@@ -38,7 +38,94 @@ const SpreadsheetPage: React.FC = () => {
     vaccines: Vaccines;
   }>({ tutorName: '', tutorPhone: '', tutorEmail: '', tutorAddress: '', tutorNeighborhood: '', tutorCpf: '', name: '', breed: '', petSize: undefined, weight: undefined, vaccines: { ...DEFAULT_VACCINES } });
 
-  const filteredClients = clients.filter((client) =>
+  const downloadQrForClient = useCallback((client: Client) => {
+    const qrValue = `Tutor: ${client.tutorName}\nDog: ${client.name}\nRaça: ${client.breed || 'N/A'}`;
+    const container = document.createElement('div');
+    container.style.position = 'absolute';
+    container.style.left = '-9999px';
+    document.body.appendChild(container);
+
+    // Create a temporary SVG via QRCodeSVG render
+    const svgNS = 'http://www.w3.org/2000/svg';
+    // Use canvas approach directly
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) { document.body.removeChild(container); return; }
+
+    // Render QR to a temporary element
+    const tempDiv = document.createElement('div');
+    document.body.appendChild(tempDiv);
+    
+    // Use import to render
+    import('qrcode.react').then(({ QRCodeCanvas }) => {
+      // Fallback: generate via canvas manually
+      import('qrcode.react').catch(() => {});
+    });
+
+    // Simpler approach: create SVG string manually and convert
+    const tempSvgContainer = document.createElement('div');
+    tempSvgContainer.style.position = 'absolute';
+    tempSvgContainer.style.left = '-9999px';
+    document.body.appendChild(tempSvgContainer);
+
+    // Use React to render SVG - but simpler to use a direct canvas
+    // Let's use the simpler approach with a hidden rendered QR
+    const padding = 40;
+    const qrSize = 200;
+    const textHeight = 80;
+    canvas.width = qrSize + padding * 2;
+    canvas.height = qrSize + padding * 2 + textHeight;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // We need to find the SVG in the table row or generate it
+    // Better approach: use the already rendered SVG in the table
+    const svgEl = document.querySelector(`[data-qr-id="${client.id}"] svg`);
+    if (svgEl) {
+      const svgData = new XMLSerializer().serializeToString(svgEl);
+      const img = new Image();
+      img.onload = () => {
+        ctx.drawImage(img, padding, padding, qrSize, qrSize);
+        ctx.fillStyle = '#000000';
+        ctx.font = 'bold 14px sans-serif';
+        ctx.textAlign = 'center';
+        const y = qrSize + padding + 20;
+        ctx.fillText(`Tutor: ${client.tutorName}`, canvas.width / 2, y);
+        ctx.fillText(`Dog: ${client.name}`, canvas.width / 2, y + 22);
+        ctx.fillText(`Raça: ${client.breed || 'N/A'}`, canvas.width / 2, y + 44);
+        const link = document.createElement('a');
+        link.download = `qr_${client.name}_${client.tutorName}.png`.replace(/\s+/g, '_');
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        setGeneratedQrIds(prev => new Set(prev).add(client.id));
+      };
+      img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+    }
+
+    document.body.removeChild(container);
+    if (document.body.contains(tempSvgContainer)) document.body.removeChild(tempSvgContainer);
+    if (document.body.contains(tempDiv)) document.body.removeChild(tempDiv);
+  }, []);
+
+  const generateAllQrCodes = useCallback(async () => {
+    setGeneratingAll(true);
+    const toGenerate = clients.filter(c => !generatedQrIds.has(c.id));
+    if (toGenerate.length === 0) {
+      toast.info('Todos os QR Codes já foram gerados!');
+      setGeneratingAll(false);
+      return;
+    }
+    let count = 0;
+    for (const client of toGenerate) {
+      await new Promise(resolve => setTimeout(resolve, 300)); // stagger downloads
+      downloadQrForClient(client);
+      count++;
+    }
+    toast.success(`${count} QR Code(s) gerado(s)!`);
+    setGeneratingAll(false);
+  }, [clients, generatedQrIds, downloadQrForClient]);
+
+
     client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (client.tutorName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
     (client.breed || '').toLowerCase().includes(searchQuery.toLowerCase())
