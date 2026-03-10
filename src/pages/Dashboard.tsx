@@ -4,8 +4,10 @@ import { AddClientDialog } from '@/components/AddClientDialog';
 import { ClientDetailSheet } from '@/components/ClientDetailSheet';
 import { HealthAlerts } from '@/components/HealthAlerts';
 import { BirthdaySection } from '@/components/dashboard/BirthdaySection';
+import { HealthControlTab } from '@/components/dashboard/HealthControlTab';
 import { Client, getHealthAlerts } from '@/types/client';
-import { Users } from 'lucide-react';
+import { Users, LayoutDashboard, HeartPulse } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 const Dashboard: React.FC = () => {
   const { clients, getClientById } = useClients();
@@ -50,24 +52,44 @@ const Dashboard: React.FC = () => {
           <AddClientDialog />
         </div>
 
-        {/* Total stat */}
-        <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-primary/10">
-              <Users size={22} className="text-primary" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-muted-foreground">Total de Clientes</p>
-              <p className="text-3xl font-bold text-foreground">{clients.length}</p>
-            </div>
-          </div>
-        </div>
+        {/* Tabs */}
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="w-full grid grid-cols-2">
+            <TabsTrigger value="overview" className="gap-1.5">
+              <LayoutDashboard size={16} />
+              Visão Geral
+            </TabsTrigger>
+            <TabsTrigger value="health" className="gap-1.5">
+              <HeartPulse size={16} />
+              Controle de Saúde
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Health Alerts */}
-        <HealthAlerts alerts={healthAlerts} onClientClick={handleAlertClientClick} />
+          <TabsContent value="overview" className="space-y-5 mt-4">
+            {/* Total stat */}
+            <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-primary/10">
+                  <Users size={22} className="text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">Total de Clientes</p>
+                  <p className="text-3xl font-bold text-foreground">{clients.length}</p>
+                </div>
+              </div>
+            </div>
 
-        {/* Birthday */}
-        <BirthdaySection clients={clients} onClientClick={handleClientClick} />
+            {/* Health Alerts */}
+            <HealthAlerts alerts={healthAlerts} onClientClick={handleAlertClientClick} />
+
+            {/* Birthday */}
+            <BirthdaySection clients={clients} onClientClick={handleClientClick} />
+          </TabsContent>
+
+          <TabsContent value="health" className="mt-4">
+            <HealthControlTab />
+          </TabsContent>
+        </Tabs>
       </div>
 
       <ClientDetailSheet client={selectedClient} open={sheetOpen} onOpenChange={setSheetOpen} />
