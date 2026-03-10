@@ -261,6 +261,7 @@ const SpreadsheetPage: React.FC = () => {
                   <TableHead className="font-semibold text-xs p-2">Bairro</TableHead>
                   <TableHead className="font-semibold text-xs p-2">Dog</TableHead>
                   <TableHead className="font-semibold text-xs p-2">Raça</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 text-right">Peso (kg)</TableHead>
                   <TableHead className="font-semibold text-xs p-2">Porte</TableHead>
                   <TableHead className="font-semibold text-xs p-2 text-right">Entrada</TableHead>
                   {VACCINE_KEYS.map(k => (
