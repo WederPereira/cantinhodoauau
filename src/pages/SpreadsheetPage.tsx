@@ -53,6 +53,7 @@ const SpreadsheetPage: React.FC = () => {
         client.tutorNeighborhood || '',
         client.name,
         client.breed || '',
+        client.weight ? client.weight.toString().replace('.', ',') : '',
         client.petSize || '',
         client.entryDate ? formatDate(client.entryDate) : '',
         ...VACCINE_KEYS.map(k => client.vaccines?.[k] ? formatVaccineDate(client.vaccines[k]) : 'Não'),
