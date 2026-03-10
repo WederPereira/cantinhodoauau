@@ -303,6 +303,9 @@ const SpreadsheetPage: React.FC = () => {
                         <TableCell className="p-2">
                           {isEditing ? <Input value={editForm.breed} onChange={(e) => setEditForm({ ...editForm, breed: e.target.value })} className="h-7 text-sm w-24" /> : <span className="text-sm text-muted-foreground">{client.breed || '—'}</span>}
                         </TableCell>
+                        <TableCell className="text-right p-2">
+                          {isEditing ? <Input type="number" step="0.1" value={editForm.weight ?? ''} onChange={(e) => setEditForm({ ...editForm, weight: e.target.value ? parseFloat(e.target.value) : undefined })} className="h-7 text-sm w-16" /> : <span className="text-sm text-muted-foreground">{client.weight ? client.weight.toFixed(1).replace('.', ',') : '—'}</span>}
+                        </TableCell>
                         <TableCell className="p-2">
                           {isEditing ? (
                             <Select value={editForm.petSize || ''} onValueChange={(value) => setEditForm({ ...editForm, petSize: (value || undefined) as PetSize })}>
