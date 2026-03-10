@@ -20,6 +20,8 @@ const SpreadsheetPage: React.FC = () => {
   const { clients, updateClient, deleteClient, importClients } = useClients();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [generatedQrIds, setGeneratedQrIds] = useState<Set<string>>(new Set());
+  const [generatingAll, setGeneratingAll] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<{
