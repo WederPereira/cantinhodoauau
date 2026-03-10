@@ -3,6 +3,8 @@ import { Client, VaccineType, DEFAULT_VACCINES, Vaccines, FleaRecord, VaccineRec
 import { mockClients } from '@/data/mockClients';
 
 const STORAGE_KEY = 'pet-grooming-clients';
+const DATA_VERSION_KEY = 'pet-grooming-data-version';
+const CURRENT_DATA_VERSION = '2';
 
 interface ClientContextType {
   clients: Client[];
