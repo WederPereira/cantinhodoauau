@@ -14,7 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      qr_entries: {
+        Row: {
+          created_at: string
+          data_hora: string
+          dog: string
+          id: string
+          raca: string
+          tutor: string
+        }
+        Insert: {
+          created_at?: string
+          data_hora?: string
+          dog: string
+          id?: string
+          raca?: string
+          tutor: string
+        }
+        Update: {
+          created_at?: string
+          data_hora?: string
+          dog?: string
+          id?: string
+          raca?: string
+          tutor?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
