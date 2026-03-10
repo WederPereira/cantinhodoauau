@@ -42,7 +42,7 @@ const SpreadsheetPage: React.FC = () => {
   );
 
   const exportToCSV = () => {
-    const headers = ['Tutor', 'Telefone', 'Email', 'CPF', 'Endereço', 'Bairro', 'Dog', 'Raça', 'Porte', 'Entrada', ...VACCINE_KEYS.map(k => VACCINE_LABELS[k])];
+    const headers = ['Tutor', 'Telefone', 'Email', 'CPF', 'Endereço', 'Bairro', 'Dog', 'Raça', 'Peso (kg)', 'Porte', 'Entrada', ...VACCINE_KEYS.map(k => VACCINE_LABELS[k])];
     const rows = clients.map(client => {
       return [
         client.tutorName || '',
