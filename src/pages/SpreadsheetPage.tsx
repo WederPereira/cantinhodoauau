@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { useClients } from '@/context/ClientContext';
 import { Client, formatDate, Vaccines, VACCINE_LABELS, formatVaccineDate, DEFAULT_VACCINES, PetSize } from '@/types/client';
 import { Button } from '@/components/ui/button';
@@ -7,11 +7,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Download, FileSpreadsheet, Search, X, Pencil, Trash2, Check, XCircle, Upload, CalendarIcon } from 'lucide-react';
+import { Download, FileSpreadsheet, Search, X, Pencil, Trash2, Check, XCircle, Upload, CalendarIcon, QrCode } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { QRCodeSVG } from 'qrcode.react';
 
 const VACCINE_KEYS = Object.keys(VACCINE_LABELS) as Array<keyof Vaccines>;
 
@@ -19,6 +20,8 @@ const SpreadsheetPage: React.FC = () => {
   const { clients, updateClient, deleteClient, importClients } = useClients();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [generatedQrIds, setGeneratedQrIds] = useState<Set<string>>(new Set());
+  const [generatingAll, setGeneratingAll] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<{
@@ -34,6 +37,60 @@ const SpreadsheetPage: React.FC = () => {
     weight?: number;
     vaccines: Vaccines;
   }>({ tutorName: '', tutorPhone: '', tutorEmail: '', tutorAddress: '', tutorNeighborhood: '', tutorCpf: '', name: '', breed: '', petSize: undefined, weight: undefined, vaccines: { ...DEFAULT_VACCINES } });
+
+  const downloadQrForClient = useCallback((client: Client): Promise<void> => {
+    return new Promise((resolve) => {
+      const svgEl = document.querySelector(`[data-qr-id="${client.id}"] svg`);
+      if (!svgEl) { resolve(); return; }
+      const svgData = new XMLSerializer().serializeToString(svgEl);
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { resolve(); return; }
+      const qrSize = 200;
+      const padding = 40;
+      const textHeight = 80;
+      canvas.width = qrSize + padding * 2;
+      canvas.height = qrSize + padding * 2 + textHeight;
+      const img = new Image();
+      img.onload = () => {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, padding, padding, qrSize, qrSize);
+        ctx.fillStyle = '#000000';
+        ctx.font = 'bold 14px sans-serif';
+        ctx.textAlign = 'center';
+        const y = qrSize + padding + 20;
+        ctx.fillText(`Tutor: ${client.tutorName}`, canvas.width / 2, y);
+        ctx.fillText(`Dog: ${client.name}`, canvas.width / 2, y + 22);
+        ctx.fillText(`Raça: ${client.breed || 'N/A'}`, canvas.width / 2, y + 44);
+        const link = document.createElement('a');
+        link.download = `qr_${client.name}_${client.tutorName}.png`.replace(/\s+/g, '_');
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        setGeneratedQrIds(prev => new Set(prev).add(client.id));
+        resolve();
+      };
+      img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+    });
+  }, []);
+
+  const generateAllQrCodes = useCallback(async () => {
+    setGeneratingAll(true);
+    const toGenerate = clients.filter(c => !generatedQrIds.has(c.id));
+    if (toGenerate.length === 0) {
+      toast.info('Todos os QR Codes já foram gerados!');
+      setGeneratingAll(false);
+      return;
+    }
+    let count = 0;
+    for (const client of toGenerate) {
+      await new Promise(resolve => setTimeout(resolve, 400));
+      await downloadQrForClient(client);
+      count++;
+    }
+    toast.success(`${count} QR Code(s) baixado(s)!`);
+    setGeneratingAll(false);
+  }, [clients, generatedQrIds, downloadQrForClient]);
 
   const filteredClients = clients.filter((client) =>
     client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -218,12 +275,22 @@ const SpreadsheetPage: React.FC = () => {
             <h1 className="text-2xl font-bold text-foreground">Planilha</h1>
             <span className="text-sm text-muted-foreground">({clients.length} clientes)</span>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {selectedIds.size > 0 && (
               <Button variant="destructive" size="sm" className="gap-2" onClick={deleteSelected}>
                 <Trash2 size={16} /> Excluir ({selectedIds.size})
               </Button>
             )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={generateAllQrCodes}
+              disabled={generatingAll}
+            >
+              <QrCode size={16} />
+              {generatingAll ? 'Gerando...' : `Gerar Todos QR (${clients.filter(c => !generatedQrIds.has(c.id)).length})`}
+            </Button>
             <input type="file" ref={fileInputRef} accept=".csv" onChange={handleFileUpload} className="hidden" />
             <Button variant="outline" size="sm" className="gap-2" onClick={() => fileInputRef.current?.click()}>
               <Upload size={16} /> Importar CSV
@@ -254,6 +321,7 @@ const SpreadsheetPage: React.FC = () => {
                   <TableHead className="w-10 p-2">
                     <input type="checkbox" checked={selectedIds.size === filteredClients.length && filteredClients.length > 0} onChange={toggleSelectAll} />
                   </TableHead>
+                  <TableHead className="font-semibold text-xs p-2">QR</TableHead>
                   <TableHead className="font-semibold text-xs p-2">Tutor</TableHead>
                   <TableHead className="font-semibold text-xs p-2">Telefone</TableHead>
                   <TableHead className="font-semibold text-xs p-2">Email</TableHead>
@@ -275,10 +343,28 @@ const SpreadsheetPage: React.FC = () => {
                 {filteredClients.length > 0 ? (
                   filteredClients.map((client) => {
                     const isEditing = editingId === client.id;
+                    const qrValue = `Tutor: ${client.tutorName}\nDog: ${client.name}\nRaça: ${client.breed || 'N/A'}`;
+                    const isQrGenerated = generatedQrIds.has(client.id);
                     return (
                       <TableRow key={client.id} className="hover:bg-muted/30">
                         <TableCell className="p-2">
                           <input type="checkbox" checked={selectedIds.has(client.id)} onChange={() => toggleSelect(client.id)} />
+                        </TableCell>
+                        <TableCell className="p-2">
+                          <div className="flex flex-col items-center gap-1">
+                            <div data-qr-id={client.id} className="w-10 h-10">
+                              <QRCodeSVG value={qrValue} size={40} level="L" />
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className={cn("h-6 w-6", isQrGenerated ? "text-green-600" : "text-primary")}
+                              onClick={() => downloadQrForClient(client)}
+                              title={isQrGenerated ? "QR já baixado" : "Baixar QR Code"}
+                            >
+                              {isQrGenerated ? <Check size={12} /> : <Download size={12} />}
+                            </Button>
+                          </div>
                         </TableCell>
                         <TableCell className="p-2">
                           {isEditing ? <Input value={editForm.tutorName} onChange={(e) => setEditForm({ ...editForm, tutorName: e.target.value })} className="h-7 text-sm w-24" /> : <span className="text-sm text-muted-foreground">{client.tutorName || '—'}</span>}
@@ -361,7 +447,7 @@ const SpreadsheetPage: React.FC = () => {
                   })
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={12 + VACCINE_KEYS.length} className="text-center py-8 text-muted-foreground text-sm">
+                    <TableCell colSpan={13 + VACCINE_KEYS.length} className="text-center py-8 text-muted-foreground text-sm">
                       {searchQuery ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}
                     </TableCell>
                   </TableRow>
