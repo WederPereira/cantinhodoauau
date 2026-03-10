@@ -13,6 +13,7 @@ import ClientsPage from "./pages/ClientsPage";
 import SpreadsheetPage from "./pages/SpreadsheetPage";
 import BanhoPetPage from "./pages/BanhoPetPage";
 import ReportsPage from "./pages/ReportsPage";
+import QrCodePage from "./pages/QrCodePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ const App = () => (
                     <Route path="/spreadsheet" element={<SpreadsheetPage />} />
                     <Route path="/banho" element={<BanhoPetPage />} />
                     <Route path="/reports" element={<ReportsPage />} />
+                    <Route path="/qrcode" element={<QrCodePage />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </main>
