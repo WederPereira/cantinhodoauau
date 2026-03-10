@@ -31,8 +31,9 @@ const SpreadsheetPage: React.FC = () => {
     name: string;
     breed: string;
     petSize?: PetSize;
+    weight?: number;
     vaccines: Vaccines;
-  }>({ tutorName: '', tutorPhone: '', tutorEmail: '', tutorAddress: '', tutorNeighborhood: '', tutorCpf: '', name: '', breed: '', petSize: undefined, vaccines: { ...DEFAULT_VACCINES } });
+  }>({ tutorName: '', tutorPhone: '', tutorEmail: '', tutorAddress: '', tutorNeighborhood: '', tutorCpf: '', name: '', breed: '', petSize: undefined, weight: undefined, vaccines: { ...DEFAULT_VACCINES } });
 
   const filteredClients = clients.filter((client) =>
     client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
