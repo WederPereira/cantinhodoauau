@@ -116,7 +116,7 @@ const QrGenerator: React.FC = () => {
           </div>
           <div>
             <Label>Raça</Label>
-            <BreedSelect value={manualBreed} onValueChange={setManualBreed} />
+            <BreedSelect value={manualBreed} onChange={setManualBreed} />
           </div>
         </div>
       )}
