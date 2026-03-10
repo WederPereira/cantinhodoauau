@@ -1,0 +1,213 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+@layer base {
+  :root {
+    --background: 200 20% 98%;
+    --foreground: 200 30% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 200 30% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 200 30% 10%;
+
+    --primary: 174 72% 40%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 200 20% 94%;
+    --secondary-foreground: 200 30% 20%;
+
+    --muted: 200 15% 92%;
+    --muted-foreground: 200 15% 45%;
+
+    --accent: 24 95% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 200 20% 88%;
+    --input: 200 20% 88%;
+    --ring: 174 72% 40%;
+
+    --radius: 0.75rem;
+
+    /* Status colors */
+    --status-ok: 142 70% 45%;
+    --status-ok-bg: 142 70% 95%;
+    --status-warning: 45 95% 50%;
+    --status-warning-bg: 45 95% 95%;
+    --status-depleted: 0 72% 51%;
+    --status-depleted-bg: 0 72% 95%;
+    --status-renew: 210 90% 55%;
+    --status-renew-bg: 210 90% 95%;
+    --status-paused: 260 50% 55%;
+    --status-paused-bg: 260 50% 95%;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(200 30% 10% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(200 30% 10% / 0.08), 0 2px 4px -2px hsl(200 30% 10% / 0.05);
+    --shadow-lg: 0 10px 15px -3px hsl(200 30% 10% / 0.08), 0 4px 6px -4px hsl(200 30% 10% / 0.05);
+    --shadow-xl: 0 20px 25px -5px hsl(200 30% 10% / 0.1), 0 8px 10px -6px hsl(200 30% 10% / 0.08);
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 200 30% 20%;
+    --sidebar-primary: 174 72% 40%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 200 20% 96%;
+    --sidebar-accent-foreground: 200 30% 20%;
+    --sidebar-border: 200 20% 90%;
+    --sidebar-ring: 174 72% 40%;
+  }
+
+  .dark {
+    --background: 200 30% 8%;
+    --foreground: 200 20% 98%;
+
+    --card: 200 25% 12%;
+    --card-foreground: 200 20% 98%;
+
+    --popover: 200 25% 12%;
+    --popover-foreground: 200 20% 98%;
+
+    --primary: 174 65% 50%;
+    --primary-foreground: 200 30% 8%;
+
+    --secondary: 200 20% 18%;
+    --secondary-foreground: 200 20% 90%;
+
+    --muted: 200 20% 18%;
+    --muted-foreground: 200 15% 60%;
+
+    --accent: 24 90% 55%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 200 20% 20%;
+    --input: 200 20% 20%;
+    --ring: 174 65% 50%;
+
+    --status-ok: 142 60% 50%;
+    --status-ok-bg: 142 40% 15%;
+    --status-warning: 45 85% 55%;
+    --status-warning-bg: 45 60% 15%;
+    --status-depleted: 0 65% 55%;
+    --status-depleted-bg: 0 50% 15%;
+    --status-renew: 210 80% 60%;
+    --status-renew-bg: 210 60% 15%;
+    --status-paused: 260 45% 60%;
+    --status-paused-bg: 260 40% 15%;
+
+    --sidebar-background: 200 25% 10%;
+    --sidebar-foreground: 200 20% 90%;
+    --sidebar-primary: 174 65% 50%;
+    --sidebar-primary-foreground: 200 30% 8%;
+    --sidebar-accent: 200 20% 16%;
+    --sidebar-accent-foreground: 200 20% 90%;
+    --sidebar-border: 200 20% 18%;
+    --sidebar-ring: 174 65% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+}
+
+@layer utilities {
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-sm border border-border/50;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+  }
+
+  .shadow-soft {
+    box-shadow: 0 2px 8px -2px hsl(var(--foreground) / 0.06), 0 4px 16px -4px hsl(var(--foreground) / 0.08);
+  }
+
+  .shadow-medium {
+    box-shadow: 0 4px 12px -2px hsl(var(--foreground) / 0.08), 0 8px 24px -4px hsl(var(--foreground) / 0.1);
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.4s ease-out forwards;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.2s ease-out forwards;
+  }
+
+  .status-ok {
+    @apply bg-[hsl(var(--status-ok-bg))] text-[hsl(var(--status-ok))] border-[hsl(var(--status-ok)/0.3)];
+  }
+
+  .status-warning {
+    @apply bg-[hsl(var(--status-warning-bg))] text-[hsl(var(--status-warning))] border-[hsl(var(--status-warning)/0.3)];
+  }
+
+  .status-depleted {
+    @apply bg-[hsl(var(--status-depleted-bg))] text-[hsl(var(--status-depleted))] border-[hsl(var(--status-depleted)/0.3)];
+  }
+
+  .status-renew {
+    @apply bg-[hsl(var(--status-renew-bg))] text-[hsl(var(--status-renew))] border-[hsl(var(--status-renew)/0.3)];
+  }
+
+  .status-paused {
+    @apply bg-[hsl(var(--status-paused-bg))] text-[hsl(var(--status-paused))] border-[hsl(var(--status-paused)/0.3)];
+  }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Ensure popovers with calendars fit on mobile */
+  .calendar-popover {
+    max-width: calc(100vw - 2rem);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "Cão do Campo",
+  "short_name": "CãoCampo",
+  "description": "Gestão de creche e banho para pets",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafb",
+  "theme_color": "#1a9e8f",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    }
+  ]
+}
