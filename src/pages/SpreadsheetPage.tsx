@@ -144,6 +144,7 @@ const SpreadsheetPage: React.FC = () => {
       name: editForm.name.trim() || client.name,
       breed: editForm.breed.trim(),
       petSize: editForm.petSize,
+      weight: editForm.weight,
       vaccines: editForm.vaccines,
     });
     setEditingId(null);
