@@ -125,7 +125,7 @@ const SpreadsheetPage: React.FC = () => {
     setGeneratingAll(false);
   }, [clients, generatedQrIds, downloadQrForClient]);
 
-
+  const filteredClients = clients.filter((client) =>
     client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (client.tutorName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
     (client.breed || '').toLowerCase().includes(searchQuery.toLowerCase())
