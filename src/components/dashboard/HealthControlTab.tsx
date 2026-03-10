@@ -66,19 +66,29 @@ const buildWhatsAppMessage = (client: Client, info: ClientHealthInfo): string =>
       lines.push(`❌ A vacina *${v.label}* está *vencida* desde ${v.expiryDate ? formatDate(v.expiryDate) : ''}. É importante atualizar o quanto antes! 💉`);
     } else if (v.status === 'expiring') {
       lines.push(`⚠️ A vacina *${v.label}* está *para vencer* em ${v.expiryDate ? formatDate(v.expiryDate) : ''}. Agende a renovação! 📅`);
+    } else if (v.status === 'ok') {
+      lines.push(`✅ A vacina *${v.label}* está *em dia* até ${v.expiryDate ? formatDate(v.expiryDate) : ''}.`);
+    } else {
+      lines.push(`📋 A vacina *${v.label}* ainda *não possui registro*. Que tal agendar?`);
     }
   });
+
+  lines.push('');
 
   if (info.flea.status === 'expired') {
     lines.push(`❌ O *antipulgas* está *vencido* desde ${info.flea.expiryDate ? formatDate(info.flea.expiryDate) : ''}. Vamos renovar? 🐛`);
   } else if (info.flea.status === 'expiring') {
     lines.push(`⚠️ O *antipulgas* está *para vencer* em ${info.flea.expiryDate ? formatDate(info.flea.expiryDate) : ''}. Fique atento(a)! 🐛`);
+  } else if (info.flea.status === 'ok') {
+    lines.push(`✅ O *antipulgas* está *em dia* até ${info.flea.expiryDate ? formatDate(info.flea.expiryDate) : ''}.`);
+  } else {
+    lines.push(`📋 O *antipulgas* ainda *não possui registro*. Que tal agendar?`);
   }
 
   lines.push('');
   lines.push('Ficamos à disposição para agendar! 🏥💕');
   lines.push('');
-  lines.push('Atenciosamente, sua Pet Shop 🐶🐱');
+  lines.push('Atenciosamente, equipe *Cantinho do AuAu* 🐶');
 
   return lines.join('\n');
 };

@@ -32,7 +32,7 @@ export const Header: React.FC = () => {
             <PawPrint size={18} className="text-primary-foreground" />
           </div>
           <div className="flex flex-col">
-            <span className="font-bold text-base text-foreground leading-tight">Cão do Campo</span>
+            <span className="font-bold text-base text-foreground leading-tight"><span className="font-bold text-base text-foreground leading-tight">Cantinho do AuAu</span></span>
             <span className="text-[10px] text-muted-foreground leading-tight">{getGreeting()} 👋</span>
           </div>
         </div>
