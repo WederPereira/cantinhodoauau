@@ -31,8 +31,9 @@ const SpreadsheetPage: React.FC = () => {
     name: string;
     breed: string;
     petSize?: PetSize;
+    weight?: number;
     vaccines: Vaccines;
-  }>({ tutorName: '', tutorPhone: '', tutorEmail: '', tutorAddress: '', tutorNeighborhood: '', tutorCpf: '', name: '', breed: '', petSize: undefined, vaccines: { ...DEFAULT_VACCINES } });
+  }>({ tutorName: '', tutorPhone: '', tutorEmail: '', tutorAddress: '', tutorNeighborhood: '', tutorCpf: '', name: '', breed: '', petSize: undefined, weight: undefined, vaccines: { ...DEFAULT_VACCINES } });
 
   const filteredClients = clients.filter((client) =>
     client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -41,7 +42,7 @@ const SpreadsheetPage: React.FC = () => {
   );
 
   const exportToCSV = () => {
-    const headers = ['Tutor', 'Telefone', 'Email', 'CPF', 'Endereço', 'Bairro', 'Dog', 'Raça', 'Porte', 'Entrada', ...VACCINE_KEYS.map(k => VACCINE_LABELS[k])];
+    const headers = ['Tutor', 'Telefone', 'Email', 'CPF', 'Endereço', 'Bairro', 'Dog', 'Raça', 'Peso (kg)', 'Porte', 'Entrada', ...VACCINE_KEYS.map(k => VACCINE_LABELS[k])];
     const rows = clients.map(client => {
       return [
         client.tutorName || '',
@@ -52,6 +53,7 @@ const SpreadsheetPage: React.FC = () => {
         client.tutorNeighborhood || '',
         client.name,
         client.breed || '',
+        client.weight ? client.weight.toString().replace('.', ',') : '',
         client.petSize || '',
         client.entryDate ? formatDate(client.entryDate) : '',
         ...VACCINE_KEYS.map(k => client.vaccines?.[k] ? formatVaccineDate(client.vaccines[k]) : 'Não'),
@@ -125,6 +127,7 @@ const SpreadsheetPage: React.FC = () => {
       name: client.name,
       breed: client.breed || '',
       petSize: client.petSize,
+      weight: client.weight,
       vaccines: client.vaccines || { ...DEFAULT_VACCINES },
     });
   };
@@ -142,6 +145,7 @@ const SpreadsheetPage: React.FC = () => {
       name: editForm.name.trim() || client.name,
       breed: editForm.breed.trim(),
       petSize: editForm.petSize,
+      weight: editForm.weight,
       vaccines: editForm.vaccines,
     });
     setEditingId(null);
@@ -258,6 +262,7 @@ const SpreadsheetPage: React.FC = () => {
                   <TableHead className="font-semibold text-xs p-2">Bairro</TableHead>
                   <TableHead className="font-semibold text-xs p-2">Dog</TableHead>
                   <TableHead className="font-semibold text-xs p-2">Raça</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 text-right">Peso (kg)</TableHead>
                   <TableHead className="font-semibold text-xs p-2">Porte</TableHead>
                   <TableHead className="font-semibold text-xs p-2 text-right">Entrada</TableHead>
                   {VACCINE_KEYS.map(k => (
@@ -298,6 +303,9 @@ const SpreadsheetPage: React.FC = () => {
                         </TableCell>
                         <TableCell className="p-2">
                           {isEditing ? <Input value={editForm.breed} onChange={(e) => setEditForm({ ...editForm, breed: e.target.value })} className="h-7 text-sm w-24" /> : <span className="text-sm text-muted-foreground">{client.breed || '—'}</span>}
+                        </TableCell>
+                        <TableCell className="text-right p-2">
+                          {isEditing ? <Input type="number" step="0.1" value={editForm.weight ?? ''} onChange={(e) => setEditForm({ ...editForm, weight: e.target.value ? parseFloat(e.target.value) : undefined })} className="h-7 text-sm w-16" /> : <span className="text-sm text-muted-foreground">{client.weight ? client.weight.toFixed(1).replace('.', ',') : '—'}</span>}
                         </TableCell>
                         <TableCell className="p-2">
                           {isEditing ? (

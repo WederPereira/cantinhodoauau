@@ -36,6 +36,7 @@ export interface Client {
   name: string;
   breed: string;
   petSize?: PetSize;
+  weight?: number;
   birthDate?: Date;
   photo?: string;
   entryDate: Date;

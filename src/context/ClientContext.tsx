@@ -3,6 +3,8 @@ import { Client, VaccineType, DEFAULT_VACCINES, Vaccines, FleaRecord, VaccineRec
 import { mockClients } from '@/data/mockClients';
 
 const STORAGE_KEY = 'pet-grooming-clients';
+const DATA_VERSION_KEY = 'pet-grooming-data-version';
+const CURRENT_DATA_VERSION = '2';
 
 interface ClientContextType {
   clients: Client[];
@@ -55,6 +57,7 @@ const parseClientDates = (client: any): Client => ({
   ...client,
   entryDate: client.entryDate ? new Date(client.entryDate) : new Date(),
   birthDate: client.birthDate ? new Date(client.birthDate) : undefined,
+  weight: client.weight,
   createdAt: new Date(client.createdAt),
   updatedAt: new Date(client.updatedAt),
   tutorName: client.tutorName || '',
@@ -71,6 +74,12 @@ const parseClientDates = (client: any): Client => ({
 
 const loadClients = (): Client[] => {
   try {
+    const version = localStorage.getItem(DATA_VERSION_KEY);
+    if (version !== CURRENT_DATA_VERSION) {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.setItem(DATA_VERSION_KEY, CURRENT_DATA_VERSION);
+      return mockClients;
+    }
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
