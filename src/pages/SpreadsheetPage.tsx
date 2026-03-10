@@ -126,6 +126,7 @@ const SpreadsheetPage: React.FC = () => {
       name: client.name,
       breed: client.breed || '',
       petSize: client.petSize,
+      weight: client.weight,
       vaccines: client.vaccines || { ...DEFAULT_VACCINES },
     });
   };
