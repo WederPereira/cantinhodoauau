@@ -36,6 +36,7 @@ const App = () => (
                     <Route path="/spreadsheet" element={<SpreadsheetPage />} />
                     <Route path="/banho" element={<BanhoPetPage />} />
                     <Route path="/reports" element={<ReportsPage />} />
+                    <Route path="/qrcode" element={<QrCodePage />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </main>
