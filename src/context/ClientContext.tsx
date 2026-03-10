@@ -73,6 +73,12 @@ const parseClientDates = (client: any): Client => ({
 
 const loadClients = (): Client[] => {
   try {
+    const version = localStorage.getItem(DATA_VERSION_KEY);
+    if (version !== CURRENT_DATA_VERSION) {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.setItem(DATA_VERSION_KEY, CURRENT_DATA_VERSION);
+      return mockClients;
+    }
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
