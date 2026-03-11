@@ -209,10 +209,10 @@ const DaycareTab: React.FC = () => {
                 <span className="text-[10px] text-muted-foreground">
                   {entry.ate ? 'Comeu' : 'Não comeu'}
                 </span>
-                <Switch
+                <Checkbox
                   checked={entry.ate}
                   onCheckedChange={() => toggleAte(entry)}
-                  className="data-[state=checked]:bg-green-600"
+                  className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
                 />
               </div>
             </div>
