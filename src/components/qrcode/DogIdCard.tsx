@@ -279,10 +279,10 @@ const DogIdCard: React.FC = () => {
                 </div>
 
                 {/* QR */}
-                <div className="absolute right-5 bottom-[34px] bg-white rounded p-1">
+                <div className="absolute right-4 bottom-[40px] bg-white rounded p-1">
                   <QRCodeSVG
                     value={`Tutor: ${client.tutorName}\nDog: ${client.name}\nRaça: ${client.breed || 'N/A'}`}
-                    size={55}
+                    size={65}
                     level="M"
                   />
                 </div>
