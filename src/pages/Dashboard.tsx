@@ -5,8 +5,9 @@ import { ClientDetailSheet } from '@/components/ClientDetailSheet';
 import { HealthAlerts } from '@/components/HealthAlerts';
 import { BirthdaySection } from '@/components/dashboard/BirthdaySection';
 import { HealthControlTab } from '@/components/dashboard/HealthControlTab';
+import DaycareTab from '@/components/dashboard/DaycareTab';
 import { Client, getHealthAlerts } from '@/types/client';
-import { Users, LayoutDashboard, HeartPulse } from 'lucide-react';
+import { Users, LayoutDashboard, HeartPulse, PawPrint } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 const Dashboard: React.FC = () => {
