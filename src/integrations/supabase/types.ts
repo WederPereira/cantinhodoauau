@@ -66,6 +66,7 @@ export type Database = {
           id: string
           medication_name: string
           notes: string | null
+          recurrence: string
           scheduled_time: string
         }
         Insert: {
@@ -75,6 +76,7 @@ export type Database = {
           id?: string
           medication_name: string
           notes?: string | null
+          recurrence?: string
           scheduled_time: string
         }
         Update: {
@@ -84,6 +86,7 @@ export type Database = {
           id?: string
           medication_name?: string
           notes?: string | null
+          recurrence?: string
           scheduled_time?: string
         }
         Relationships: [
@@ -99,6 +102,7 @@ export type Database = {
       hotel_stays: {
         Row: {
           active: boolean
+          ate: boolean
           belongings_photos: string[] | null
           check_in: string
           check_out: string | null
@@ -112,6 +116,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          ate?: boolean
           belongings_photos?: string[] | null
           check_in?: string
           check_out?: string | null
@@ -125,6 +130,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          ate?: boolean
           belongings_photos?: string[] | null
           check_in?: string
           check_out?: string | null
