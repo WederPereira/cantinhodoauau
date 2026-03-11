@@ -13,7 +13,6 @@ import ClientsPage from "./pages/ClientsPage";
 import SpreadsheetPage from "./pages/SpreadsheetPage";
 import BanhoPetPage from "./pages/BanhoPetPage";
 import ReportsPage from "./pages/ReportsPage";
-import QrCodePage from "./pages/QrCodePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
