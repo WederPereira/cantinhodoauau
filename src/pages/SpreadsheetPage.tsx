@@ -356,15 +356,30 @@ const SpreadsheetPage: React.FC = () => {
                             <div data-qr-id={client.id} className="w-10 h-10">
                               <QRCodeSVG value={qrValue} size={40} level="L" />
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className={cn("h-6 w-6", isQrGenerated ? "text-green-600" : "text-primary")}
-                              onClick={() => downloadQrForClient(client)}
-                              title={isQrGenerated ? "QR já baixado" : "Baixar QR Code"}
-                            >
-                              {isQrGenerated ? <Check size={12} /> : <Download size={12} />}
-                            </Button>
+                            <div className="flex gap-0.5">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className={cn("h-6 w-6", isQrGenerated ? "text-green-600" : "text-primary")}
+                                onClick={() => downloadQrForClient(client)}
+                                title={isQrGenerated ? "QR já baixado" : "Baixar QR Code"}
+                              >
+                                {isQrGenerated ? <Check size={12} /> : <Download size={12} />}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-primary"
+                                onClick={() => { downloadCardForClient(client); toast.success(`Carteirinha de ${client.name} baixada!`); }}
+                                title="Baixar Carteirinha"
+                              >
+                                <CreditCard size={12} />
+                              </Button>
+                            </div>
+                            {/* Hidden QR for card generation */}
+                            <div data-card-qr={client.id} className="hidden">
+                              <QRCodeSVG value={qrValue} size={200} level="M" />
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell className="p-2">
