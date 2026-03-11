@@ -112,9 +112,9 @@ const generateCardCanvas = (client: Client): Promise<HTMLCanvasElement> => {
       if (client.tutorPhone) drawField('Tel:', client.tutorPhone);
 
       // QR Code area - bottom right
-      const qrSize = 65 * scale;
-      const qrX = w - qrSize - 20 * scale;
-      const qrY = h - qrSize - 36 * scale;
+      const qrSize = 80 * scale;
+      const qrX = w - qrSize - 16 * scale;
+      const qrY = h - qrSize - 42 * scale;
 
       ctx.fillStyle = '#ffffff';
       roundRect(qrX - 4 * scale, qrY - 4 * scale, qrSize + 8 * scale, qrSize + 8 * scale, 4 * scale);
@@ -279,10 +279,10 @@ const DogIdCard: React.FC = () => {
                 </div>
 
                 {/* QR */}
-                <div className="absolute right-5 bottom-[34px] bg-white rounded p-1">
+                <div className="absolute right-4 bottom-[40px] bg-white rounded p-1">
                   <QRCodeSVG
                     value={`Tutor: ${client.tutorName}\nDog: ${client.name}\nRaça: ${client.breed || 'N/A'}`}
-                    size={55}
+                    size={65}
                     level="M"
                   />
                 </div>
