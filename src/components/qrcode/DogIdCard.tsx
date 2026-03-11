@@ -278,13 +278,15 @@ const DogIdCard: React.FC = () => {
                   </div>
                 </div>
 
-                {/* QR */}
-                <div className="absolute right-5 bottom-[34px] bg-white rounded p-1">
-                  <QRCodeSVG
-                    value={`Tutor: ${client.tutorName}\nDog: ${client.name}\nRaça: ${client.breed || 'N/A'}`}
-                    size={55}
-                    level="M"
-                  />
+                {/* QR - centered under photo */}
+                <div className="absolute left-4 top-[178px] w-[90px] flex justify-center">
+                  <div className="bg-white rounded p-1">
+                    <QRCodeSVG
+                      value={`Tutor: ${client.tutorName}\nDog: ${client.name}\nRaça: ${client.breed || 'N/A'}`}
+                      size={70}
+                      level="M"
+                    />
+                  </div>
                 </div>
 
                 {/* Footer */}
