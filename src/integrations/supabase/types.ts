@@ -61,6 +61,7 @@ export type Database = {
       hotel_medications: {
         Row: {
           administered: boolean
+          administered_at: string | null
           created_at: string
           hotel_stay_id: string
           id: string
@@ -71,6 +72,7 @@ export type Database = {
         }
         Insert: {
           administered?: boolean
+          administered_at?: string | null
           created_at?: string
           hotel_stay_id: string
           id?: string
@@ -81,6 +83,7 @@ export type Database = {
         }
         Update: {
           administered?: boolean
+          administered_at?: string | null
           created_at?: string
           hotel_stay_id?: string
           id?: string
@@ -103,6 +106,7 @@ export type Database = {
         Row: {
           active: boolean
           ate: boolean
+          belonging_labels: Json | null
           belongings_photos: string[] | null
           check_in: string
           check_out: string | null
@@ -117,6 +121,7 @@ export type Database = {
         Insert: {
           active?: boolean
           ate?: boolean
+          belonging_labels?: Json | null
           belongings_photos?: string[] | null
           check_in?: string
           check_out?: string | null
@@ -131,6 +136,7 @@ export type Database = {
         Update: {
           active?: boolean
           ate?: boolean
+          belonging_labels?: Json | null
           belongings_photos?: string[] | null
           check_in?: string
           check_out?: string | null
