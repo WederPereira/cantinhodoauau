@@ -111,10 +111,10 @@ const generateCardCanvas = (client: Client): Promise<HTMLCanvasElement> => {
       drawField('Tutor:', client.tutorName);
       if (client.tutorPhone) drawField('Tel:', client.tutorPhone);
 
-      // QR Code area - bottom right
-      const qrSize = 65 * scale;
-      const qrX = w - qrSize - 20 * scale;
-      const qrY = h - qrSize - 36 * scale;
+      // QR Code area - centered under photo
+      const qrSize = 80 * scale;
+      const qrX = photoX + (photoW - qrSize) / 2;
+      const qrY = photoY + photoH + 10 * scale;
 
       ctx.fillStyle = '#ffffff';
       roundRect(qrX - 4 * scale, qrY - 4 * scale, qrSize + 8 * scale, qrSize + 8 * scale, 4 * scale);
