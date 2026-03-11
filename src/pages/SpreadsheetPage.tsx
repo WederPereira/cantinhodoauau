@@ -7,12 +7,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Download, FileSpreadsheet, Search, X, Pencil, Trash2, Check, XCircle, Upload, CalendarIcon, QrCode } from 'lucide-react';
+import { Download, FileSpreadsheet, Search, X, Pencil, Trash2, Check, XCircle, Upload, CalendarIcon, QrCode, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { QRCodeSVG } from 'qrcode.react';
+import { downloadCardForClient } from '@/components/qrcode/DogIdCard';
 
 const VACCINE_KEYS = Object.keys(VACCINE_LABELS) as Array<keyof Vaccines>;
 
@@ -355,15 +356,30 @@ const SpreadsheetPage: React.FC = () => {
                             <div data-qr-id={client.id} className="w-10 h-10">
                               <QRCodeSVG value={qrValue} size={40} level="L" />
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className={cn("h-6 w-6", isQrGenerated ? "text-green-600" : "text-primary")}
-                              onClick={() => downloadQrForClient(client)}
-                              title={isQrGenerated ? "QR já baixado" : "Baixar QR Code"}
-                            >
-                              {isQrGenerated ? <Check size={12} /> : <Download size={12} />}
-                            </Button>
+                            <div className="flex gap-0.5">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className={cn("h-6 w-6", isQrGenerated ? "text-green-600" : "text-primary")}
+                                onClick={() => downloadQrForClient(client)}
+                                title={isQrGenerated ? "QR já baixado" : "Baixar QR Code"}
+                              >
+                                {isQrGenerated ? <Check size={12} /> : <Download size={12} />}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-primary"
+                                onClick={() => { downloadCardForClient(client); toast.success(`Carteirinha de ${client.name} baixada!`); }}
+                                title="Baixar Carteirinha"
+                              >
+                                <CreditCard size={12} />
+                              </Button>
+                            </div>
+                            {/* Hidden QR for card generation */}
+                            <div data-card-qr={client.id} className="hidden">
+                              <QRCodeSVG value={qrValue} size={200} level="M" />
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell className="p-2">
