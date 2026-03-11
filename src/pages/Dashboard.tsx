@@ -101,6 +101,10 @@ const Dashboard: React.FC = () => {
             <DaycareTab />
           </TabsContent>
 
+          <TabsContent value="hotel" className="mt-4">
+            <HotelTab />
+          </TabsContent>
+
           <TabsContent value="health" className="mt-4">
             <HealthControlTab />
           </TabsContent>
