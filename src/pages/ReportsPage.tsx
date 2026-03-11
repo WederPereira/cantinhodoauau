@@ -150,11 +150,13 @@ const ReportsPage: React.FC = () => {
   const copySelectedDateDogs = () => {
     if (selectedDateSummary.length === 0) return;
     const total = selectedDateSummary.reduce((s, d) => s + d.count, 0);
-    const lines = selectedDateSummary.map(d => `${d.dog} (${d.count}x)`);
-    lines.push(`\nTotal: ${total} entrada(s)`);
-    const text = `Entradas ${format(selectedDate!, 'dd/MM/yyyy')}:\n${lines.join('\n')}`;
+    const dateStr = format(selectedDate!, 'dd/MM/yyyy');
+    const header = `*HOTEL ${dateStr}:*`;
+    const lines = selectedDateSummary.map((d, i) => `${i + 1}. ${d.dog.toUpperCase()}`);
+    const footer = `*TOTAL:${total}*`;
+    const text = `${header}\n\n${lines.join('\n\n')}\n\n${footer}`;
     navigator.clipboard.writeText(text);
-    toast.success('Lista copiada!');
+    toast.success('Lista copiada no formato WhatsApp!');
   };
 
   const CustomTooltipStyle = {
