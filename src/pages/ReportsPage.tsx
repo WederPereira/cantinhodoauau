@@ -151,9 +151,9 @@ const ReportsPage: React.FC = () => {
     if (selectedDateSummary.length === 0) return;
     const total = selectedDateSummary.reduce((s, d) => s + d.count, 0);
     const dateStr = format(selectedDate!, 'dd/MM/yyyy');
-    const header = `'HOTEL ${dateStr}:'`;
+    const header = `\`HOTEL ${dateStr}:\``;
     const lines = selectedDateSummary.map((d, i) => `${i + 1}. ${d.dog.toUpperCase()}`);
-    const footer = `'TOTAL:${total}'`;
+    const footer = `\`TOTAL:${total}\``;
     const text = `${header}\n\n${lines.join('\n\n')}\n\n${footer}`;
     navigator.clipboard.writeText(text);
     toast.success('Lista copiada no formato WhatsApp!');
