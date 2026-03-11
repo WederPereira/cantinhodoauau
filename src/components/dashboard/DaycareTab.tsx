@@ -27,15 +27,16 @@ const DaycareTab: React.FC = () => {
   const fetchEntries = useCallback(async () => {
     setLoading(true);
     try {
-      // Get today's QR check-ins
-      const startOfDay = `${today}T00:00:00`;
-      const endOfDay = `${today}T23:59:59`;
+      // Get today's QR check-ins using local timezone offset
+      const now = new Date();
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+      const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
 
       const { data: qrData, error: qrError } = await supabase
         .from('qr_entries')
         .select('*')
-        .gte('data_hora', startOfDay)
-        .lte('data_hora', endOfDay)
+        .gte('data_hora', startOfDay.toISOString())
+        .lte('data_hora', endOfDay.toISOString())
         .order('data_hora', { ascending: true });
 
       if (qrError) throw qrError;
