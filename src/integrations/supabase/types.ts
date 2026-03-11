@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      daily_records: {
+        Row: {
+          ate: boolean
+          created_at: string
+          date: string
+          dog: string
+          id: string
+          notes: string | null
+          qr_entry_id: string
+          tutor: string
+          updated_at: string
+        }
+        Insert: {
+          ate?: boolean
+          created_at?: string
+          date?: string
+          dog: string
+          id?: string
+          notes?: string | null
+          qr_entry_id: string
+          tutor: string
+          updated_at?: string
+        }
+        Update: {
+          ate?: boolean
+          created_at?: string
+          date?: string
+          dog?: string
+          id?: string
+          notes?: string | null
+          qr_entry_id?: string
+          tutor?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_records_qr_entry_id_fkey"
+            columns: ["qr_entry_id"]
+            isOneToOne: false
+            referencedRelation: "qr_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       qr_entries: {
         Row: {
           created_at: string

@@ -5,8 +5,9 @@ import { ClientDetailSheet } from '@/components/ClientDetailSheet';
 import { HealthAlerts } from '@/components/HealthAlerts';
 import { BirthdaySection } from '@/components/dashboard/BirthdaySection';
 import { HealthControlTab } from '@/components/dashboard/HealthControlTab';
+import DaycareTab from '@/components/dashboard/DaycareTab';
 import { Client, getHealthAlerts } from '@/types/client';
-import { Users, LayoutDashboard, HeartPulse } from 'lucide-react';
+import { Users, LayoutDashboard, HeartPulse, PawPrint } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 const Dashboard: React.FC = () => {
@@ -54,14 +55,19 @@ const Dashboard: React.FC = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="w-full grid grid-cols-2">
+          <TabsList className="w-full grid grid-cols-3">
             <TabsTrigger value="overview" className="gap-1.5">
               <LayoutDashboard size={16} />
-              Visão Geral
+              <span className="hidden sm:inline">Visão Geral</span>
+              <span className="sm:hidden">Geral</span>
+            </TabsTrigger>
+            <TabsTrigger value="daycare" className="gap-1.5">
+              <PawPrint size={16} />
+              Creche
             </TabsTrigger>
             <TabsTrigger value="health" className="gap-1.5">
               <HeartPulse size={16} />
-              Controle de Saúde
+              Saúde
             </TabsTrigger>
           </TabsList>
 
@@ -84,6 +90,10 @@ const Dashboard: React.FC = () => {
 
             {/* Birthday */}
             <BirthdaySection clients={clients} onClientClick={handleClientClick} />
+          </TabsContent>
+
+          <TabsContent value="daycare" className="mt-4">
+            <DaycareTab />
           </TabsContent>
 
           <TabsContent value="health" className="mt-4">
