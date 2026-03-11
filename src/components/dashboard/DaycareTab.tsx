@@ -15,7 +15,8 @@ const DaycareTab: React.FC = () => {
         <TabsList className="w-full grid grid-cols-6 h-auto">
           <TabsTrigger value="presence" className="gap-1 text-[10px] sm:text-xs px-1 py-2 flex flex-col sm:flex-row items-center">
             <Dog size={14} />
-            <span>Presença</span>
+            <span>
+</span>
           </TabsTrigger>
           <TabsTrigger value="generate" className="gap-1 text-[10px] sm:text-xs px-1 py-2 flex flex-col sm:flex-row items-center">
             <QrCode size={14} />
@@ -58,8 +59,7 @@ const DaycareTab: React.FC = () => {
           <FrequencyAnalytics />
         </TabsContent>
       </Tabs>
-    </div>
-  );
+    </div>);
 };
 
 export default DaycareTab;
