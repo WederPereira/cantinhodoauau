@@ -58,6 +58,86 @@ export type Database = {
           },
         ]
       }
+      hotel_medications: {
+        Row: {
+          administered: boolean
+          created_at: string
+          hotel_stay_id: string
+          id: string
+          medication_name: string
+          notes: string | null
+          scheduled_time: string
+        }
+        Insert: {
+          administered?: boolean
+          created_at?: string
+          hotel_stay_id: string
+          id?: string
+          medication_name: string
+          notes?: string | null
+          scheduled_time: string
+        }
+        Update: {
+          administered?: boolean
+          created_at?: string
+          hotel_stay_id?: string
+          id?: string
+          medication_name?: string
+          notes?: string | null
+          scheduled_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hotel_medications_hotel_stay_id_fkey"
+            columns: ["hotel_stay_id"]
+            isOneToOne: false
+            referencedRelation: "hotel_stays"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hotel_stays: {
+        Row: {
+          active: boolean
+          belongings_photos: string[] | null
+          check_in: string
+          check_out: string | null
+          client_id: string
+          created_at: string
+          dog_name: string
+          id: string
+          observations: string | null
+          tutor_name: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          belongings_photos?: string[] | null
+          check_in?: string
+          check_out?: string | null
+          client_id: string
+          created_at?: string
+          dog_name: string
+          id?: string
+          observations?: string | null
+          tutor_name: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          belongings_photos?: string[] | null
+          check_in?: string
+          check_out?: string | null
+          client_id?: string
+          created_at?: string
+          dog_name?: string
+          id?: string
+          observations?: string | null
+          tutor_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       qr_entries: {
         Row: {
           created_at: string

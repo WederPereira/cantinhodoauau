@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Utensils, UtensilsCrossed, Dog, RefreshCw, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 
@@ -209,10 +209,10 @@ const DaycareTab: React.FC = () => {
                 <span className="text-[10px] text-muted-foreground">
                   {entry.ate ? 'Comeu' : 'Não comeu'}
                 </span>
-                <Switch
+                <Checkbox
                   checked={entry.ate}
                   onCheckedChange={() => toggleAte(entry)}
-                  className="data-[state=checked]:bg-green-600"
+                  className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
                 />
               </div>
             </div>
