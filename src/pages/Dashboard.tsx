@@ -55,14 +55,19 @@ const Dashboard: React.FC = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="w-full grid grid-cols-2">
+          <TabsList className="w-full grid grid-cols-3">
             <TabsTrigger value="overview" className="gap-1.5">
               <LayoutDashboard size={16} />
-              Visão Geral
+              <span className="hidden sm:inline">Visão Geral</span>
+              <span className="sm:hidden">Geral</span>
+            </TabsTrigger>
+            <TabsTrigger value="daycare" className="gap-1.5">
+              <PawPrint size={16} />
+              Creche
             </TabsTrigger>
             <TabsTrigger value="health" className="gap-1.5">
               <HeartPulse size={16} />
-              Controle de Saúde
+              Saúde
             </TabsTrigger>
           </TabsList>
 
