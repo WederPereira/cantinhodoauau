@@ -6,7 +6,7 @@ import { ptBR } from 'date-fns/locale';
 import {
   Hotel, Plus, Camera, Pill, Clock, Trash2, X, ChevronDown, ChevronUp,
   AlertTriangle, Check, FileText, Dog, Bell, Search, Copy, Calendar as CalendarIcon,
-  Utensils
+  Utensils, Undo2, Eye, Tag, Package
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,6 +32,7 @@ interface HotelStay {
   check_out: string | null;
   observations: string;
   belongings_photos: string[];
+  belonging_labels: Record<string, string>;
   active: boolean;
   ate: boolean;
 }
@@ -42,6 +43,7 @@ interface Medication {
   medication_name: string;
   scheduled_time: string;
   administered: boolean;
+  administered_at: string | null;
   notes: string;
   recurrence: string;
 }
@@ -73,6 +75,8 @@ const HotelTab: React.FC = () => {
   const [uploadingStayId, setUploadingStayId] = useState<string | null>(null);
   const [searchFilter, setSearchFilter] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [recentCheckouts, setRecentCheckouts] = useState<HotelStay[]>([]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -84,11 +88,19 @@ const HotelTab: React.FC = () => {
         .order('check_in', { ascending: false });
       if (sErr) throw sErr;
 
-      // Fetch ALL stays for history calendar
       const { data: allData } = await supabase
         .from('hotel_stays')
         .select('*')
         .order('check_in', { ascending: false });
+
+      // Fetch recent checkouts (last 24h) for undo
+      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data: recentCO } = await supabase
+        .from('hotel_stays')
+        .select('*')
+        .eq('active', false)
+        .gte('check_out', oneDayAgo)
+        .order('check_out', { ascending: false });
 
       const stayIds = (staysData || []).map((s: any) => s.id);
       let medsData: any[] = [];
@@ -102,9 +114,10 @@ const HotelTab: React.FC = () => {
         medsData = data || [];
       }
 
-      setStays(staysData || []);
-      setAllStays(allData || []);
+      setStays((staysData || []).map((s: any) => ({ ...s, belonging_labels: s.belonging_labels || {} })));
+      setAllStays((allData || []).map((s: any) => ({ ...s, belonging_labels: s.belonging_labels || {} })));
       setMedications(medsData);
+      setRecentCheckouts((recentCO || []).map((s: any) => ({ ...s, belonging_labels: s.belonging_labels || {} })));
     } catch (err) {
       console.error(err);
       toast.error('Erro ao carregar dados do hotel');
@@ -149,7 +162,6 @@ const HotelTab: React.FC = () => {
     return () => clearInterval(interval);
   }, [medications, stays]);
 
-  // Filtered clients for check-in dialog
   const filteredClients = useMemo(() => {
     if (!searchFilter) return clients;
     const q = searchFilter.toLowerCase();
@@ -160,7 +172,6 @@ const HotelTab: React.FC = () => {
     );
   }, [clients, searchFilter]);
 
-  // Calendar history data
   const datesWithStays = useMemo(() => {
     const set = new Set<string>();
     allStays.forEach(s => set.add(format(new Date(s.check_in), 'yyyy-MM-dd')));
@@ -207,9 +218,27 @@ const HotelTab: React.FC = () => {
         .update({ active: false, check_out: new Date().toISOString() })
         .eq('id', stay.id);
       if (error) throw error;
-      toast.success(`${stay.dog_name} fez checkout! ✅`);
+      toast.success(`${stay.dog_name} fez checkout! Fotos serão removidas em 24h.`, {
+        duration: 8000,
+        action: {
+          label: 'Desfazer',
+          onClick: () => handleUndoCheckout(stay.id),
+        },
+      });
       fetchData();
     } catch { toast.error('Erro ao fazer checkout'); }
+  };
+
+  const handleUndoCheckout = async (stayId: string) => {
+    try {
+      const { error } = await supabase
+        .from('hotel_stays')
+        .update({ active: true, check_out: null })
+        .eq('id', stayId);
+      if (error) throw error;
+      toast.success('Checkout desfeito! 🔄');
+      fetchData();
+    } catch { toast.error('Erro ao desfazer checkout'); }
   };
 
   const handleToggleAte = async (stay: HotelStay) => {
@@ -258,7 +287,10 @@ const HotelTab: React.FC = () => {
     try {
       const { error } = await supabase
         .from('hotel_medications')
-        .update({ administered: !med.administered })
+        .update({
+          administered: !med.administered,
+          administered_at: !med.administered ? new Date().toISOString() : null,
+        })
         .eq('id', med.id);
       if (error) throw error;
       fetchData();
@@ -279,6 +311,7 @@ const HotelTab: React.FC = () => {
     try {
       const stay = stays.find(s => s.id === stayId);
       const newPhotos = [...(stay?.belongings_photos || [])];
+      const newLabels = { ...(stay?.belonging_labels || {}) };
       for (const file of Array.from(files)) {
         const ext = file.name.split('.').pop();
         const path = `${stayId}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
@@ -286,10 +319,11 @@ const HotelTab: React.FC = () => {
         if (upErr) throw upErr;
         const { data: urlData } = supabase.storage.from('hotel-belongings').getPublicUrl(path);
         newPhotos.push(urlData.publicUrl);
+        newLabels[urlData.publicUrl] = '';
       }
       const { error } = await supabase
         .from('hotel_stays')
-        .update({ belongings_photos: newPhotos, updated_at: new Date().toISOString() })
+        .update({ belongings_photos: newPhotos, belonging_labels: newLabels, updated_at: new Date().toISOString() })
         .eq('id', stayId);
       if (error) throw error;
       toast.success('Foto(s) enviada(s)!');
@@ -306,11 +340,23 @@ const HotelTab: React.FC = () => {
     const stay = stays.find(s => s.id === stayId);
     if (!stay) return;
     const newPhotos = stay.belongings_photos.filter(p => p !== photoUrl);
+    const newLabels = { ...stay.belonging_labels };
+    delete newLabels[photoUrl];
     try {
-      const { error } = await supabase.from('hotel_stays').update({ belongings_photos: newPhotos }).eq('id', stayId);
+      const { error } = await supabase.from('hotel_stays').update({ belongings_photos: newPhotos, belonging_labels: newLabels }).eq('id', stayId);
       if (error) throw error;
       fetchData();
     } catch { toast.error('Erro ao remover foto'); }
+  };
+
+  const handleUpdateLabel = async (stayId: string, photoUrl: string, label: string) => {
+    const stay = stays.find(s => s.id === stayId);
+    if (!stay) return;
+    const newLabels = { ...(stay.belonging_labels || {}), [photoUrl]: label };
+    try {
+      await supabase.from('hotel_stays').update({ belonging_labels: newLabels }).eq('id', stayId);
+      setStays(prev => prev.map(s => s.id === stayId ? { ...s, belonging_labels: newLabels } : s));
+    } catch { /* silent */ }
   };
 
   const copySelectedDateHotel = () => {
@@ -328,349 +374,468 @@ const HotelTab: React.FC = () => {
   const recurrenceLabel = (val: string) => RECURRENCE_OPTIONS.find(o => o.value === val)?.label || val;
 
   return (
-    <Tabs defaultValue="active" className="space-y-4">
-      <TabsList className="w-full grid grid-cols-2">
-        <TabsTrigger value="active" className="gap-1 text-xs">
-          <Hotel size={14} /> Hospedados
-        </TabsTrigger>
-        <TabsTrigger value="history" className="gap-1 text-xs">
-          <CalendarIcon size={14} /> Histórico
-        </TabsTrigger>
-      </TabsList>
+    <>
+      <Tabs defaultValue="active" className="space-y-4">
+        <TabsList className="w-full grid grid-cols-3">
+          <TabsTrigger value="active" className="gap-1 text-xs">
+            <Hotel size={14} /> Hospedados
+          </TabsTrigger>
+          <TabsTrigger value="belongings" className="gap-1 text-xs">
+            <Package size={14} /> Pertences
+          </TabsTrigger>
+          <TabsTrigger value="history" className="gap-1 text-xs">
+            <CalendarIcon size={14} /> Histórico
+          </TabsTrigger>
+        </TabsList>
 
-      {/* ===== ACTIVE STAYS ===== */}
-      <TabsContent value="active" className="space-y-4">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Hotel size={16} className="text-primary" />
-            <span className="text-sm font-medium text-foreground">
-              {stays.length} dog(s) hospedado(s)
-            </span>
-          </div>
-          <Dialog open={addDialogOpen} onOpenChange={(open) => { setAddDialogOpen(open); if (!open) { setSearchFilter(''); setSelectedClientId(''); } }}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="gap-1"><Plus size={14} /> Check-in</Button>
-            </DialogTrigger>
-            <DialogContent className="max-h-[85vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Check-in Hotel</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                {/* Search filter */}
-                <div className="relative">
-                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar por nome, raça ou tutor..."
-                    value={searchFilter}
-                    onChange={e => setSearchFilter(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-
-                {/* Dog cards grid */}
-                <div className="grid grid-cols-2 gap-2 max-h-[300px] overflow-y-auto pr-1">
-                  {filteredClients.map(c => (
-                    <button
-                      key={c.id}
-                      onClick={() => setSelectedClientId(c.id)}
-                      className={`flex flex-col items-center p-3 rounded-xl border-2 transition-all text-center ${
-                        selectedClientId === c.id
-                          ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
-                          : 'border-border hover:border-primary/40 bg-card'
-                      }`}
-                    >
-                      {c.photo ? (
-                        <img src={c.photo} alt={c.name} className="w-14 h-14 rounded-full object-cover mb-2 border-2 border-border" />
-                      ) : (
-                        <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mb-2">
-                          <Dog size={24} className="text-muted-foreground" />
-                        </div>
-                      )}
-                      <p className="font-semibold text-xs text-foreground truncate w-full">{c.name}</p>
-                      <p className="text-[10px] text-muted-foreground truncate w-full">{c.breed || 'Sem raça'}</p>
-                      <p className="text-[10px] text-muted-foreground truncate w-full">{c.tutorName}</p>
-                    </button>
-                  ))}
-                  {filteredClients.length === 0 && (
-                    <p className="col-span-2 text-center text-sm text-muted-foreground py-8">Nenhum dog encontrado</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-foreground">Observações</label>
-                  <Textarea
-                    value={observations}
-                    onChange={e => setObservations(e.target.value)}
-                    placeholder="Alergias, comportamento, cuidados especiais..."
-                    className="mt-1"
-                    rows={3}
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <DialogClose asChild>
-                  <Button variant="outline">Cancelar</Button>
-                </DialogClose>
-                <Button onClick={handleAddStay} disabled={!selectedClientId}>Confirmar Check-in</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
-
-        {/* Stay list */}
-        {stays.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            <Hotel size={48} className="mx-auto mb-3 opacity-30" />
-            <p className="text-sm font-medium">Nenhum dog no hotel</p>
-            <p className="text-xs mt-1">Faça um check-in para começar</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {stays.map(stay => {
-              const isExpanded = expandedStay === stay.id;
-              const stayMeds = getMedsForStay(stay.id);
-              const pendingMeds = stayMeds.filter(m => !m.administered).length;
-              const client = clients.find(c => c.id === stay.client_id);
-
-              return (
-                <div key={stay.id} className="bg-card border border-border rounded-xl overflow-hidden shadow-soft">
-                  {/* Stay header */}
-                  <div
-                    className="flex items-center justify-between p-3 cursor-pointer"
-                    onClick={() => setExpandedStay(isExpanded ? null : stay.id)}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      {client?.photo ? (
-                        <img src={client.photo} alt={stay.dog_name} className="w-10 h-10 rounded-full object-cover border border-border shrink-0" />
-                      ) : (
-                        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">
-                          <Dog size={18} className="text-muted-foreground" />
-                        </div>
-                      )}
-                      <div className="min-w-0">
-                        <p className="font-semibold text-sm text-foreground truncate">{stay.dog_name}</p>
-                        <p className="text-[10px] text-muted-foreground truncate">
-                          {stay.tutor_name} · {format(new Date(stay.check_in), 'dd/MM HH:mm')}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      {/* Ate badge */}
-                      <div onClick={e => { e.stopPropagation(); handleToggleAte(stay); }} className="cursor-pointer">
-                        <Badge variant={stay.ate ? 'default' : 'outline'} className={`text-[9px] px-1.5 py-0 ${stay.ate ? 'bg-green-600 hover:bg-green-700' : ''}`}>
-                          <Utensils size={10} className="mr-0.5" />
-                          {stay.ate ? 'Comeu' : 'Não comeu'}
-                        </Badge>
-                      </div>
-                      {pendingMeds > 0 && (
-                        <Badge variant="destructive" className="text-[9px] px-1.5 py-0">
-                          <Pill size={10} className="mr-0.5" />{pendingMeds}
-                        </Badge>
-                      )}
-                      {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                    </div>
-                  </div>
-
-                  {/* Expanded content */}
-                  {isExpanded && (
-                    <div className="border-t border-border p-3 space-y-4">
-                      {/* Observations */}
-                      <div>
-                        <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-1">
-                          <FileText size={12} /> Observações
-                        </label>
-                        <Textarea
-                          defaultValue={stay.observations}
-                          onBlur={e => handleUpdateObservations(stay.id, e.target.value)}
-                          placeholder="Adicione observações..."
-                          rows={2}
-                          className="text-xs"
-                        />
-                      </div>
-
-                      {/* Photos */}
-                      <div>
-                        <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-1">
-                          <Camera size={12} /> Pertences
-                        </label>
-                        <div className="flex flex-wrap gap-2">
-                          {stay.belongings_photos?.map((url, i) => (
-                            <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-border group">
-                              <img src={url} alt={`Pertence ${i + 1}`} className="w-full h-full object-cover" />
-                              <button
-                                onClick={() => handleDeletePhoto(stay.id, url)}
-                                className="absolute top-0 right-0 bg-destructive text-destructive-foreground rounded-bl p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                <X size={10} />
-                              </button>
-                            </div>
-                          ))}
-                          <button
-                            onClick={() => { setUploadingStayId(stay.id); fileInputRef.current?.click(); }}
-                            disabled={uploadingStayId === stay.id}
-                            className="w-16 h-16 rounded-lg border-2 border-dashed border-border flex items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors"
-                          >
-                            {uploadingStayId === stay.id ? <span className="animate-spin text-xs">⏳</span> : <Plus size={18} />}
-                          </button>
-                        </div>
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept="image/*"
-                          multiple
-                          className="hidden"
-                          onChange={e => { if (uploadingStayId) handlePhotoUpload(uploadingStayId, e.target.files); e.target.value = ''; }}
-                        />
-                      </div>
-
-                      {/* Medications */}
-                      <div>
-                        <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-2">
-                          <Pill size={12} /> Remédios
-                        </label>
-                        {stayMeds.length > 0 && (
-                          <div className="space-y-1.5 mb-2">
-                            {stayMeds.map(med => (
-                              <div
-                                key={med.id}
-                                className={`flex items-center justify-between p-2 rounded-lg border text-xs ${
-                                  med.administered
-                                    ? 'bg-muted/50 border-border line-through text-muted-foreground'
-                                    : 'bg-card border-border'
-                                }`}
-                              >
-                                <div className="flex items-center gap-2">
-                                  <Checkbox checked={med.administered} onCheckedChange={() => handleToggleMed(med)} />
-                                  <Clock size={12} className="text-muted-foreground" />
-                                  <span className="font-mono">{med.scheduled_time.slice(0, 5)}</span>
-                                  <span className="font-medium">{med.medication_name}</span>
-                                  <Badge variant="outline" className="text-[8px] px-1 py-0">{recurrenceLabel(med.recurrence)}</Badge>
-                                </div>
-                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDeleteMed(med.id)}>
-                                  <Trash2 size={12} className="text-destructive" />
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        {addMedStayId === stay.id ? (
-                          <div className="space-y-2">
-                            <div className="flex gap-2">
-                              <Input placeholder="Nome do remédio" value={medName} onChange={e => setMedName(e.target.value)} className="text-xs h-8 flex-1" />
-                              <Input type="time" value={medTime} onChange={e => setMedTime(e.target.value)} className="text-xs h-8 w-24" />
-                            </div>
-                            <div className="flex gap-2 items-center">
-                              <Select value={medRecurrence} onValueChange={setMedRecurrence}>
-                                <SelectTrigger className="h-8 text-xs flex-1">
-                                  <SelectValue placeholder="Recorrência" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {RECURRENCE_OPTIONS.map(o => (
-                                    <SelectItem key={o.value} value={o.value} className="text-xs">{o.label}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <Button size="sm" className="h-8" onClick={() => handleAddMedication(stay.id)}>
-                                <Check size={14} />
-                              </Button>
-                              <Button size="sm" variant="ghost" className="h-8" onClick={() => setAddMedStayId(null)}>
-                                <X size={14} />
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <Button
-                            variant="outline" size="sm" className="gap-1 text-xs w-full"
-                            onClick={() => { setAddMedStayId(stay.id); setMedName(''); setMedTime(''); setMedRecurrence('once'); }}
-                          >
-                            <Plus size={12} /> Adicionar Remédio
-                          </Button>
-                        )}
-                      </div>
-
-                      {/* Checkout */}
-                      <Button variant="destructive" size="sm" className="w-full gap-1" onClick={() => handleCheckout(stay)}>
-                        <AlertTriangle size={14} /> Fazer Checkout
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </TabsContent>
-
-      {/* ===== HISTORY TAB ===== */}
-      <TabsContent value="history" className="space-y-4">
-        <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
-          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-            <CalendarIcon size={16} className="text-primary" />
-            Calendário de Estadias
-          </h3>
-          <div className="flex flex-col lg:flex-row gap-4">
-            <div className="flex-shrink-0">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-                modifiers={{
-                  hasStay: (date) => datesWithStays.has(format(date, 'yyyy-MM-dd')),
-                }}
-                modifiersStyles={{
-                  hasStay: {
-                    backgroundColor: 'hsl(24, 95%, 60%)',
-                    color: 'white',
-                    borderRadius: '50%',
-                  },
-                }}
-              />
+        {/* ===== ACTIVE STAYS ===== */}
+        <TabsContent value="active" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Hotel size={16} className="text-primary" />
+              <span className="text-sm font-medium text-foreground">
+                {stays.length} dog(s) hospedado(s)
+              </span>
             </div>
-            <div className="flex-1 min-w-0">
-              {selectedDate ? (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-semibold text-foreground">
-                      {format(selectedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                    </h4>
-                    {staysForSelectedDate.length > 0 && (
-                      <Button variant="outline" size="sm" className="gap-1.5" onClick={copySelectedDateHotel}>
-                        <Copy size={14} /> Copiar
-                      </Button>
+            <Dialog open={addDialogOpen} onOpenChange={(open) => { setAddDialogOpen(open); if (!open) { setSearchFilter(''); setSelectedClientId(''); } }}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="gap-1"><Plus size={14} /> Check-in</Button>
+              </DialogTrigger>
+              <DialogContent className="max-h-[85vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Check-in Hotel</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="relative">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar por nome, raça ou tutor..."
+                      value={searchFilter}
+                      onChange={e => setSearchFilter(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 max-h-[300px] overflow-y-auto pr-1">
+                    {filteredClients.map(c => (
+                      <button
+                        key={c.id}
+                        onClick={() => setSelectedClientId(c.id)}
+                        className={`flex flex-col items-center p-3 rounded-xl border-2 transition-all text-center ${
+                          selectedClientId === c.id
+                            ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                            : 'border-border hover:border-primary/40 bg-card'
+                        }`}
+                      >
+                        {c.photo ? (
+                          <img src={c.photo} alt={c.name} className="w-14 h-14 rounded-full object-cover mb-2 border-2 border-border" />
+                        ) : (
+                          <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mb-2">
+                            <Dog size={24} className="text-muted-foreground" />
+                          </div>
+                        )}
+                        <p className="font-semibold text-xs text-foreground truncate w-full">{c.name}</p>
+                        <p className="text-[10px] text-muted-foreground truncate w-full">{c.breed || 'Sem raça'}</p>
+                        <p className="text-[10px] text-muted-foreground truncate w-full">{c.tutorName}</p>
+                      </button>
+                    ))}
+                    {filteredClients.length === 0 && (
+                      <p className="col-span-2 text-center text-sm text-muted-foreground py-8">Nenhum dog encontrado</p>
                     )}
                   </div>
-                  {staysForSelectedDate.length === 0 ? (
-                    <p className="text-sm text-muted-foreground py-4 text-center">Nenhuma estadia neste dia</p>
-                  ) : (
-                    <>
-                      <Badge variant="secondary" className="text-xs">{staysForSelectedDate.length} estadia(s)</Badge>
-                      <div className="space-y-2">
-                        {staysForSelectedDate.map((s, i) => (
-                          <div key={s.id} className="flex items-center gap-3 p-2 rounded-lg border border-border bg-muted/30">
-                            <span className="text-xs font-mono text-muted-foreground w-5 text-right">{i + 1}.</span>
-                            <div className="min-w-0 flex-1">
-                              <p className="font-semibold text-xs text-foreground truncate">{s.dog_name}</p>
-                              <p className="text-[10px] text-muted-foreground truncate">{s.tutor_name}</p>
-                            </div>
-                            <Badge variant={s.active ? 'default' : 'secondary'} className="text-[9px]">
-                              {s.active ? 'Ativo' : 'Checkout'}
-                            </Badge>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
+                  <div>
+                    <label className="text-sm font-medium text-foreground">Observações</label>
+                    <Textarea
+                      value={observations}
+                      onChange={e => setObservations(e.target.value)}
+                      placeholder="Alergias, comportamento, cuidados especiais..."
+                      className="mt-1"
+                      rows={3}
+                    />
+                  </div>
                 </div>
-              ) : (
-                <p className="text-sm text-muted-foreground py-8 text-center">Selecione uma data para ver as estadias</p>
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button variant="outline">Cancelar</Button>
+                  </DialogClose>
+                  <Button onClick={handleAddStay} disabled={!selectedClientId}>Confirmar Check-in</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          {/* Recent checkouts with undo */}
+          {recentCheckouts.length > 0 && (
+            <div className="bg-muted/30 border border-border rounded-xl p-3 space-y-2">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                <Undo2 size={10} /> Checkouts recentes (desfazer)
+              </p>
+              <div className="space-y-1">
+                {recentCheckouts.slice(0, 5).map(stay => (
+                  <div key={stay.id} className="flex items-center justify-between p-2 rounded-lg bg-card border border-border text-xs">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Dog size={12} className="text-muted-foreground shrink-0" />
+                      <span className="font-medium truncate">{stay.dog_name}</span>
+                      <span className="text-muted-foreground text-[10px]">
+                        {stay.check_out && format(new Date(stay.check_out), 'HH:mm')}
+                      </span>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-6 text-[10px] gap-1 px-2"
+                      onClick={() => handleUndoCheckout(stay.id)}
+                    >
+                      <Undo2 size={10} /> Desfazer
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Stay list */}
+          {stays.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <Hotel size={48} className="mx-auto mb-3 opacity-30" />
+              <p className="text-sm font-medium">Nenhum dog no hotel</p>
+              <p className="text-xs mt-1">Faça um check-in para começar</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {stays.map(stay => {
+                const isExpanded = expandedStay === stay.id;
+                const stayMeds = getMedsForStay(stay.id);
+                const pendingMeds = stayMeds.filter(m => !m.administered).length;
+                const client = clients.find(c => c.id === stay.client_id);
+
+                return (
+                  <div key={stay.id} className="bg-card border border-border rounded-xl overflow-hidden shadow-soft">
+                    <div
+                      className="flex items-center justify-between p-3 cursor-pointer"
+                      onClick={() => setExpandedStay(isExpanded ? null : stay.id)}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        {client?.photo ? (
+                          <img src={client.photo} alt={stay.dog_name} className="w-10 h-10 rounded-full object-cover border border-border shrink-0" />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">
+                            <Dog size={18} className="text-muted-foreground" />
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <p className="font-semibold text-sm text-foreground truncate">{stay.dog_name}</p>
+                          <p className="text-[10px] text-muted-foreground truncate">
+                            {stay.tutor_name} · {format(new Date(stay.check_in), 'dd/MM HH:mm')}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div onClick={e => { e.stopPropagation(); handleToggleAte(stay); }} className="cursor-pointer">
+                          <Badge variant={stay.ate ? 'default' : 'outline'} className={`text-[9px] px-1.5 py-0 ${stay.ate ? 'bg-green-600 hover:bg-green-700' : ''}`}>
+                            <Utensils size={10} className="mr-0.5" />
+                            {stay.ate ? 'Comeu' : 'Não comeu'}
+                          </Badge>
+                        </div>
+                        {pendingMeds > 0 && (
+                          <Badge variant="destructive" className="text-[9px] px-1.5 py-0">
+                            <Pill size={10} className="mr-0.5" />{pendingMeds}
+                          </Badge>
+                        )}
+                        {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                      </div>
+                    </div>
+
+                    {isExpanded && (
+                      <div className="border-t border-border p-3 space-y-4">
+                        {/* Observations */}
+                        <div>
+                          <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-1">
+                            <FileText size={12} /> Observações
+                          </label>
+                          <Textarea
+                            defaultValue={stay.observations}
+                            onBlur={e => handleUpdateObservations(stay.id, e.target.value)}
+                            placeholder="Adicione observações..."
+                            rows={2}
+                            className="text-xs"
+                          />
+                        </div>
+
+                        {/* Inline photos (small preview) */}
+                        <div>
+                          <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-1">
+                            <Camera size={12} /> Pertences ({stay.belongings_photos?.length || 0})
+                          </label>
+                          <div className="flex flex-wrap gap-2">
+                            {stay.belongings_photos?.slice(0, 4).map((url, i) => (
+                              <button
+                                key={i}
+                                onClick={() => setLightboxUrl(url)}
+                                className="relative w-12 h-12 rounded-lg overflow-hidden border border-border hover:ring-2 hover:ring-primary/50 transition-all"
+                              >
+                                <img src={url} alt={stay.belonging_labels?.[url] || `Pertence ${i + 1}`} className="w-full h-full object-cover" />
+                              </button>
+                            ))}
+                            {(stay.belongings_photos?.length || 0) > 4 && (
+                              <div className="w-12 h-12 rounded-lg border border-border flex items-center justify-center text-xs text-muted-foreground bg-muted/50">
+                                +{stay.belongings_photos.length - 4}
+                              </div>
+                            )}
+                            <button
+                              onClick={() => { setUploadingStayId(stay.id); fileInputRef.current?.click(); }}
+                              disabled={uploadingStayId === stay.id}
+                              className="w-12 h-12 rounded-lg border-2 border-dashed border-border flex items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+                            >
+                              {uploadingStayId === stay.id ? <span className="animate-spin text-xs">⏳</span> : <Plus size={14} />}
+                            </button>
+                          </div>
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="hidden"
+                            onChange={e => { if (uploadingStayId) handlePhotoUpload(uploadingStayId, e.target.files); e.target.value = ''; }}
+                          />
+                        </div>
+
+                        {/* Medications */}
+                        <div>
+                          <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-2">
+                            <Pill size={12} /> Remédios
+                          </label>
+                          {stayMeds.length > 0 && (
+                            <div className="space-y-1.5 mb-2">
+                              {stayMeds.map(med => (
+                                <div
+                                  key={med.id}
+                                  className={`flex items-center justify-between p-2 rounded-lg border text-xs ${
+                                    med.administered
+                                      ? 'bg-muted/50 border-border line-through text-muted-foreground'
+                                      : 'bg-card border-border'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <Checkbox checked={med.administered} onCheckedChange={() => handleToggleMed(med)} />
+                                    <Clock size={12} className="text-muted-foreground" />
+                                    <span className="font-mono">{med.scheduled_time.slice(0, 5)}</span>
+                                    <span className="font-medium">{med.medication_name}</span>
+                                    <Badge variant="outline" className="text-[8px] px-1 py-0">{recurrenceLabel(med.recurrence)}</Badge>
+                                  </div>
+                                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDeleteMed(med.id)}>
+                                    <Trash2 size={12} className="text-destructive" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {addMedStayId === stay.id ? (
+                            <div className="space-y-2">
+                              <div className="flex gap-2">
+                                <Input placeholder="Nome do remédio" value={medName} onChange={e => setMedName(e.target.value)} className="text-xs h-8 flex-1" />
+                                <Input type="time" value={medTime} onChange={e => setMedTime(e.target.value)} className="text-xs h-8 w-24" />
+                              </div>
+                              <div className="flex gap-2 items-center">
+                                <Select value={medRecurrence} onValueChange={setMedRecurrence}>
+                                  <SelectTrigger className="h-8 text-xs flex-1">
+                                    <SelectValue placeholder="Recorrência" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {RECURRENCE_OPTIONS.map(o => (
+                                      <SelectItem key={o.value} value={o.value} className="text-xs">{o.label}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <Button size="sm" className="h-8" onClick={() => handleAddMedication(stay.id)}>
+                                  <Check size={14} />
+                                </Button>
+                                <Button size="sm" variant="ghost" className="h-8" onClick={() => setAddMedStayId(null)}>
+                                  <X size={14} />
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <Button
+                              variant="outline" size="sm" className="gap-1 text-xs w-full"
+                              onClick={() => { setAddMedStayId(stay.id); setMedName(''); setMedTime(''); setMedRecurrence('once'); }}
+                            >
+                              <Plus size={12} /> Adicionar Remédio
+                            </Button>
+                          )}
+                        </div>
+
+                        {/* Checkout */}
+                        <Button variant="destructive" size="sm" className="w-full gap-1" onClick={() => handleCheckout(stay)}>
+                          <AlertTriangle size={14} /> Fazer Checkout
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* ===== BELONGINGS TAB ===== */}
+        <TabsContent value="belongings" className="space-y-4">
+          {stays.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <Package size={48} className="mx-auto mb-3 opacity-30" />
+              <p className="text-sm font-medium">Nenhum dog hospedado</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {stays.map(stay => {
+                const photos = stay.belongings_photos || [];
+                const labels = stay.belonging_labels || {};
+                if (photos.length === 0) return null;
+                return (
+                  <div key={stay.id} className="bg-card border border-border rounded-xl p-4 shadow-soft space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Dog size={16} className="text-primary" />
+                      <h4 className="text-sm font-bold text-foreground">{stay.dog_name}</h4>
+                      <Badge variant="secondary" className="text-[10px]">{photos.length} item(ns)</Badge>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {photos.map((url, i) => (
+                        <div key={i} className="space-y-1.5 group">
+                          <button
+                            onClick={() => setLightboxUrl(url)}
+                            className="relative w-full aspect-square rounded-xl overflow-hidden border-2 border-border hover:border-primary/50 transition-all shadow-sm hover:shadow-md"
+                          >
+                            <img src={url} alt={labels[url] || `Pertence ${i + 1}`} className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/0 hover:bg-black/20 transition-colors flex items-center justify-center">
+                              <Eye size={24} className="text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
+                            </div>
+                          </button>
+                          <div className="flex items-center gap-1">
+                            <Tag size={10} className="text-muted-foreground shrink-0" />
+                            <Input
+                              placeholder="Ex: Coleira azul"
+                              value={labels[url] || ''}
+                              onChange={e => {
+                                const val = e.target.value;
+                                setStays(prev => prev.map(s => s.id === stay.id ? { ...s, belonging_labels: { ...s.belonging_labels, [url]: val } } : s));
+                              }}
+                              onBlur={e => handleUpdateLabel(stay.id, url, e.target.value)}
+                              className="h-6 text-[10px] px-1.5"
+                            />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 shrink-0"
+                              onClick={() => handleDeletePhoto(stay.id, url)}
+                            >
+                              <Trash2 size={10} className="text-destructive" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+              {stays.every(s => !s.belongings_photos?.length) && (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Camera size={48} className="mx-auto mb-3 opacity-30" />
+                  <p className="text-sm font-medium">Nenhum pertence registrado</p>
+                  <p className="text-xs mt-1">Adicione fotos na aba Hospedados</p>
+                </div>
               )}
             </div>
+          )}
+        </TabsContent>
+
+        {/* ===== HISTORY TAB ===== */}
+        <TabsContent value="history" className="space-y-4">
+          <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
+            <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+              <CalendarIcon size={16} className="text-primary" />
+              Calendário de Estadias
+            </h3>
+            <div className="flex flex-col lg:flex-row gap-4">
+              <div className="flex-shrink-0">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={setSelectedDate}
+                  modifiers={{
+                    hasStay: (date) => datesWithStays.has(format(date, 'yyyy-MM-dd')),
+                  }}
+                  modifiersStyles={{
+                    hasStay: {
+                      backgroundColor: 'hsl(24, 95%, 60%)',
+                      color: 'white',
+                      borderRadius: '50%',
+                    },
+                  }}
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                {selectedDate ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-semibold text-foreground">
+                        {format(selectedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                      </h4>
+                      {staysForSelectedDate.length > 0 && (
+                        <Button variant="outline" size="sm" className="gap-1.5" onClick={copySelectedDateHotel}>
+                          <Copy size={14} /> Copiar
+                        </Button>
+                      )}
+                    </div>
+                    {staysForSelectedDate.length === 0 ? (
+                      <p className="text-sm text-muted-foreground py-4 text-center">Nenhuma estadia neste dia</p>
+                    ) : (
+                      <>
+                        <Badge variant="secondary" className="text-xs">{staysForSelectedDate.length} estadia(s)</Badge>
+                        <div className="space-y-2">
+                          {staysForSelectedDate.map((s, i) => (
+                            <div key={s.id} className="flex items-center gap-3 p-2 rounded-lg border border-border bg-muted/30">
+                              <span className="text-xs font-mono text-muted-foreground w-5 text-right">{i + 1}.</span>
+                              <div className="min-w-0 flex-1">
+                                <p className="font-semibold text-xs text-foreground truncate">{s.dog_name}</p>
+                                <p className="text-[10px] text-muted-foreground truncate">{s.tutor_name}</p>
+                              </div>
+                              <Badge variant={s.active ? 'default' : 'secondary'} className="text-[9px]">
+                                {s.active ? 'Ativo' : 'Checkout'}
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground py-8 text-center">Selecione uma data para ver as estadias</p>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
-      </TabsContent>
-    </Tabs>
+        </TabsContent>
+      </Tabs>
+
+      {/* Lightbox */}
+      {lightboxUrl && (
+        <Dialog open={!!lightboxUrl} onOpenChange={() => setLightboxUrl(null)}>
+          <DialogContent className="max-w-[95vw] max-h-[95vh] p-2 bg-black/95 border-none">
+            <button
+              onClick={() => setLightboxUrl(null)}
+              className="absolute top-3 right-3 z-50 p-2 rounded-full bg-white/20 hover:bg-white/40 text-white transition-colors"
+            >
+              <X size={20} />
+            </button>
+            <img
+              src={lightboxUrl}
+              alt="Pertence"
+              className="w-full h-full max-h-[90vh] object-contain rounded-lg"
+            />
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
   );
 };
 
