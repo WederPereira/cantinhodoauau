@@ -92,6 +92,10 @@ const Dashboard: React.FC = () => {
             <BirthdaySection clients={clients} onClientClick={handleClientClick} />
           </TabsContent>
 
+          <TabsContent value="daycare" className="mt-4">
+            <DaycareTab />
+          </TabsContent>
+
           <TabsContent value="health" className="mt-4">
             <HealthControlTab />
           </TabsContent>
