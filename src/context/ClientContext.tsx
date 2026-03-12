@@ -154,25 +154,39 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   const importClients = useCallback((newClients: Array<{
     tutorName?: string;
+    tutorPhone?: string;
+    tutorEmail?: string;
+    tutorAddress?: string;
+    tutorNeighborhood?: string;
+    tutorCpf?: string;
     name: string;
     breed?: string;
     petSize?: Client['petSize'];
     photo?: string;
+    gender?: PetGender;
+    castrated?: boolean;
+    birthDate?: Date;
+    weight?: number;
+    vaccines?: Vaccines;
   }>) => {
     const clientsToAdd: Client[] = newClients.map(c => ({
       id: crypto.randomUUID(),
       tutorName: c.tutorName || '',
-      tutorPhone: '',
-      tutorEmail: '',
-      tutorAddress: '',
-      tutorNeighborhood: '',
-      tutorCpf: '',
+      tutorPhone: c.tutorPhone || '',
+      tutorEmail: c.tutorEmail || '',
+      tutorAddress: c.tutorAddress || '',
+      tutorNeighborhood: c.tutorNeighborhood || '',
+      tutorCpf: c.tutorCpf || '',
       name: c.name,
       breed: c.breed || '',
       petSize: c.petSize,
       photo: c.photo,
+      gender: c.gender,
+      castrated: c.castrated ?? false,
+      birthDate: c.birthDate,
+      weight: c.weight,
       entryDate: new Date(),
-      vaccines: { ...DEFAULT_VACCINES },
+      vaccines: c.vaccines || { ...DEFAULT_VACCINES },
       vaccineHistory: [],
       fleaHistory: [],
       createdAt: new Date(),

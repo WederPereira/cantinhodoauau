@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Client, PetSize, Vaccines, VACCINE_LABELS, DEFAULT_VACCINES } from '@/types/client';
+import { Client, PetSize, PetGender, Vaccines, VACCINE_LABELS, DEFAULT_VACCINES } from '@/types/client';
 import { useClients } from '@/context/ClientContext';
 import { toast } from 'sonner';
 import { CalendarIcon, Pencil, PawPrint, User } from 'lucide-react';
