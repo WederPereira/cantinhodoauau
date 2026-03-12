@@ -88,6 +88,8 @@ export const EditClientDialog: React.FC<EditClientDialogProps> = ({ client, open
       entryDate,
       birthDate,
       vaccines,
+      gender,
+      castrated,
     });
     toast.success('Cliente atualizado com sucesso!');
     onOpenChange(false);
