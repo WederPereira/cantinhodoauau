@@ -40,6 +40,8 @@ export const EditClientDialog: React.FC<EditClientDialogProps> = ({ client, open
   const [entryDate, setEntryDate] = useState<Date>(new Date(client.entryDate));
   const [birthDate, setBirthDate] = useState<Date | undefined>(client.birthDate ? new Date(client.birthDate) : undefined);
   const [vaccines, setVaccines] = useState<Vaccines>(client.vaccines || { ...DEFAULT_VACCINES });
+  const [gender, setGender] = useState<PetGender | undefined>(client.gender);
+  const [castrated, setCastrated] = useState(client.castrated ?? false);
 
   useEffect(() => {
     setTutorName(client.tutorName || '');
