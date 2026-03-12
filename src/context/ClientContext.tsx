@@ -60,6 +60,8 @@ const parseClientDates = (client: any): Client => ({
   entryDate: client.entryDate ? new Date(client.entryDate) : new Date(),
   birthDate: client.birthDate ? new Date(client.birthDate) : undefined,
   weight: client.weight,
+  gender: client.gender,
+  castrated: client.castrated ?? false,
   createdAt: new Date(client.createdAt),
   updatedAt: new Date(client.updatedAt),
   tutorName: client.tutorName || '',
