@@ -134,6 +134,25 @@ export const EditClientDialog: React.FC<EditClientDialogProps> = ({ client, open
                 </SelectContent>
               </Select>
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Gênero</Label>
+                <Select value={gender || ''} onValueChange={(v) => setGender(v as PetGender || undefined)}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Macho">♂ Macho</SelectItem>
+                    <SelectItem value="Fêmea">♀ Fêmea</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Castrado(a)</Label>
+                <div className="flex items-center h-10 gap-2">
+                  <Switch checked={castrated} onCheckedChange={setCastrated} />
+                  <span className="text-sm text-muted-foreground">{castrated ? 'Sim' : 'Não'}</span>
+                </div>
+              </div>
+            </div>
             <div className="space-y-2">
               <Label>Data de Nascimento</Label>
               <Popover>
