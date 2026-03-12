@@ -22,6 +22,8 @@ interface ClientContextType {
     vaccines?: Vaccines;
     entryDate?: Date;
     birthDate?: Date;
+    gender?: PetGender;
+    castrated?: boolean;
   }) => void;
   importClients: (newClients: Array<{
     tutorName?: string;
