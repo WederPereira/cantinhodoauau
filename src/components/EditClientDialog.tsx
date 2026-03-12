@@ -57,6 +57,8 @@ export const EditClientDialog: React.FC<EditClientDialogProps> = ({ client, open
     setEntryDate(new Date(client.entryDate || new Date()));
     setBirthDate(client.birthDate ? new Date(client.birthDate) : undefined);
     setVaccines(client.vaccines || { ...DEFAULT_VACCINES });
+    setGender(client.gender);
+    setCastrated(client.castrated ?? false);
   }, [client]);
 
   const setVaccineDate = (key: keyof Vaccines, date: Date | undefined) => {
