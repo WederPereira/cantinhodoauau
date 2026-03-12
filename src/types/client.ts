@@ -25,6 +25,8 @@ export interface FleaRecord {
   notes?: string;
 }
 
+export type PetGender = 'Macho' | 'Fêmea';
+
 export interface Client {
   id: string;
   tutorName: string;
@@ -39,6 +41,8 @@ export interface Client {
   weight?: number;
   birthDate?: Date;
   photo?: string;
+  gender?: PetGender;
+  castrated?: boolean;
   entryDate: Date;
   vaccines: Vaccines;
   vaccineHistory: VaccineRecord[];
