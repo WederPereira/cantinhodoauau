@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
-import { Client, VaccineType, DEFAULT_VACCINES, Vaccines, FleaRecord, VaccineRecord } from '@/types/client';
+import { Client, VaccineType, DEFAULT_VACCINES, Vaccines, FleaRecord, VaccineRecord, PetGender } from '@/types/client';
 import { mockClients } from '@/data/mockClients';
 
 const STORAGE_KEY = 'pet-grooming-clients';
@@ -22,6 +22,8 @@ interface ClientContextType {
     vaccines?: Vaccines;
     entryDate?: Date;
     birthDate?: Date;
+    gender?: PetGender;
+    castrated?: boolean;
   }) => void;
   importClients: (newClients: Array<{
     tutorName?: string;
@@ -58,6 +60,8 @@ const parseClientDates = (client: any): Client => ({
   entryDate: client.entryDate ? new Date(client.entryDate) : new Date(),
   birthDate: client.birthDate ? new Date(client.birthDate) : undefined,
   weight: client.weight,
+  gender: client.gender,
+  castrated: client.castrated ?? false,
   createdAt: new Date(client.createdAt),
   updatedAt: new Date(client.updatedAt),
   tutorName: client.tutorName || '',
@@ -120,6 +124,8 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     vaccines?: Vaccines;
     entryDate?: Date;
     birthDate?: Date;
+    gender?: PetGender;
+    castrated?: boolean;
   }) => {
     const newClient: Client = {
       id: crypto.randomUUID(),
@@ -134,6 +140,8 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       petSize: data.petSize,
       birthDate: data.birthDate,
       photo: data.photo,
+      gender: data.gender,
+      castrated: data.castrated ?? false,
       entryDate: data.entryDate || new Date(),
       vaccines: data.vaccines || { ...DEFAULT_VACCINES },
       vaccineHistory: [],
@@ -146,25 +154,39 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   const importClients = useCallback((newClients: Array<{
     tutorName?: string;
+    tutorPhone?: string;
+    tutorEmail?: string;
+    tutorAddress?: string;
+    tutorNeighborhood?: string;
+    tutorCpf?: string;
     name: string;
     breed?: string;
     petSize?: Client['petSize'];
     photo?: string;
+    gender?: PetGender;
+    castrated?: boolean;
+    birthDate?: Date;
+    weight?: number;
+    vaccines?: Vaccines;
   }>) => {
     const clientsToAdd: Client[] = newClients.map(c => ({
       id: crypto.randomUUID(),
       tutorName: c.tutorName || '',
-      tutorPhone: '',
-      tutorEmail: '',
-      tutorAddress: '',
-      tutorNeighborhood: '',
-      tutorCpf: '',
+      tutorPhone: c.tutorPhone || '',
+      tutorEmail: c.tutorEmail || '',
+      tutorAddress: c.tutorAddress || '',
+      tutorNeighborhood: c.tutorNeighborhood || '',
+      tutorCpf: c.tutorCpf || '',
       name: c.name,
       breed: c.breed || '',
       petSize: c.petSize,
       photo: c.photo,
+      gender: c.gender,
+      castrated: c.castrated ?? false,
+      birthDate: c.birthDate,
+      weight: c.weight,
       entryDate: new Date(),
-      vaccines: { ...DEFAULT_VACCINES },
+      vaccines: c.vaccines || { ...DEFAULT_VACCINES },
       vaccineHistory: [],
       fleaHistory: [],
       createdAt: new Date(),

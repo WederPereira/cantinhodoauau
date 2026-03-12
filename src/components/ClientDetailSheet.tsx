@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Client, PetSize, formatDate, VACCINE_LABELS, Vaccines, formatVaccineDate, getVaccineExpiryDate, isExpired, isExpiringSoon, VaccineType, DEFAULT_VACCINES } from '@/types/client';
+import { Client, PetSize, PetGender, formatDate, VACCINE_LABELS, Vaccines, formatVaccineDate, getVaccineExpiryDate, isExpired, isExpiringSoon, VaccineType, DEFAULT_VACCINES } from '@/types/client';
 import { useClients } from '@/context/ClientContext';
 import { toast } from 'sonner';
 import { Trash2, Pencil, Dog, Heart, User, MapPin, Phone, Mail, FileText, Home, X, Shield } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { HealthHistorySection } from './HealthHistorySection';
 import { PhotoUpload } from './PhotoUpload';
@@ -183,6 +184,31 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
                         </SelectContent>
                       </Select>
                     </div>
+                  </div>
+                  {/* Gender */}
+                  <div className="flex items-center gap-3 p-2.5 group hover:bg-muted/30 transition-all">
+                    <span className="text-muted-foreground">{client.gender === 'Fêmea' ? '♀' : '♂'}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Gênero</p>
+                      <Select value={client.gender || ''} onValueChange={(v) => inlineUpdate('gender', v as PetGender)}>
+                        <SelectTrigger className="h-7 border-0 bg-transparent p-0 text-sm font-medium shadow-none focus:ring-0 w-auto">
+                          <SelectValue placeholder="Selecionar gênero" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Macho">♂ Macho</SelectItem>
+                          <SelectItem value="Fêmea">♀ Fêmea</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  {/* Castrated */}
+                  <div className="flex items-center gap-3 p-2.5 group hover:bg-muted/30 transition-all">
+                    <span className="text-muted-foreground">✂️</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Castrado(a)</p>
+                      <p className="text-sm font-medium">{client.castrated ? 'Sim' : 'Não'}</p>
+                    </div>
+                    <Switch checked={client.castrated ?? false} onCheckedChange={(v) => inlineUpdate('castrated', v)} />
                   </div>
                   {/* Birth date */}
                   <div className="flex items-center gap-3 p-2.5 group hover:bg-muted/30 transition-all">

@@ -96,7 +96,7 @@ export const InlineEditField: React.FC<InlineEditFieldProps> = ({
       {icon && <div className="text-muted-foreground flex-shrink-0">{icon}</div>}
       <div className="flex-1 min-w-0">
         <p className="text-[9px] text-muted-foreground uppercase tracking-wider">{label}</p>
-        <p className={cn("text-sm font-medium truncate", !value && "text-muted-foreground/50 italic")}>
+        <p className={cn("text-sm font-medium break-words", !value && "text-muted-foreground/50 italic")}>
           {value || placeholder || 'Toque para editar'}
         </p>
       </div>

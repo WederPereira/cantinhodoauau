@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Client, PetSize, Vaccines, VACCINE_LABELS, DEFAULT_VACCINES } from '@/types/client';
+import { Client, PetSize, PetGender, Vaccines, VACCINE_LABELS, DEFAULT_VACCINES } from '@/types/client';
 import { useClients } from '@/context/ClientContext';
 import { toast } from 'sonner';
 import { CalendarIcon, Pencil, PawPrint, User } from 'lucide-react';
@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { PhotoUpload } from './PhotoUpload';
 import { BreedSelect } from './BreedSelect';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
 
 interface EditClientDialogProps {
   client: Client;
@@ -39,6 +40,8 @@ export const EditClientDialog: React.FC<EditClientDialogProps> = ({ client, open
   const [entryDate, setEntryDate] = useState<Date>(new Date(client.entryDate));
   const [birthDate, setBirthDate] = useState<Date | undefined>(client.birthDate ? new Date(client.birthDate) : undefined);
   const [vaccines, setVaccines] = useState<Vaccines>(client.vaccines || { ...DEFAULT_VACCINES });
+  const [gender, setGender] = useState<PetGender | undefined>(client.gender);
+  const [castrated, setCastrated] = useState(client.castrated ?? false);
 
   useEffect(() => {
     setTutorName(client.tutorName || '');
@@ -54,6 +57,8 @@ export const EditClientDialog: React.FC<EditClientDialogProps> = ({ client, open
     setEntryDate(new Date(client.entryDate || new Date()));
     setBirthDate(client.birthDate ? new Date(client.birthDate) : undefined);
     setVaccines(client.vaccines || { ...DEFAULT_VACCINES });
+    setGender(client.gender);
+    setCastrated(client.castrated ?? false);
   }, [client]);
 
   const setVaccineDate = (key: keyof Vaccines, date: Date | undefined) => {
@@ -83,6 +88,8 @@ export const EditClientDialog: React.FC<EditClientDialogProps> = ({ client, open
       entryDate,
       birthDate,
       vaccines,
+      gender,
+      castrated,
     });
     toast.success('Cliente atualizado com sucesso!');
     onOpenChange(false);
@@ -126,6 +133,25 @@ export const EditClientDialog: React.FC<EditClientDialogProps> = ({ client, open
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Gênero</Label>
+                <Select value={gender || ''} onValueChange={(v) => setGender(v as PetGender || undefined)}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Macho">♂ Macho</SelectItem>
+                    <SelectItem value="Fêmea">♀ Fêmea</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Castrado(a)</Label>
+                <div className="flex items-center h-10 gap-2">
+                  <Switch checked={castrated} onCheckedChange={setCastrated} />
+                  <span className="text-sm text-muted-foreground">{castrated ? 'Sim' : 'Não'}</span>
+                </div>
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Data de Nascimento</Label>

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { useClients } from '@/context/ClientContext';
-import { Client, formatDate, Vaccines, VACCINE_LABELS, formatVaccineDate, DEFAULT_VACCINES, PetSize } from '@/types/client';
+import { Client, formatDate, Vaccines, VACCINE_LABELS, formatVaccineDate, DEFAULT_VACCINES, PetSize, PetGender } from '@/types/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -26,18 +26,11 @@ const SpreadsheetPage: React.FC = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<{
-    tutorName: string;
-    tutorPhone: string;
-    tutorEmail: string;
-    tutorAddress: string;
-    tutorNeighborhood: string;
-    tutorCpf: string;
-    name: string;
-    breed: string;
-    petSize?: PetSize;
-    weight?: number;
-    vaccines: Vaccines;
-  }>({ tutorName: '', tutorPhone: '', tutorEmail: '', tutorAddress: '', tutorNeighborhood: '', tutorCpf: '', name: '', breed: '', petSize: undefined, weight: undefined, vaccines: { ...DEFAULT_VACCINES } });
+    tutorName: string; tutorPhone: string; tutorEmail: string;
+    tutorAddress: string; tutorNeighborhood: string; tutorCpf: string;
+    name: string; breed: string; petSize?: PetSize; weight?: number;
+    gender?: PetGender; castrated?: boolean; vaccines: Vaccines;
+  }>({ tutorName: '', tutorPhone: '', tutorEmail: '', tutorAddress: '', tutorNeighborhood: '', tutorCpf: '', name: '', breed: '', petSize: undefined, weight: undefined, gender: undefined, castrated: false, vaccines: { ...DEFAULT_VACCINES } });
 
   const downloadQrForClient = useCallback((client: Client): Promise<void> => {
     return new Promise((resolve) => {
@@ -47,9 +40,7 @@ const SpreadsheetPage: React.FC = () => {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       if (!ctx) { resolve(); return; }
-      const qrSize = 200;
-      const padding = 40;
-      const textHeight = 80;
+      const qrSize = 200; const padding = 40; const textHeight = 80;
       canvas.width = qrSize + padding * 2;
       canvas.height = qrSize + padding * 2 + textHeight;
       const img = new Image();
@@ -78,11 +69,7 @@ const SpreadsheetPage: React.FC = () => {
   const generateAllQrCodes = useCallback(async () => {
     setGeneratingAll(true);
     const toGenerate = clients.filter(c => !generatedQrIds.has(c.id));
-    if (toGenerate.length === 0) {
-      toast.info('Todos os QR Codes já foram gerados!');
-      setGeneratingAll(false);
-      return;
-    }
+    if (toGenerate.length === 0) { toast.info('Todos os QR Codes já foram gerados!'); setGeneratingAll(false); return; }
     let count = 0;
     for (const client of toGenerate) {
       await new Promise(resolve => setTimeout(resolve, 400));
@@ -100,8 +87,9 @@ const SpreadsheetPage: React.FC = () => {
   );
 
   const exportToCSV = () => {
-    const headers = ['Tutor', 'Telefone', 'Email', 'CPF', 'Endereço', 'Bairro', 'Dog', 'Raça', 'Peso (kg)', 'Porte', 'Entrada', ...VACCINE_KEYS.map(k => VACCINE_LABELS[k])];
+    const headers = ['Tutor', 'Telefone', 'Email', 'CPF', 'Endereço', 'Bairro', 'Dog', 'Raça', 'Peso (kg)', 'Porte', 'Gênero', 'Castrado', 'Nascimento', 'Entrada', ...VACCINE_KEYS.map(k => VACCINE_LABELS[k])];
     const rows = clients.map(client => {
+      const fleaInfo = client.fleaHistory?.length > 0 ? client.fleaHistory[0].brand : '';
       return [
         client.tutorName || '',
         client.tutorPhone || '',
@@ -113,12 +101,21 @@ const SpreadsheetPage: React.FC = () => {
         client.breed || '',
         client.weight ? client.weight.toString().replace('.', ',') : '',
         client.petSize || '',
+        client.gender || '',
+        client.castrated ? 'Sim' : 'Não',
+        client.birthDate ? format(new Date(client.birthDate), 'dd/MM/yyyy') : '',
         client.entryDate ? formatDate(client.entryDate) : '',
-        ...VACCINE_KEYS.map(k => client.vaccines?.[k] ? formatVaccineDate(client.vaccines[k]) : 'Não'),
+        ...VACCINE_KEYS.map(k => {
+          if (k === 'antipulgas') {
+            const val = client.vaccines?.[k];
+            return val ? `${formatVaccineDate(val)}${fleaInfo ? ' (' + fleaInfo + ')' : ''}` : 'Não';
+          }
+          return client.vaccines?.[k] ? formatVaccineDate(client.vaccines[k]) : 'Não';
+        }),
       ].join(';');
     });
     const csv = [headers.join(';'), ...rows].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -126,6 +123,17 @@ const SpreadsheetPage: React.FC = () => {
     link.click();
     URL.revokeObjectURL(url);
     toast.success('Arquivo exportado com sucesso!');
+  };
+
+  const parseDate = (str: string): Date | undefined => {
+    if (!str) return undefined;
+    const parts = str.split('/');
+    if (parts.length === 3) {
+      const d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+      if (!isNaN(d.getTime())) return d;
+    }
+    const d = new Date(str);
+    return isNaN(d.getTime()) ? undefined : d;
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -140,33 +148,90 @@ const SpreadsheetPage: React.FC = () => {
         const header = lines[0].toLowerCase();
         const separator = header.includes(';') ? ';' : ',';
         const headers = header.split(separator).map(h => h.trim());
-        const nameIndex = headers.findIndex(h => h.includes('dog') || h.includes('nome'));
-        const tutorIndex = headers.findIndex(h => h.includes('tutor'));
-        const breedIndex = headers.findIndex(h => h.includes('raça') || h.includes('raca'));
-        const petSizeIndex = headers.findIndex(h => h.includes('porte'));
-        if (nameIndex === -1) { toast.error('Coluna "Nome/Dog" não encontrada no CSV'); return; }
-        const newClients: Array<{ name: string; tutorName?: string; breed?: string; petSize?: PetSize }> = [];
-        let skipped = 0;
 
+        const findCol = (...terms: string[]) => headers.findIndex(h => terms.some(t => h.includes(t)));
+        const nameIndex = findCol('dog', 'nome do dog', 'nome');
+        const tutorIndex = findCol('tutor');
+        const breedIndex = findCol('raça', 'raca');
+        const petSizeIndex = findCol('porte');
+        const phoneIndex = findCol('telefone', 'fone', 'celular');
+        const emailIndex = findCol('email');
+        const cpfIndex = findCol('cpf');
+        const addressIndex = findCol('endereço', 'endereco');
+        const neighborhoodIndex = findCol('bairro');
+        const genderIndex = findCol('gênero', 'genero', 'sexo');
+        const castratedIndex = findCol('castrad');
+        const birthIndex = findCol('nascimento', 'aniversário', 'aniversario');
+        const weightIndex = findCol('peso');
+
+        if (nameIndex === -1) { toast.error('Coluna "Nome/Dog" não encontrada no CSV'); return; }
+
+        let imported = 0, skipped = 0;
         for (let i = 1; i < lines.length; i++) {
           const values = lines[i].split(separator).map(v => v.trim().replace(/^["']|["']$/g, ''));
           const name = values[nameIndex];
           if (!name) continue;
-          const tutorName = tutorIndex !== -1 ? values[tutorIndex] : undefined;
-          const isDuplicate = clients.some(client =>
-            client.name.toLowerCase() === name.toLowerCase() &&
-            (!tutorName || !client.tutorName || client.tutorName.toLowerCase() === tutorName.toLowerCase())
+          const tutorName = tutorIndex !== -1 ? values[tutorIndex] : '';
+          const isDuplicate = clients.some(c =>
+            c.name.toLowerCase() === name.toLowerCase() &&
+            (!tutorName || !c.tutorName || c.tutorName.toLowerCase() === tutorName.toLowerCase())
           );
           if (isDuplicate) { skipped++; continue; }
-          newClients.push({ name, tutorName, breed: breedIndex !== -1 ? values[breedIndex] : undefined, petSize: petSizeIndex !== -1 ? values[petSizeIndex] as PetSize : undefined });
+
+          const phone = phoneIndex !== -1 ? values[phoneIndex] : '';
+          const email = emailIndex !== -1 ? values[emailIndex] : '';
+          const cpf = cpfIndex !== -1 ? values[cpfIndex] : '';
+          const address = addressIndex !== -1 ? values[addressIndex] : '';
+          const neighborhood = neighborhoodIndex !== -1 ? values[neighborhoodIndex] : '';
+          const gender = genderIndex !== -1 ? values[genderIndex] : '';
+          const castrated = castratedIndex !== -1 ? values[castratedIndex]?.toLowerCase() === 'sim' : false;
+          const birthStr = birthIndex !== -1 ? values[birthIndex] : '';
+          const breed = breedIndex !== -1 ? values[breedIndex] : '';
+          const petSize = petSizeIndex !== -1 ? values[petSizeIndex] as PetSize : undefined;
+          const weightStr = weightIndex !== -1 ? values[weightIndex] : '';
+          const weight = weightStr ? parseFloat(weightStr.replace(',', '.')) : undefined;
+
+          // Find existing tutor to copy info
+          const existingTutor = tutorName ? clients.find(c => c.tutorName.toLowerCase() === tutorName.toLowerCase()) : null;
+
+          const newClient: any = {
+            name,
+            tutorName: tutorName || '',
+            tutorPhone: phone || existingTutor?.tutorPhone || '',
+            tutorEmail: email || existingTutor?.tutorEmail || '',
+            tutorCpf: cpf || existingTutor?.tutorCpf || '',
+            tutorAddress: address || existingTutor?.tutorAddress || '',
+            tutorNeighborhood: neighborhood || existingTutor?.tutorNeighborhood || '',
+            breed: breed || '',
+            petSize,
+            weight,
+            gender: (gender === 'Macho' || gender === 'Fêmea') ? gender as PetGender : undefined,
+            castrated,
+            birthDate: parseDate(birthStr),
+          };
+
+          // Parse vaccine dates from CSV
+          const vaccines: any = { ...DEFAULT_VACCINES };
+          VACCINE_KEYS.forEach(k => {
+            const idx = headers.findIndex(h => h.includes(VACCINE_LABELS[k].toLowerCase()));
+            if (idx !== -1 && values[idx] && values[idx] !== 'Não') {
+              const cleanVal = values[idx].replace(/\s*\(.*\)/, '');
+              const d = parseDate(cleanVal);
+              if (d) vaccines[k] = d.toISOString();
+            }
+          });
+          newClient.vaccines = vaccines;
+
+          // Use addClient-like approach via importClients
+          importClients([newClient]);
+          imported++;
         }
 
-        if (newClients.length === 0) {
+        if (imported === 0) {
           toast.error(skipped > 0 ? `${skipped} duplicado(s) ignorado(s). Nenhum novo.` : 'Nenhum cliente válido encontrado.');
-          return;
+        } else {
+          toast.success(skipped > 0 ? `${imported} importado(s), ${skipped} duplicado(s) ignorado(s).` : `${imported} cliente(s) importado(s)!`);
         }
-        importClients(newClients);
-        toast.success(skipped > 0 ? `${newClients.length} importado(s), ${skipped} duplicado(s) ignorado(s).` : `${newClients.length} cliente(s) importado(s)!`);
       } catch { toast.error('Erro ao processar arquivo CSV'); }
     };
     reader.readAsText(file);
@@ -176,16 +241,11 @@ const SpreadsheetPage: React.FC = () => {
   const startEdit = (client: Client) => {
     setEditingId(client.id);
     setEditForm({
-      tutorName: client.tutorName || '',
-      tutorPhone: client.tutorPhone || '',
-      tutorEmail: client.tutorEmail || '',
-      tutorAddress: client.tutorAddress || '',
-      tutorNeighborhood: client.tutorNeighborhood || '',
-      tutorCpf: client.tutorCpf || '',
-      name: client.name,
-      breed: client.breed || '',
-      petSize: client.petSize,
-      weight: client.weight,
+      tutorName: client.tutorName || '', tutorPhone: client.tutorPhone || '',
+      tutorEmail: client.tutorEmail || '', tutorAddress: client.tutorAddress || '',
+      tutorNeighborhood: client.tutorNeighborhood || '', tutorCpf: client.tutorCpf || '',
+      name: client.name, breed: client.breed || '', petSize: client.petSize,
+      weight: client.weight, gender: client.gender, castrated: client.castrated,
       vaccines: client.vaccines || { ...DEFAULT_VACCINES },
     });
   };
@@ -194,34 +254,25 @@ const SpreadsheetPage: React.FC = () => {
 
   const saveEdit = (client: Client) => {
     updateClient(client.id, {
-      tutorName: editForm.tutorName.trim(),
-      tutorPhone: editForm.tutorPhone.trim(),
-      tutorEmail: editForm.tutorEmail.trim(),
-      tutorAddress: editForm.tutorAddress.trim(),
-      tutorNeighborhood: editForm.tutorNeighborhood.trim(),
-      tutorCpf: editForm.tutorCpf.trim(),
-      name: editForm.name.trim() || client.name,
-      breed: editForm.breed.trim(),
-      petSize: editForm.petSize,
-      weight: editForm.weight,
-      vaccines: editForm.vaccines,
+      tutorName: editForm.tutorName.trim(), tutorPhone: editForm.tutorPhone.trim(),
+      tutorEmail: editForm.tutorEmail.trim(), tutorAddress: editForm.tutorAddress.trim(),
+      tutorNeighborhood: editForm.tutorNeighborhood.trim(), tutorCpf: editForm.tutorCpf.trim(),
+      name: editForm.name.trim() || client.name, breed: editForm.breed.trim(),
+      petSize: editForm.petSize, weight: editForm.weight, gender: editForm.gender,
+      castrated: editForm.castrated, vaccines: editForm.vaccines,
     });
     setEditingId(null);
     toast.success('Cliente atualizado!');
   };
 
   const toggleSelect = (id: string) => {
-    const newSelected = new Set(selectedIds);
-    if (newSelected.has(id)) newSelected.delete(id);
-    else newSelected.add(id);
-    setSelectedIds(newSelected);
+    const s = new Set(selectedIds);
+    s.has(id) ? s.delete(id) : s.add(id);
+    setSelectedIds(s);
   };
-
   const toggleSelectAll = () => {
-    if (selectedIds.size === filteredClients.length) setSelectedIds(new Set());
-    else setSelectedIds(new Set(filteredClients.map(c => c.id)));
+    setSelectedIds(selectedIds.size === filteredClients.length ? new Set() : new Set(filteredClients.map(c => c.id)));
   };
-
   const deleteSelected = () => {
     selectedIds.forEach(id => deleteClient(id));
     toast.success(`${selectedIds.size} cliente(s) removido(s)`);
@@ -229,10 +280,7 @@ const SpreadsheetPage: React.FC = () => {
   };
 
   const setEditVaccineDate = (key: keyof Vaccines, date: Date | undefined) => {
-    setEditForm(prev => ({
-      ...prev,
-      vaccines: { ...prev.vaccines, [key]: date ? date.toISOString() : null },
-    }));
+    setEditForm(prev => ({ ...prev, vaccines: { ...prev.vaccines, [key]: date ? date.toISOString() : null } }));
   };
 
   const VaccineDateCell = ({ vaccineKey }: { vaccineKey: keyof Vaccines }) => {
@@ -249,7 +297,7 @@ const SpreadsheetPage: React.FC = () => {
           <Calendar mode="single" selected={val ? new Date(val) : undefined} onSelect={(d) => setEditVaccineDate(vaccineKey, d)} initialFocus className="pointer-events-auto" locale={ptBR} />
           {val && (
             <div className="p-2 border-t">
-              <Button variant="ghost" size="sm" className="w-full text-xs text-destructive" onClick={() => setEditVaccineDate(vaccineKey, undefined)}>Limpar data</Button>
+              <Button variant="ghost" size="sm" className="w-full text-xs text-destructive" onClick={() => setEditVaccineDate(vaccineKey, undefined)}>Limpar</Button>
             </div>
           )}
         </PopoverContent>
@@ -260,7 +308,7 @@ const SpreadsheetPage: React.FC = () => {
   const VaccineIndicator = ({ value }: { value: string | null }) => (
     <div className="flex justify-center">
       {value ? (
-        <span className="text-xs text-status-ok font-medium">{format(new Date(value), "dd/MM/yy")}</span>
+        <span className="text-xs text-[hsl(var(--status-ok))] font-medium">{format(new Date(value), "dd/MM/yy")}</span>
       ) : (
         <span className="text-xs text-destructive font-bold">✗</span>
       )}
@@ -282,13 +330,7 @@ const SpreadsheetPage: React.FC = () => {
                 <Trash2 size={16} /> Excluir ({selectedIds.size})
               </Button>
             )}
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2"
-              onClick={generateAllQrCodes}
-              disabled={generatingAll}
-            >
+            <Button variant="outline" size="sm" className="gap-2" onClick={generateAllQrCodes} disabled={generatingAll}>
               <QrCode size={16} />
               {generatingAll ? 'Gerando...' : `Gerar Todos QR (${clients.filter(c => !generatedQrIds.has(c.id)).length})`}
             </Button>
@@ -315,10 +357,10 @@ const SpreadsheetPage: React.FC = () => {
         </div>
 
         <div className="bg-card border border-border rounded-lg shadow-soft overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="overflow-auto max-h-[calc(100vh-220px)]">
             <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50">
+              <TableHeader className="sticky top-0 z-10 bg-muted">
+                <TableRow>
                   <TableHead className="w-10 p-2">
                     <input type="checkbox" checked={selectedIds.size === filteredClients.length && filteredClients.length > 0} onChange={toggleSelectAll} />
                   </TableHead>
@@ -331,9 +373,12 @@ const SpreadsheetPage: React.FC = () => {
                   <TableHead className="font-semibold text-xs p-2">Bairro</TableHead>
                   <TableHead className="font-semibold text-xs p-2">Dog</TableHead>
                   <TableHead className="font-semibold text-xs p-2">Raça</TableHead>
-                  <TableHead className="font-semibold text-xs p-2 text-right">Peso (kg)</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 text-right">Peso</TableHead>
                   <TableHead className="font-semibold text-xs p-2">Porte</TableHead>
-                  <TableHead className="font-semibold text-xs p-2 text-right">Entrada</TableHead>
+                  <TableHead className="font-semibold text-xs p-2">Gênero</TableHead>
+                  <TableHead className="font-semibold text-xs p-2">Castrado</TableHead>
+                  <TableHead className="font-semibold text-xs p-2">Nascimento</TableHead>
+                  <TableHead className="font-semibold text-xs p-2">Entrada</TableHead>
                   {VACCINE_KEYS.map(k => (
                     <TableHead key={k} className="font-semibold text-xs p-2 text-center">{VACCINE_LABELS[k]}</TableHead>
                   ))}
@@ -357,26 +402,18 @@ const SpreadsheetPage: React.FC = () => {
                               <QRCodeSVG value={qrValue} size={40} level="L" />
                             </div>
                             <div className="flex gap-0.5">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className={cn("h-6 w-6", isQrGenerated ? "text-green-600" : "text-primary")}
+                              <Button variant="ghost" size="icon"
+                                className={cn("h-6 w-6", isQrGenerated ? "text-[hsl(var(--status-ok))]" : "text-primary")}
                                 onClick={() => downloadQrForClient(client)}
-                                title={isQrGenerated ? "QR já baixado" : "Baixar QR Code"}
-                              >
+                                title={isQrGenerated ? "QR já baixado" : "Baixar QR Code"}>
                                 {isQrGenerated ? <Check size={12} /> : <Download size={12} />}
                               </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6 text-primary"
+                              <Button variant="ghost" size="icon" className="h-6 w-6 text-primary"
                                 onClick={() => { downloadCardForClient(client); toast.success(`Carteirinha de ${client.name} baixada!`); }}
-                                title="Baixar Carteirinha"
-                              >
+                                title="Baixar Carteirinha">
                                 <CreditCard size={12} />
                               </Button>
                             </div>
-                            {/* Hidden QR for card generation */}
                             <div data-card-qr={client.id} className="hidden">
                               <QRCodeSVG value={qrValue} size={200} level="M" />
                             </div>
@@ -394,8 +431,8 @@ const SpreadsheetPage: React.FC = () => {
                         <TableCell className="p-2">
                           {isEditing ? <Input value={editForm.tutorCpf} onChange={(e) => setEditForm({ ...editForm, tutorCpf: e.target.value })} className="h-7 text-sm w-28" /> : <span className="text-sm text-muted-foreground">{client.tutorCpf || '—'}</span>}
                         </TableCell>
-                        <TableCell className="p-2">
-                          {isEditing ? <Input value={editForm.tutorAddress} onChange={(e) => setEditForm({ ...editForm, tutorAddress: e.target.value })} className="h-7 text-sm w-36" /> : <span className="text-sm text-muted-foreground">{client.tutorAddress || '—'}</span>}
+                        <TableCell className="p-2 max-w-[150px]">
+                          {isEditing ? <Input value={editForm.tutorAddress} onChange={(e) => setEditForm({ ...editForm, tutorAddress: e.target.value })} className="h-7 text-sm w-36" /> : <span className="text-sm text-muted-foreground break-words line-clamp-2">{client.tutorAddress || '—'}</span>}
                         </TableCell>
                         <TableCell className="p-2">
                           {isEditing ? <Input value={editForm.tutorNeighborhood} onChange={(e) => setEditForm({ ...editForm, tutorNeighborhood: e.target.value })} className="h-7 text-sm w-24" /> : <span className="text-sm text-muted-foreground">{client.tutorNeighborhood || '—'}</span>}
@@ -411,17 +448,34 @@ const SpreadsheetPage: React.FC = () => {
                         </TableCell>
                         <TableCell className="p-2">
                           {isEditing ? (
-                            <Select value={editForm.petSize || ''} onValueChange={(value) => setEditForm({ ...editForm, petSize: (value || undefined) as PetSize })}>
+                            <Select value={editForm.petSize || ''} onValueChange={(v) => setEditForm({ ...editForm, petSize: (v || undefined) as PetSize })}>
                               <SelectTrigger className="h-7 text-xs w-24"><SelectValue placeholder="—" /></SelectTrigger>
                               <SelectContent>
-                                {(['Pequeno', 'Médio', 'Grande', 'Gigante'] as PetSize[]).map((size) => (
-                                  <SelectItem key={size} value={size} className="text-xs">{size}</SelectItem>
+                                {(['Pequeno', 'Médio', 'Grande', 'Gigante'] as PetSize[]).map(s => (
+                                  <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">{client.petSize || '—'}</span>
-                          )}
+                          ) : <span className="text-sm text-muted-foreground">{client.petSize || '—'}</span>}
+                        </TableCell>
+                        <TableCell className="p-2">
+                          {isEditing ? (
+                            <Select value={editForm.gender || ''} onValueChange={(v) => setEditForm({ ...editForm, gender: (v || undefined) as PetGender })}>
+                              <SelectTrigger className="h-7 text-xs w-20"><SelectValue placeholder="—" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Macho" className="text-xs">♂ Macho</SelectItem>
+                                <SelectItem value="Fêmea" className="text-xs">♀ Fêmea</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          ) : <span className="text-sm text-muted-foreground">{client.gender ? (client.gender === 'Macho' ? '♂' : '♀') : '—'}</span>}
+                        </TableCell>
+                        <TableCell className="p-2 text-center">
+                          {isEditing ? (
+                            <input type="checkbox" checked={editForm.castrated ?? false} onChange={(e) => setEditForm({ ...editForm, castrated: e.target.checked })} />
+                          ) : <span className="text-sm">{client.castrated ? '✓' : '—'}</span>}
+                        </TableCell>
+                        <TableCell className="p-2 text-sm text-muted-foreground">
+                          {client.birthDate ? format(new Date(client.birthDate), 'dd/MM/yy') : '—'}
                         </TableCell>
                         <TableCell className="text-right p-2 text-muted-foreground text-sm">
                           {client.entryDate ? formatDate(client.entryDate) : '—'}
@@ -439,19 +493,19 @@ const SpreadsheetPage: React.FC = () => {
                           <div className="flex items-center justify-center gap-1">
                             {isEditing ? (
                               <>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 text-status-ok hover:text-status-ok hover:bg-status-ok/10" onClick={() => saveEdit(client)}>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-[hsl(var(--status-ok))] hover:bg-[hsl(var(--status-ok))]/10" onClick={() => saveEdit(client)}>
                                   <Check size={14} />
                                 </Button>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={cancelEdit}>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:bg-destructive/10" onClick={cancelEdit}>
                                   <XCircle size={14} />
                                 </Button>
                               </>
                             ) : (
                               <>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 text-primary hover:text-primary hover:bg-primary/10" onClick={() => startEdit(client)}>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-primary hover:bg-primary/10" onClick={() => startEdit(client)}>
                                   <Pencil size={14} />
                                 </Button>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => { deleteClient(client.id); toast.success('Cliente removido'); }}>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:bg-destructive/10" onClick={() => { deleteClient(client.id); toast.success('Cliente removido'); }}>
                                   <Trash2 size={14} />
                                 </Button>
                               </>
@@ -463,7 +517,7 @@ const SpreadsheetPage: React.FC = () => {
                   })
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={13 + VACCINE_KEYS.length} className="text-center py-8 text-muted-foreground text-sm">
+                    <TableCell colSpan={17 + VACCINE_KEYS.length} className="text-center py-8 text-muted-foreground text-sm">
                       {searchQuery ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}
                     </TableCell>
                   </TableRow>
