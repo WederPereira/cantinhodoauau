@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { PetSize, DEFAULT_VACCINES, Vaccines, VACCINE_LABELS } from '@/types/client';
+import { PetSize, PetGender, DEFAULT_VACCINES, Vaccines, VACCINE_LABELS } from '@/types/client';
 import { useClients } from '@/context/ClientContext';
 import { Plus, PawPrint, CalendarIcon, User } from 'lucide-react';
 import { toast } from 'sonner';
@@ -16,6 +16,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
 
 interface AddClientDialogProps {
   trigger?: React.ReactNode;
@@ -34,8 +35,39 @@ export const AddClientDialog: React.FC<AddClientDialogProps> = ({ trigger }) => 
   const [petSize, setPetSize] = useState<PetSize | undefined>(undefined);
   const [birthDate, setBirthDate] = useState<Date | undefined>(undefined);
   const [photo, setPhoto] = useState<string | undefined>(undefined);
+  const [gender, setGender] = useState<PetGender | undefined>(undefined);
+  const [castrated, setCastrated] = useState(false);
   const [vaccines, setVaccines] = useState<Vaccines>({ ...DEFAULT_VACCINES });
-  const { addClient } = useClients();
+  const { clients, addClient } = useClients();
+
+  // Get unique tutor names for auto-fill
+  const tutorOptions = useMemo(() => {
+    const tutors = new Map<string, typeof clients[0]>();
+    clients.forEach(c => {
+      if (c.tutorName && !tutors.has(c.tutorName.toLowerCase())) {
+        tutors.set(c.tutorName.toLowerCase(), c);
+      }
+    });
+    return Array.from(tutors.values());
+  }, [clients]);
+
+  const handleTutorSelect = (selectedTutor: typeof clients[0]) => {
+    setTutorName(selectedTutor.tutorName);
+    setTutorPhone(selectedTutor.tutorPhone || '');
+    setTutorEmail(selectedTutor.tutorEmail || '');
+    setTutorAddress(selectedTutor.tutorAddress || '');
+    setTutorNeighborhood(selectedTutor.tutorNeighborhood || '');
+    setTutorCpf(selectedTutor.tutorCpf || '');
+    toast.success(`Dados do tutor ${selectedTutor.tutorName} preenchidos!`);
+  };
+
+  const filteredTutors = useMemo(() => {
+    if (!tutorName.trim()) return [];
+    return tutorOptions.filter(c =>
+      c.tutorName.toLowerCase().includes(tutorName.toLowerCase()) &&
+      c.tutorName.toLowerCase() !== tutorName.toLowerCase()
+    ).slice(0, 5);
+  }, [tutorName, tutorOptions]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,6 +89,8 @@ export const AddClientDialog: React.FC<AddClientDialogProps> = ({ trigger }) => 
       photo,
       vaccines,
       birthDate,
+      gender,
+      castrated,
     });
     toast.success(`${name} adicionado com sucesso!`);
     resetForm();
@@ -68,6 +102,7 @@ export const AddClientDialog: React.FC<AddClientDialogProps> = ({ trigger }) => 
     setTutorAddress(''); setTutorNeighborhood(''); setTutorCpf('');
     setName(''); setBreed(''); setPetSize(undefined); setBirthDate(undefined);
     setPhoto(undefined); setVaccines({ ...DEFAULT_VACCINES });
+    setGender(undefined); setCastrated(false);
   };
 
   const setVaccineDate = (key: keyof Vaccines, date: Date | undefined) => {
@@ -118,16 +153,32 @@ export const AddClientDialog: React.FC<AddClientDialogProps> = ({ trigger }) => 
                 <Label>Raça</Label>
                 <BreedSelect value={breed} onChange={setBreed} />
               </div>
-              <div className="space-y-2">
-                <Label>Porte</Label>
-                <Select value={petSize || ''} onValueChange={(v) => setPetSize(v as PetSize || undefined)}>
-                  <SelectTrigger className="h-11"><SelectValue placeholder="Selecione o porte" /></SelectTrigger>
-                  <SelectContent>
-                    {(['Pequeno', 'Médio', 'Grande', 'Gigante'] as PetSize[]).map(s => (
-                      <SelectItem key={s} value={s}>{s}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Porte</Label>
+                  <Select value={petSize || ''} onValueChange={(v) => setPetSize(v as PetSize || undefined)}>
+                    <SelectTrigger className="h-11"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      {(['Pequeno', 'Médio', 'Grande', 'Gigante'] as PetSize[]).map(s => (
+                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Gênero</Label>
+                  <Select value={gender || ''} onValueChange={(v) => setGender(v as PetGender || undefined)}>
+                    <SelectTrigger className="h-11"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Macho">♂ Macho</SelectItem>
+                      <SelectItem value="Fêmea">♀ Fêmea</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border">
+                <Label htmlFor="castrated" className="text-sm cursor-pointer">Castrado(a)?</Label>
+                <Switch id="castrated" checked={castrated} onCheckedChange={setCastrated} />
               </div>
               <div className="space-y-2">
                 <Label>Data de Nascimento</Label>
@@ -146,9 +197,26 @@ export const AddClientDialog: React.FC<AddClientDialogProps> = ({ trigger }) => 
             </TabsContent>
 
             <TabsContent value="tutor" className="space-y-4 mt-0">
-              <div className="space-y-2">
+              <div className="space-y-2 relative">
                 <Label>Nome do Tutor</Label>
                 <Input value={tutorName} onChange={(e) => setTutorName(e.target.value)} placeholder="Nome completo" className="h-11" />
+                {filteredTutors.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 z-50 bg-card border border-border rounded-lg shadow-lg mt-1 overflow-hidden">
+                    <p className="text-[10px] text-muted-foreground px-3 py-1.5 bg-muted/50">Tutores existentes — clique para preencher</p>
+                    {filteredTutors.map(t => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        className="w-full text-left px-3 py-2 hover:bg-muted/50 text-sm flex items-center gap-2 transition-colors"
+                        onClick={() => handleTutorSelect(t)}
+                      >
+                        <User size={12} className="text-muted-foreground" />
+                        <span className="font-medium">{t.tutorName}</span>
+                        <span className="text-xs text-muted-foreground ml-auto">({clients.filter(c => c.tutorName === t.tutorName).length} dogs)</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>CPF</Label>
