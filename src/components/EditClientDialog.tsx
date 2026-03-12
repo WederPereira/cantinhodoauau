@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { PhotoUpload } from './PhotoUpload';
 import { BreedSelect } from './BreedSelect';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
 
 interface EditClientDialogProps {
   client: Client;
