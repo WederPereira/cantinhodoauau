@@ -5,6 +5,7 @@ import { Client, PetSize, PetGender, formatDate, VACCINE_LABELS, Vaccines, forma
 import { useClients } from '@/context/ClientContext';
 import { toast } from 'sonner';
 import { Trash2, Pencil, Dog, Heart, User, MapPin, Phone, Mail, FileText, Home, X, Shield } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { HealthHistorySection } from './HealthHistorySection';
 import { PhotoUpload } from './PhotoUpload';
