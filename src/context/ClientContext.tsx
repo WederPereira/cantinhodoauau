@@ -124,6 +124,8 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     vaccines?: Vaccines;
     entryDate?: Date;
     birthDate?: Date;
+    gender?: PetGender;
+    castrated?: boolean;
   }) => {
     const newClient: Client = {
       id: crypto.randomUUID(),
@@ -138,6 +140,8 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       petSize: data.petSize,
       birthDate: data.birthDate,
       photo: data.photo,
+      gender: data.gender,
+      castrated: data.castrated ?? false,
       entryDate: data.entryDate || new Date(),
       vaccines: data.vaccines || { ...DEFAULT_VACCINES },
       vaccineHistory: [],
