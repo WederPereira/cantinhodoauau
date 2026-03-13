@@ -30,7 +30,8 @@ const SpreadsheetPage: React.FC = () => {
     tutorAddress: string; tutorNeighborhood: string; tutorCpf: string;
     name: string; breed: string; petSize?: PetSize; weight?: number;
     gender?: PetGender; castrated?: boolean; vaccines: Vaccines;
-  }>({ tutorName: '', tutorPhone: '', tutorEmail: '', tutorAddress: '', tutorNeighborhood: '', tutorCpf: '', name: '', breed: '', petSize: undefined, weight: undefined, gender: undefined, castrated: false, vaccines: { ...DEFAULT_VACCINES } });
+    birthDate?: Date; entryDate?: Date;
+  }>({ tutorName: '', tutorPhone: '', tutorEmail: '', tutorAddress: '', tutorNeighborhood: '', tutorCpf: '', name: '', breed: '', petSize: undefined, weight: undefined, gender: undefined, castrated: false, vaccines: { ...DEFAULT_VACCINES }, birthDate: undefined, entryDate: undefined });
 
   const downloadQrForClient = useCallback((client: Client): Promise<void> => {
     return new Promise((resolve) => {
@@ -104,7 +105,7 @@ const SpreadsheetPage: React.FC = () => {
         client.gender || '',
         client.castrated ? 'Sim' : 'Não',
         client.birthDate ? format(new Date(client.birthDate), 'dd/MM/yyyy') : '',
-        client.entryDate ? formatDate(client.entryDate) : '',
+        client.entryDate ? format(new Date(client.entryDate), 'dd/MM/yyyy') : '',
         ...VACCINE_KEYS.map(k => {
           if (k === 'antipulgas') {
             const val = client.vaccines?.[k];
@@ -162,6 +163,7 @@ const SpreadsheetPage: React.FC = () => {
         const genderIndex = findCol('gênero', 'genero', 'sexo');
         const castratedIndex = findCol('castrad');
         const birthIndex = findCol('nascimento', 'aniversário', 'aniversario');
+        const entryIndex = findCol('entrada');
         const weightIndex = findCol('peso');
 
         if (nameIndex === -1) { toast.error('Coluna "Nome/Dog" não encontrada no CSV'); return; }
@@ -186,12 +188,12 @@ const SpreadsheetPage: React.FC = () => {
           const gender = genderIndex !== -1 ? values[genderIndex] : '';
           const castrated = castratedIndex !== -1 ? values[castratedIndex]?.toLowerCase() === 'sim' : false;
           const birthStr = birthIndex !== -1 ? values[birthIndex] : '';
+          const entryStr = entryIndex !== -1 ? values[entryIndex] : '';
           const breed = breedIndex !== -1 ? values[breedIndex] : '';
           const petSize = petSizeIndex !== -1 ? values[petSizeIndex] as PetSize : undefined;
           const weightStr = weightIndex !== -1 ? values[weightIndex] : '';
           const weight = weightStr ? parseFloat(weightStr.replace(',', '.')) : undefined;
 
-          // Find existing tutor to copy info
           const existingTutor = tutorName ? clients.find(c => c.tutorName.toLowerCase() === tutorName.toLowerCase()) : null;
 
           const newClient: any = {
@@ -208,9 +210,9 @@ const SpreadsheetPage: React.FC = () => {
             gender: (gender === 'Macho' || gender === 'Fêmea') ? gender as PetGender : undefined,
             castrated,
             birthDate: parseDate(birthStr),
+            entryDate: parseDate(entryStr),
           };
 
-          // Parse vaccine dates from CSV
           const vaccines: any = { ...DEFAULT_VACCINES };
           VACCINE_KEYS.forEach(k => {
             const idx = headers.findIndex(h => h.includes(VACCINE_LABELS[k].toLowerCase()));
@@ -222,7 +224,6 @@ const SpreadsheetPage: React.FC = () => {
           });
           newClient.vaccines = vaccines;
 
-          // Use addClient-like approach via importClients
           importClients([newClient]);
           imported++;
         }
@@ -247,6 +248,8 @@ const SpreadsheetPage: React.FC = () => {
       name: client.name, breed: client.breed || '', petSize: client.petSize,
       weight: client.weight, gender: client.gender, castrated: client.castrated,
       vaccines: client.vaccines || { ...DEFAULT_VACCINES },
+      birthDate: client.birthDate ? new Date(client.birthDate) : undefined,
+      entryDate: client.entryDate ? new Date(client.entryDate) : undefined,
     });
   };
 
@@ -260,6 +263,7 @@ const SpreadsheetPage: React.FC = () => {
       name: editForm.name.trim() || client.name, breed: editForm.breed.trim(),
       petSize: editForm.petSize, weight: editForm.weight, gender: editForm.gender,
       castrated: editForm.castrated, vaccines: editForm.vaccines,
+      birthDate: editForm.birthDate, entryDate: editForm.entryDate || client.entryDate,
     });
     setEditingId(null);
     toast.success('Cliente atualizado!');
@@ -282,6 +286,25 @@ const SpreadsheetPage: React.FC = () => {
   const setEditVaccineDate = (key: keyof Vaccines, date: Date | undefined) => {
     setEditForm(prev => ({ ...prev, vaccines: { ...prev.vaccines, [key]: date ? date.toISOString() : null } }));
   };
+
+  const DateEditCell = ({ value, onChange }: { value?: Date; onChange: (d: Date | undefined) => void }) => (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="outline" size="sm" className={cn("h-7 text-xs w-24", !value && "text-muted-foreground")}>
+          <CalendarIcon className="mr-1 h-3 w-3" />
+          {value ? format(value, "dd/MM/yy", { locale: ptBR }) : '—'}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar mode="single" selected={value} onSelect={(d) => onChange(d || undefined)} initialFocus className="pointer-events-auto" locale={ptBR} />
+        {value && (
+          <div className="p-2 border-t">
+            <Button variant="ghost" size="sm" className="w-full text-xs text-destructive" onClick={() => onChange(undefined)}>Limpar</Button>
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
 
   const VaccineDateCell = ({ vaccineKey }: { vaccineKey: keyof Vaccines }) => {
     const val = editForm.vaccines[vaccineKey];
@@ -382,7 +405,7 @@ const SpreadsheetPage: React.FC = () => {
                   {VACCINE_KEYS.map(k => (
                     <TableHead key={k} className="font-semibold text-xs p-2 text-center">{VACCINE_LABELS[k]}</TableHead>
                   ))}
-                  <TableHead className="font-semibold text-xs p-2 text-center w-20">Ações</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 text-center w-20 sticky right-0 bg-muted">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -474,11 +497,19 @@ const SpreadsheetPage: React.FC = () => {
                             <input type="checkbox" checked={editForm.castrated ?? false} onChange={(e) => setEditForm({ ...editForm, castrated: e.target.checked })} />
                           ) : <span className="text-sm">{client.castrated ? '✓' : '—'}</span>}
                         </TableCell>
-                        <TableCell className="p-2 text-sm text-muted-foreground">
-                          {client.birthDate ? format(new Date(client.birthDate), 'dd/MM/yy') : '—'}
+                        <TableCell className="p-2">
+                          {isEditing ? (
+                            <DateEditCell value={editForm.birthDate} onChange={(d) => setEditForm(prev => ({ ...prev, birthDate: d }))} />
+                          ) : (
+                            <span className="text-sm text-muted-foreground">{client.birthDate ? format(new Date(client.birthDate), 'dd/MM/yy') : '—'}</span>
+                          )}
                         </TableCell>
-                        <TableCell className="text-right p-2 text-muted-foreground text-sm">
-                          {client.entryDate ? formatDate(client.entryDate) : '—'}
+                        <TableCell className="p-2">
+                          {isEditing ? (
+                            <DateEditCell value={editForm.entryDate} onChange={(d) => setEditForm(prev => ({ ...prev, entryDate: d }))} />
+                          ) : (
+                            <span className="text-sm text-muted-foreground">{client.entryDate ? format(new Date(client.entryDate), 'dd/MM/yy') : '—'}</span>
+                          )}
                         </TableCell>
                         {isEditing ? (
                           VACCINE_KEYS.map(key => (
@@ -489,7 +520,7 @@ const SpreadsheetPage: React.FC = () => {
                             <TableCell key={key} className="p-2"><VaccineIndicator value={client.vaccines?.[key] || null} /></TableCell>
                           ))
                         )}
-                        <TableCell className="p-2">
+                        <TableCell className="p-2 sticky right-0 bg-card">
                           <div className="flex items-center justify-center gap-1">
                             {isEditing ? (
                               <>

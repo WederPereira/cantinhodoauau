@@ -58,6 +58,44 @@ export type Database = {
           },
         ]
       }
+      hotel_meals: {
+        Row: {
+          ate: boolean
+          created_at: string
+          date: string
+          hotel_stay_id: string
+          id: string
+          meal_type: string
+          updated_at: string
+        }
+        Insert: {
+          ate?: boolean
+          created_at?: string
+          date?: string
+          hotel_stay_id: string
+          id?: string
+          meal_type: string
+          updated_at?: string
+        }
+        Update: {
+          ate?: boolean
+          created_at?: string
+          date?: string
+          hotel_stay_id?: string
+          id?: string
+          meal_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hotel_meals_hotel_stay_id_fkey"
+            columns: ["hotel_stay_id"]
+            isOneToOne: false
+            referencedRelation: "hotel_stays"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hotel_medications: {
         Row: {
           administered: boolean
@@ -113,6 +151,7 @@ export type Database = {
           client_id: string
           created_at: string
           dog_name: string
+          expected_checkout: string | null
           id: string
           observations: string | null
           tutor_name: string
@@ -128,6 +167,7 @@ export type Database = {
           client_id: string
           created_at?: string
           dog_name: string
+          expected_checkout?: string | null
           id?: string
           observations?: string | null
           tutor_name: string
@@ -143,6 +183,7 @@ export type Database = {
           client_id?: string
           created_at?: string
           dog_name?: string
+          expected_checkout?: string | null
           id?: string
           observations?: string | null
           tutor_name?: string
