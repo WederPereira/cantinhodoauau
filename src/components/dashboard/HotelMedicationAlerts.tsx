@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Pill, AlertTriangle, Clock, Dog, Check } from 'lucide-react';
+import { Pill, AlertTriangle, Clock, Dog, Check, Timer } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 
@@ -16,6 +16,7 @@ interface MedAlert {
 
 const HotelMedicationAlerts: React.FC = () => {
   const [alerts, setAlerts] = useState<MedAlert[]>([]);
+  const [now, setNow] = useState(new Date());
 
   const fetchAlerts = useCallback(async () => {
     try {
@@ -36,7 +37,7 @@ const HotelMedicationAlerts: React.FC = () => {
 
       if (!meds) { setAlerts([]); return; }
 
-      const mapped: MedAlert[] = meds.map((m: any) => ({
+      setAlerts(meds.map((m: any) => ({
         id: m.id,
         medication_name: m.medication_name,
         scheduled_time: m.scheduled_time,
@@ -44,9 +45,7 @@ const HotelMedicationAlerts: React.FC = () => {
         administered_at: m.administered_at || null,
         recurrence: m.recurrence || 'once',
         dog_name: stayMap.get(m.hotel_stay_id) || 'Dog',
-      }));
-
-      setAlerts(mapped);
+      })));
     } catch (err) {
       console.error(err);
     }
@@ -62,6 +61,12 @@ const HotelMedicationAlerts: React.FC = () => {
     return () => { supabase.removeChannel(channel); };
   }, [fetchAlerts]);
 
+  // Tick every second for countdown
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   const handleAdminister = async (med: MedAlert) => {
     try {
       const { error } = await supabase
@@ -76,22 +81,94 @@ const HotelMedicationAlerts: React.FC = () => {
     }
   };
 
-  // Check if medication is overdue (scheduled > 2h ago and not administered)
+  const getMedMinutes = (med: MedAlert) => {
+    const [h, m] = med.scheduled_time.split(':').map(Number);
+    return h * 60 + m;
+  };
+
+  const getNowMinutes = () => now.getHours() * 60 + now.getMinutes();
+
   const isOverdue = (med: MedAlert): boolean => {
     if (med.administered) return false;
-    const now = new Date();
-    const nowMinutes = now.getHours() * 60 + now.getMinutes();
-    const [h, m] = med.scheduled_time.split(':').map(Number);
-    const medMinutes = h * 60 + m;
-    const diff = nowMinutes - medMinutes;
-    return diff > 120; // more than 2 hours overdue
+    return getNowMinutes() - getMedMinutes(med) > 120;
+  };
+
+  const getCountdown = (med: MedAlert): string => {
+    const medMinutes = getMedMinutes(med);
+    const nowMinutes = getNowMinutes();
+    const nowSeconds = now.getSeconds();
+    const diffTotal = (medMinutes - nowMinutes) * 60 - nowSeconds;
+
+    if (diffTotal <= 0) {
+      const overdueSec = Math.abs(diffTotal);
+      const oh = Math.floor(overdueSec / 3600);
+      const om = Math.floor((overdueSec % 3600) / 60);
+      if (oh > 0) return `+${oh}h${om.toString().padStart(2, '0')}m`;
+      return `+${om}min`;
+    }
+
+    const h = Math.floor(diffTotal / 3600);
+    const m = Math.floor((diffTotal % 3600) / 60);
+    const s = diffTotal % 60;
+    if (h > 0) return `${h}h${m.toString().padStart(2, '0')}m`;
+    if (m > 0) return `${m}m${s.toString().padStart(2, '0')}s`;
+    return `${s}s`;
+  };
+
+  const isUpcoming = (med: MedAlert): boolean => {
+    if (med.administered) return false;
+    const diff = getMedMinutes(med) - getNowMinutes();
+    return diff > 0;
+  };
+
+  const isPastNotOverdue = (med: MedAlert): boolean => {
+    if (med.administered) return false;
+    const diff = getNowMinutes() - getMedMinutes(med);
+    return diff >= 0 && diff <= 120;
   };
 
   const pending = alerts.filter(a => !a.administered);
   const overdue = pending.filter(isOverdue);
-  const upcoming = pending.filter(a => !isOverdue(a));
+  const pastNotOverdue = pending.filter(isPastNotOverdue);
+  const upcoming = pending.filter(isUpcoming);
 
   if (alerts.length === 0) return null;
+
+  const MedButton = ({ med, variant }: { med: MedAlert; variant: 'overdue' | 'past' | 'upcoming' }) => {
+    const countdown = getCountdown(med);
+    const classes = {
+      overdue: 'border-2 border-destructive/50 bg-destructive/10 hover:bg-destructive/20',
+      past: 'border-2 border-amber-400/50 bg-amber-50/50 dark:bg-amber-950/20 hover:bg-amber-100/70 dark:hover:bg-amber-950/40',
+      upcoming: 'border border-border bg-card hover:bg-muted/50',
+    };
+
+    return (
+      <button
+        onClick={() => handleAdminister(med)}
+        className={`w-full flex items-center justify-between p-2.5 rounded-lg text-xs transition-colors cursor-pointer ${classes[variant]}`}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <Dog size={14} className={variant === 'overdue' ? 'text-destructive shrink-0' : 'text-primary shrink-0'} />
+          <span className="font-semibold truncate">{med.dog_name}</span>
+          <span className="text-muted-foreground">—</span>
+          <span className="truncate">{med.medication_name}</span>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <div className={`flex items-center gap-1 font-mono text-xs font-bold ${variant === 'overdue' ? 'text-destructive' : variant === 'past' ? 'text-amber-600 dark:text-amber-400' : 'text-primary'}`}>
+            <Timer size={12} />
+            <span>{countdown}</span>
+          </div>
+          <div className="flex items-center gap-1 text-muted-foreground">
+            <Clock size={12} />
+            <span className="font-mono">{med.scheduled_time.slice(0, 5)}</span>
+          </div>
+          <Badge variant="outline" className="text-[8px] px-1.5 py-0 border-primary text-primary">
+            Aplicar
+          </Badge>
+        </div>
+      </button>
+    );
+  };
 
   return (
     <div className="bg-card border border-border rounded-xl p-4 shadow-soft space-y-3">
@@ -114,67 +191,28 @@ const HotelMedicationAlerts: React.FC = () => {
         </p>
       ) : (
         <div className="space-y-2">
-          {/* Overdue - critical */}
           {overdue.length > 0 && (
             <div className="space-y-1.5">
               <p className="text-[10px] font-bold text-destructive uppercase tracking-wide flex items-center gap-1">
                 <AlertTriangle size={10} /> Atrasados (+2h)
               </p>
-              {overdue.map(med => (
-                <button
-                  key={med.id}
-                  onClick={() => handleAdminister(med)}
-                  className="w-full flex items-center justify-between p-2 rounded-lg border-2 border-destructive/50 bg-destructive/10 text-xs hover:bg-destructive/20 transition-colors cursor-pointer"
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Dog size={14} className="text-destructive shrink-0" />
-                    <span className="font-semibold truncate">{med.dog_name}</span>
-                    <span className="text-muted-foreground">—</span>
-                    <span className="truncate">{med.medication_name}</span>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <div className="flex items-center gap-1 text-destructive">
-                      <Clock size={12} />
-                      <span className="font-mono">{med.scheduled_time.slice(0, 5)}</span>
-                    </div>
-                    <Badge variant="outline" className="text-[8px] px-1.5 py-0 border-primary text-primary">
-                      Aplicar
-                    </Badge>
-                  </div>
-                </button>
-              ))}
+              {overdue.map(med => <MedButton key={med.id} med={med} variant="overdue" />)}
             </div>
           )}
-
-          {/* Upcoming - normal pending */}
+          {pastNotOverdue.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wide flex items-center gap-1">
+                <Clock size={10} /> Horário passou
+              </p>
+              {pastNotOverdue.map(med => <MedButton key={med.id} med={med} variant="past" />)}
+            </div>
+          )}
           {upcoming.length > 0 && (
             <div className="space-y-1.5">
-              {overdue.length > 0 && (
+              {(overdue.length > 0 || pastNotOverdue.length > 0) && (
                 <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mt-1">Próximos</p>
               )}
-              {upcoming.map(med => (
-                <button
-                  key={med.id}
-                  onClick={() => handleAdminister(med)}
-                  className="w-full flex items-center justify-between p-2 rounded-lg border border-amber-300/50 bg-amber-50/50 dark:bg-amber-950/20 text-xs hover:bg-amber-100/70 dark:hover:bg-amber-950/40 transition-colors cursor-pointer"
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Dog size={14} className="text-primary shrink-0" />
-                    <span className="font-semibold truncate">{med.dog_name}</span>
-                    <span className="text-muted-foreground">—</span>
-                    <span className="truncate">{med.medication_name}</span>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <div className="flex items-center gap-1 text-muted-foreground">
-                      <Clock size={12} />
-                      <span className="font-mono">{med.scheduled_time.slice(0, 5)}</span>
-                    </div>
-                    <Badge variant="outline" className="text-[8px] px-1.5 py-0 border-primary text-primary">
-                      Aplicar
-                    </Badge>
-                  </div>
-                </button>
-              ))}
+              {upcoming.map(med => <MedButton key={med.id} med={med} variant="upcoming" />)}
             </div>
           )}
         </div>
