@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useClients } from '@/context/ClientContext';
-import { format, startOfDay } from 'date-fns';
+import { format, startOfDay, differenceInDays, addDays, eachDayOfInterval, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
   Hotel, Plus, Camera, Pill, Clock, Trash2, X, ChevronDown, ChevronUp,
   AlertTriangle, Check, FileText, Dog, Bell, Search, Copy, Calendar as CalendarIcon,
-  Utensils, Undo2, Eye, Tag, Package
+  Utensils, Undo2, Eye, Tag, Package, Timer
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose
 } from '@/components/ui/dialog';
@@ -22,6 +23,7 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface HotelStay {
   id: string;
@@ -30,6 +32,7 @@ interface HotelStay {
   tutor_name: string;
   check_in: string;
   check_out: string | null;
+  expected_checkout: string | null;
   observations: string;
   belongings_photos: string[];
   belonging_labels: Record<string, string>;
@@ -48,6 +51,14 @@ interface Medication {
   recurrence: string;
 }
 
+interface HotelMeal {
+  id: string;
+  hotel_stay_id: string;
+  date: string;
+  meal_type: string;
+  ate: boolean;
+}
+
 const RECURRENCE_OPTIONS = [
   { value: 'once', label: 'Dose única' },
   { value: 'every_6h', label: 'A cada 6h' },
@@ -56,16 +67,25 @@ const RECURRENCE_OPTIONS = [
   { value: 'every_24h', label: '1x ao dia' },
 ];
 
+const MEAL_TYPES = [
+  { key: 'cafe', label: '☀️ Café', icon: '☀️' },
+  { key: 'almoco', label: '🌤️ Almoço', icon: '🌤️' },
+  { key: 'janta', label: '🌙 Janta', icon: '🌙' },
+];
+
 const HotelTab: React.FC = () => {
   const { clients } = useClients();
   const [stays, setStays] = useState<HotelStay[]>([]);
   const [allStays, setAllStays] = useState<HotelStay[]>([]);
   const [medications, setMedications] = useState<Medication[]>([]);
+  const [meals, setMeals] = useState<HotelMeal[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedStay, setExpandedStay] = useState<string | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState('');
   const [observations, setObservations] = useState('');
+  const [checkInDate, setCheckInDate] = useState<Date>(new Date());
+  const [expectedCheckoutDate, setExpectedCheckoutDate] = useState<Date>(addDays(new Date(), 1));
   const [medName, setMedName] = useState('');
   const [medTime, setMedTime] = useState('');
   const [medRecurrence, setMedRecurrence] = useState('once');
@@ -77,6 +97,8 @@ const HotelTab: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [recentCheckouts, setRecentCheckouts] = useState<HotelStay[]>([]);
+  const [uploadLabels, setUploadLabels] = useState<Record<string, string>>({});
+  const [pendingFiles, setPendingFiles] = useState<{ stayId: string; files: File[] } | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -93,7 +115,6 @@ const HotelTab: React.FC = () => {
         .select('*')
         .order('check_in', { ascending: false });
 
-      // Fetch recent checkouts (last 24h) for undo
       const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const { data: recentCO } = await supabase
         .from('hotel_stays')
@@ -102,21 +123,29 @@ const HotelTab: React.FC = () => {
         .gte('check_out', oneDayAgo)
         .order('check_out', { ascending: false });
 
-      const stayIds = (staysData || []).map((s: any) => s.id);
+      const activeIds = (staysData || []).map((s: any) => s.id);
       let medsData: any[] = [];
-      if (stayIds.length > 0) {
-        const { data, error: mErr } = await supabase
+      let mealsData: any[] = [];
+      if (activeIds.length > 0) {
+        const { data: md } = await supabase
           .from('hotel_medications')
           .select('*')
-          .in('hotel_stay_id', stayIds)
+          .in('hotel_stay_id', activeIds)
           .order('scheduled_time', { ascending: true });
-        if (mErr) throw mErr;
-        medsData = data || [];
+        medsData = md || [];
+
+        const { data: ml } = await supabase
+          .from('hotel_meals')
+          .select('*')
+          .in('hotel_stay_id', activeIds)
+          .order('date', { ascending: true });
+        mealsData = ml || [];
       }
 
       setStays((staysData || []).map((s: any) => ({ ...s, belonging_labels: s.belonging_labels || {} })));
       setAllStays((allData || []).map((s: any) => ({ ...s, belonging_labels: s.belonging_labels || {} })));
       setMedications(medsData);
+      setMeals(mealsData);
       setRecentCheckouts((recentCO || []).map((s: any) => ({ ...s, belonging_labels: s.belonging_labels || {} })));
     } catch (err) {
       console.error(err);
@@ -132,11 +161,11 @@ const HotelTab: React.FC = () => {
       .channel('hotel-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'hotel_stays' }, fetchData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'hotel_medications' }, fetchData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'hotel_meals' }, fetchData)
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [fetchData]);
 
-  // Medication alert system
   useEffect(() => {
     const checkAlerts = () => {
       const now = new Date();
@@ -197,13 +226,43 @@ const HotelTab: React.FC = () => {
         dog_name: client.name,
         tutor_name: client.tutorName,
         observations,
+        check_in: checkInDate.toISOString(),
+        expected_checkout: expectedCheckoutDate.toISOString(),
       });
       if (error) throw error;
+
+      // Pre-create meal records for the stay duration
+      const days = eachDayOfInterval({ start: checkInDate, end: expectedCheckoutDate });
+      const { data: newStay } = await supabase
+        .from('hotel_stays')
+        .select('id')
+        .eq('client_id', client.id)
+        .eq('active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (newStay) {
+        const mealRows = days.flatMap(day =>
+          MEAL_TYPES.map(mt => ({
+            hotel_stay_id: newStay.id,
+            date: format(day, 'yyyy-MM-dd'),
+            meal_type: mt.key,
+            ate: false,
+          }))
+        );
+        if (mealRows.length > 0) {
+          await supabase.from('hotel_meals').insert(mealRows);
+        }
+      }
+
       toast.success(`${client.name} entrou no hotel! 🏨`);
       setAddDialogOpen(false);
       setSelectedClientId('');
       setObservations('');
       setSearchFilter('');
+      setCheckInDate(new Date());
+      setExpectedCheckoutDate(addDays(new Date(), 1));
       fetchData();
     } catch (err) {
       console.error(err);
@@ -220,10 +279,7 @@ const HotelTab: React.FC = () => {
       if (error) throw error;
       toast.success(`${stay.dog_name} fez checkout! Fotos serão removidas em 24h.`, {
         duration: 8000,
-        action: {
-          label: 'Desfazer',
-          onClick: () => handleUndoCheckout(stay.id),
-        },
+        action: { label: 'Desfazer', onClick: () => handleUndoCheckout(stay.id) },
       });
       fetchData();
     } catch { toast.error('Erro ao fazer checkout'); }
@@ -231,35 +287,28 @@ const HotelTab: React.FC = () => {
 
   const handleUndoCheckout = async (stayId: string) => {
     try {
-      const { error } = await supabase
-        .from('hotel_stays')
-        .update({ active: true, check_out: null })
-        .eq('id', stayId);
+      const { error } = await supabase.from('hotel_stays').update({ active: true, check_out: null }).eq('id', stayId);
       if (error) throw error;
       toast.success('Checkout desfeito! 🔄');
       fetchData();
     } catch { toast.error('Erro ao desfazer checkout'); }
   };
 
-  const handleToggleAte = async (stay: HotelStay) => {
+  const handleToggleMeal = async (stayId: string, date: string, mealType: string) => {
+    const existing = meals.find(m => m.hotel_stay_id === stayId && m.date === date && m.meal_type === mealType);
     try {
-      const { error } = await supabase
-        .from('hotel_stays')
-        .update({ ate: !stay.ate, updated_at: new Date().toISOString() })
-        .eq('id', stay.id);
-      if (error) throw error;
-      setStays(prev => prev.map(s => s.id === stay.id ? { ...s, ate: !s.ate } : s));
-      toast.success(stay.ate ? `${stay.dog_name} marcado como não comeu` : `${stay.dog_name} comeu! ✅`);
-    } catch { toast.error('Erro ao atualizar'); }
+      if (existing) {
+        await supabase.from('hotel_meals').update({ ate: !existing.ate }).eq('id', existing.id);
+      } else {
+        await supabase.from('hotel_meals').insert({ hotel_stay_id: stayId, date, meal_type: mealType, ate: true });
+      }
+      fetchData();
+    } catch { toast.error('Erro ao atualizar refeição'); }
   };
 
   const handleUpdateObservations = async (stayId: string, obs: string) => {
     try {
-      const { error } = await supabase
-        .from('hotel_stays')
-        .update({ observations: obs, updated_at: new Date().toISOString() })
-        .eq('id', stayId);
-      if (error) throw error;
+      await supabase.from('hotel_stays').update({ observations: obs, updated_at: new Date().toISOString() }).eq('id', stayId);
       toast.success('Observação salva');
     } catch { toast.error('Erro ao salvar'); }
   };
@@ -267,72 +316,55 @@ const HotelTab: React.FC = () => {
   const handleAddMedication = async (stayId: string) => {
     if (!medName || !medTime) { toast.error('Preencha nome e horário'); return; }
     try {
-      const { error } = await supabase.from('hotel_medications').insert({
-        hotel_stay_id: stayId,
-        medication_name: medName,
-        scheduled_time: medTime,
-        recurrence: medRecurrence,
+      await supabase.from('hotel_medications').insert({
+        hotel_stay_id: stayId, medication_name: medName, scheduled_time: medTime, recurrence: medRecurrence,
       });
-      if (error) throw error;
       toast.success(`Remédio ${medName} adicionado`);
-      setMedName('');
-      setMedTime('');
-      setMedRecurrence('once');
-      setAddMedStayId(null);
+      setMedName(''); setMedTime(''); setMedRecurrence('once'); setAddMedStayId(null);
       fetchData();
     } catch { toast.error('Erro ao adicionar remédio'); }
   };
 
   const handleToggleMed = async (med: Medication) => {
     try {
-      const { error } = await supabase
-        .from('hotel_medications')
-        .update({
-          administered: !med.administered,
-          administered_at: !med.administered ? new Date().toISOString() : null,
-        })
-        .eq('id', med.id);
-      if (error) throw error;
+      await supabase.from('hotel_medications').update({
+        administered: !med.administered,
+        administered_at: !med.administered ? new Date().toISOString() : null,
+      }).eq('id', med.id);
       fetchData();
     } catch { toast.error('Erro ao atualizar'); }
   };
 
   const handleDeleteMed = async (medId: string) => {
-    try {
-      const { error } = await supabase.from('hotel_medications').delete().eq('id', medId);
-      if (error) throw error;
-      fetchData();
-    } catch { toast.error('Erro ao remover'); }
+    try { await supabase.from('hotel_medications').delete().eq('id', medId); fetchData(); } catch { toast.error('Erro ao remover'); }
   };
 
-  const handlePhotoUpload = async (stayId: string, files: FileList | null) => {
-    if (!files || files.length === 0) return;
+  const handlePhotoUploadWithLabels = async (stayId: string, files: File[], labels: Record<string, string>) => {
     setUploadingStayId(stayId);
     try {
       const stay = stays.find(s => s.id === stayId);
       const newPhotos = [...(stay?.belongings_photos || [])];
       const newLabels = { ...(stay?.belonging_labels || {}) };
-      for (const file of Array.from(files)) {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
         const ext = file.name.split('.').pop();
         const path = `${stayId}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
         const { error: upErr } = await supabase.storage.from('hotel-belongings').upload(path, file);
         if (upErr) throw upErr;
         const { data: urlData } = supabase.storage.from('hotel-belongings').getPublicUrl(path);
         newPhotos.push(urlData.publicUrl);
-        newLabels[urlData.publicUrl] = '';
+        newLabels[urlData.publicUrl] = labels[`file_${i}`] || '';
       }
-      const { error } = await supabase
-        .from('hotel_stays')
-        .update({ belongings_photos: newPhotos, belonging_labels: newLabels, updated_at: new Date().toISOString() })
-        .eq('id', stayId);
-      if (error) throw error;
-      toast.success('Foto(s) enviada(s)!');
+      await supabase.from('hotel_stays').update({ belongings_photos: newPhotos, belonging_labels: newLabels }).eq('id', stayId);
+      toast.success('Foto(s) enviada(s) com etiqueta!');
       fetchData();
     } catch (err) {
       console.error(err);
       toast.error('Erro ao enviar foto');
     } finally {
       setUploadingStayId(null);
+      setPendingFiles(null);
+      setUploadLabels({});
     }
   };
 
@@ -343,8 +375,8 @@ const HotelTab: React.FC = () => {
     const newLabels = { ...stay.belonging_labels };
     delete newLabels[photoUrl];
     try {
-      const { error } = await supabase.from('hotel_stays').update({ belongings_photos: newPhotos, belonging_labels: newLabels }).eq('id', stayId);
-      if (error) throw error;
+      await supabase.from('hotel_stays').update({ belongings_photos: newPhotos, belonging_labels: newLabels }).eq('id', stayId);
+      toast.success('Foto removida');
       fetchData();
     } catch { toast.error('Erro ao remover foto'); }
   };
@@ -365,13 +397,19 @@ const HotelTab: React.FC = () => {
     const header = `\`HOTEL ${dateStr}:\``;
     const lines = staysForSelectedDate.map((s, i) => `${i + 1}. ${s.dog_name.toUpperCase()}`);
     const footer = `\`TOTAL:${staysForSelectedDate.length}\``;
-    const text = `${header}\n\n${lines.join('\n\n')}\n\n${footer}`;
-    navigator.clipboard.writeText(text);
+    navigator.clipboard.writeText(`${header}\n\n${lines.join('\n\n')}\n\n${footer}`);
     toast.success('Lista copiada no formato WhatsApp!');
   };
 
   const getMedsForStay = (stayId: string) => medications.filter(m => m.hotel_stay_id === stayId);
+  const getMealsForStay = (stayId: string) => meals.filter(m => m.hotel_stay_id === stayId);
   const recurrenceLabel = (val: string) => RECURRENCE_OPTIONS.find(o => o.value === val)?.label || val;
+
+  const getStayDays = (stay: HotelStay): Date[] => {
+    const start = new Date(stay.check_in);
+    const end = stay.expected_checkout ? new Date(stay.expected_checkout) : new Date();
+    return eachDayOfInterval({ start: startOfDay(start), end: startOfDay(end) });
+  };
 
   return (
     <>
@@ -393,9 +431,7 @@ const HotelTab: React.FC = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Hotel size={16} className="text-primary" />
-              <span className="text-sm font-medium text-foreground">
-                {stays.length} dog(s) hospedado(s)
-              </span>
+              <span className="text-sm font-medium text-foreground">{stays.length} dog(s) hospedado(s)</span>
             </div>
             <Dialog open={addDialogOpen} onOpenChange={(open) => { setAddDialogOpen(open); if (!open) { setSearchFilter(''); setSelectedClientId(''); } }}>
               <DialogTrigger asChild>
@@ -408,62 +444,76 @@ const HotelTab: React.FC = () => {
                 <div className="space-y-4">
                   <div className="relative">
                     <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      placeholder="Buscar por nome, raça ou tutor..."
-                      value={searchFilter}
-                      onChange={e => setSearchFilter(e.target.value)}
-                      className="pl-9"
-                    />
+                    <Input placeholder="Buscar por nome, raça ou tutor..." value={searchFilter} onChange={e => setSearchFilter(e.target.value)} className="pl-9" />
                   </div>
-                  <div className="grid grid-cols-2 gap-2 max-h-[300px] overflow-y-auto pr-1">
+                  <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-1">
                     {filteredClients.map(c => (
                       <button
                         key={c.id}
                         onClick={() => setSelectedClientId(c.id)}
-                        className={`flex flex-col items-center p-3 rounded-xl border-2 transition-all text-center ${
-                          selectedClientId === c.id
-                            ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
-                            : 'border-border hover:border-primary/40 bg-card'
-                        }`}
+                        className={`flex flex-col items-center p-3 rounded-xl border-2 transition-all text-center ${selectedClientId === c.id ? 'border-primary bg-primary/5 ring-2 ring-primary/20' : 'border-border hover:border-primary/40 bg-card'}`}
                       >
                         {c.photo ? (
-                          <img src={c.photo} alt={c.name} className="w-14 h-14 rounded-full object-cover mb-2 border-2 border-border" />
+                          <img src={c.photo} alt={c.name} className="w-12 h-12 rounded-full object-cover mb-1 border-2 border-border" />
                         ) : (
-                          <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mb-2">
-                            <Dog size={24} className="text-muted-foreground" />
-                          </div>
+                          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-1"><Dog size={20} className="text-muted-foreground" /></div>
                         )}
                         <p className="font-semibold text-xs text-foreground truncate w-full">{c.name}</p>
-                        <p className="text-[10px] text-muted-foreground truncate w-full">{c.breed || 'Sem raça'}</p>
                         <p className="text-[10px] text-muted-foreground truncate w-full">{c.tutorName}</p>
                       </button>
                     ))}
-                    {filteredClients.length === 0 && (
-                      <p className="col-span-2 text-center text-sm text-muted-foreground py-8">Nenhum dog encontrado</p>
-                    )}
+                    {filteredClients.length === 0 && <p className="col-span-2 text-center text-sm text-muted-foreground py-8">Nenhum dog encontrado</p>}
                   </div>
+
+                  {/* Dates */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-medium text-foreground mb-1 block">Data Entrada</label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" className="w-full justify-start text-left text-sm h-9">
+                            <CalendarIcon size={14} className="mr-2" />
+                            {format(checkInDate, 'dd/MM/yyyy', { locale: ptBR })}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar mode="single" selected={checkInDate} onSelect={(d) => d && setCheckInDate(d)} className="pointer-events-auto" locale={ptBR} />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-foreground mb-1 block">Data Saída Prevista</label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" className="w-full justify-start text-left text-sm h-9">
+                            <CalendarIcon size={14} className="mr-2" />
+                            {format(expectedCheckoutDate, 'dd/MM/yyyy', { locale: ptBR })}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar mode="single" selected={expectedCheckoutDate} onSelect={(d) => d && setExpectedCheckoutDate(d)} className="pointer-events-auto" locale={ptBR} />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground text-center">
+                    {differenceInDays(expectedCheckoutDate, checkInDate) + 1} dia(s) · {(differenceInDays(expectedCheckoutDate, checkInDate) + 1) * 3} refeições
+                  </p>
+
                   <div>
                     <label className="text-sm font-medium text-foreground">Observações</label>
-                    <Textarea
-                      value={observations}
-                      onChange={e => setObservations(e.target.value)}
-                      placeholder="Alergias, comportamento, cuidados especiais..."
-                      className="mt-1"
-                      rows={3}
-                    />
+                    <Textarea value={observations} onChange={e => setObservations(e.target.value)} placeholder="Alergias, comportamento, cuidados especiais..." className="mt-1" rows={2} />
                   </div>
                 </div>
                 <DialogFooter>
-                  <DialogClose asChild>
-                    <Button variant="outline">Cancelar</Button>
-                  </DialogClose>
+                  <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
                   <Button onClick={handleAddStay} disabled={!selectedClientId}>Confirmar Check-in</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
           </div>
 
-          {/* Recent checkouts with undo */}
+          {/* Recent checkouts */}
           {recentCheckouts.length > 0 && (
             <div className="bg-muted/30 border border-border rounded-xl p-3 space-y-2">
               <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1">
@@ -475,16 +525,9 @@ const HotelTab: React.FC = () => {
                     <div className="flex items-center gap-2 min-w-0">
                       <Dog size={12} className="text-muted-foreground shrink-0" />
                       <span className="font-medium truncate">{stay.dog_name}</span>
-                      <span className="text-muted-foreground text-[10px]">
-                        {stay.check_out && format(new Date(stay.check_out), 'HH:mm')}
-                      </span>
+                      <span className="text-muted-foreground text-[10px]">{stay.check_out && format(new Date(stay.check_out), 'HH:mm')}</span>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-6 text-[10px] gap-1 px-2"
-                      onClick={() => handleUndoCheckout(stay.id)}
-                    >
+                    <Button variant="outline" size="sm" className="h-6 text-[10px] gap-1 px-2" onClick={() => handleUndoCheckout(stay.id)}>
                       <Undo2 size={10} /> Desfazer
                     </Button>
                   </div>
@@ -505,37 +548,42 @@ const HotelTab: React.FC = () => {
               {stays.map(stay => {
                 const isExpanded = expandedStay === stay.id;
                 const stayMeds = getMedsForStay(stay.id);
+                const stayMeals = getMealsForStay(stay.id);
                 const pendingMeds = stayMeds.filter(m => !m.administered).length;
                 const client = clients.find(c => c.id === stay.client_id);
+                const stayDays = getStayDays(stay);
+                const totalDays = stayDays.length;
+                const daysElapsed = Math.max(1, differenceInDays(new Date(), new Date(stay.check_in)) + 1);
+                const mealsEaten = stayMeals.filter(m => m.ate).length;
+                const totalMealsExpected = totalDays * 3;
 
                 return (
                   <div key={stay.id} className="bg-card border border-border rounded-xl overflow-hidden shadow-soft">
-                    <div
-                      className="flex items-center justify-between p-3 cursor-pointer"
-                      onClick={() => setExpandedStay(isExpanded ? null : stay.id)}
-                    >
+                    <div className="flex items-center justify-between p-3 cursor-pointer" onClick={() => setExpandedStay(isExpanded ? null : stay.id)}>
                       <div className="flex items-center gap-3 min-w-0">
                         {client?.photo ? (
                           <img src={client.photo} alt={stay.dog_name} className="w-10 h-10 rounded-full object-cover border border-border shrink-0" />
                         ) : (
-                          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">
-                            <Dog size={18} className="text-muted-foreground" />
-                          </div>
+                          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0"><Dog size={18} className="text-muted-foreground" /></div>
                         )}
                         <div className="min-w-0">
                           <p className="font-semibold text-sm text-foreground truncate">{stay.dog_name}</p>
                           <p className="text-[10px] text-muted-foreground truncate">
-                            {stay.tutor_name} · {format(new Date(stay.check_in), 'dd/MM HH:mm')}
+                            {stay.tutor_name} · {format(new Date(stay.check_in), 'dd/MM')}
+                            {stay.expected_checkout && ` → ${format(new Date(stay.expected_checkout), 'dd/MM')}`}
+                            {client?.breed && ` · ${client.breed}`}
                           </p>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <span className="text-[9px] text-muted-foreground">{daysElapsed}/{totalDays}d</span>
+                            <span className="text-[9px] text-muted-foreground">·</span>
+                            <Utensils size={9} className="text-muted-foreground" />
+                            <span className={cn("text-[9px] font-medium", mealsEaten < totalMealsExpected * 0.5 ? "text-destructive" : "text-muted-foreground")}>
+                              {mealsEaten}/{totalMealsExpected}
+                            </span>
+                          </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <div onClick={e => { e.stopPropagation(); handleToggleAte(stay); }} className="cursor-pointer">
-                          <Badge variant={stay.ate ? 'default' : 'outline'} className={`text-[9px] px-1.5 py-0 ${stay.ate ? 'bg-green-600 hover:bg-green-700' : ''}`}>
-                            <Utensils size={10} className="mr-0.5" />
-                            {stay.ate ? 'Comeu' : 'Não comeu'}
-                          </Badge>
-                        </div>
                         {pendingMeds > 0 && (
                           <Badge variant="destructive" className="text-[9px] px-1.5 py-0">
                             <Pill size={10} className="mr-0.5" />{pendingMeds}
@@ -547,42 +595,96 @@ const HotelTab: React.FC = () => {
 
                     {isExpanded && (
                       <div className="border-t border-border p-3 space-y-4">
+                        {/* Extra info */}
+                        {client && (
+                          <div className="grid grid-cols-2 gap-2 text-[10px] text-muted-foreground bg-muted/30 rounded-lg p-2">
+                            {client.petSize && <span>Porte: <b className="text-foreground">{client.petSize}</b></span>}
+                            {client.weight && <span>Peso: <b className="text-foreground">{client.weight}kg</b></span>}
+                            {client.gender && <span>Gênero: <b className="text-foreground">{client.gender}</b></span>}
+                            {client.castrated !== undefined && <span>Castrado: <b className="text-foreground">{client.castrated ? 'Sim' : 'Não'}</b></span>}
+                            {client.tutorPhone && <span>Tel: <b className="text-foreground">{client.tutorPhone}</b></span>}
+                          </div>
+                        )}
+
+                        {/* Meals Grid */}
+                        <div>
+                          <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-2">
+                            <Utensils size={12} /> Refeições ({mealsEaten}/{totalMealsExpected})
+                          </label>
+                          <div className="overflow-x-auto">
+                            <div className="inline-grid gap-1" style={{ gridTemplateColumns: `80px repeat(${Math.min(stayDays.length, 7)}, 1fr)` }}>
+                              {/* Header */}
+                              <div></div>
+                              {stayDays.slice(0, 7).map((day, i) => (
+                                <div key={i} className={cn("text-[9px] text-center font-medium px-1 py-0.5 rounded", isSameDay(day, new Date()) ? "bg-primary/10 text-primary" : "text-muted-foreground")}>
+                                  {format(day, 'dd/MM')}
+                                </div>
+                              ))}
+                              {/* Meal rows */}
+                              {MEAL_TYPES.map(mt => (
+                                <React.Fragment key={mt.key}>
+                                  <div className="text-[10px] text-muted-foreground flex items-center">{mt.icon} {mt.label.split(' ')[1]}</div>
+                                  {stayDays.slice(0, 7).map((day, i) => {
+                                    const dateStr = format(day, 'yyyy-MM-dd');
+                                    const meal = stayMeals.find(m => m.date === dateStr && m.meal_type === mt.key);
+                                    const ate = meal?.ate || false;
+                                    return (
+                                      <button
+                                        key={i}
+                                        onClick={() => handleToggleMeal(stay.id, dateStr, mt.key)}
+                                        className={cn(
+                                          "w-8 h-8 mx-auto rounded-lg border text-[10px] font-bold transition-all",
+                                          ate ? "bg-green-100 dark:bg-green-900/30 border-green-400 text-green-700 dark:text-green-400" : "bg-card border-border text-muted-foreground hover:border-primary/40"
+                                        )}
+                                      >
+                                        {ate ? '✓' : '·'}
+                                      </button>
+                                    );
+                                  })}
+                                </React.Fragment>
+                              ))}
+                            </div>
+                            {stayDays.length > 7 && (
+                              <p className="text-[9px] text-muted-foreground mt-1">Mostrando 7 de {stayDays.length} dias</p>
+                            )}
+                          </div>
+                        </div>
+
                         {/* Observations */}
                         <div>
                           <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-1">
                             <FileText size={12} /> Observações
                           </label>
-                          <Textarea
-                            defaultValue={stay.observations}
-                            onBlur={e => handleUpdateObservations(stay.id, e.target.value)}
-                            placeholder="Adicione observações..."
-                            rows={2}
-                            className="text-xs"
-                          />
+                          <Textarea defaultValue={stay.observations} onBlur={e => handleUpdateObservations(stay.id, e.target.value)} placeholder="Adicione observações..." rows={2} className="text-xs" />
                         </div>
 
-                        {/* Inline photos (small preview) */}
+                        {/* Inline photos */}
                         <div>
                           <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-1">
                             <Camera size={12} /> Pertences ({stay.belongings_photos?.length || 0})
                           </label>
                           <div className="flex flex-wrap gap-2">
-                            {stay.belongings_photos?.slice(0, 4).map((url, i) => (
-                              <button
-                                key={i}
-                                onClick={() => setLightboxUrl(url)}
-                                className="relative w-12 h-12 rounded-lg overflow-hidden border border-border hover:ring-2 hover:ring-primary/50 transition-all"
-                              >
-                                <img src={url} alt={stay.belonging_labels?.[url] || `Pertence ${i + 1}`} className="w-full h-full object-cover" />
-                              </button>
-                            ))}
-                            {(stay.belongings_photos?.length || 0) > 4 && (
-                              <div className="w-12 h-12 rounded-lg border border-border flex items-center justify-center text-xs text-muted-foreground bg-muted/50">
-                                +{stay.belongings_photos.length - 4}
+                            {stay.belongings_photos?.map((url, i) => (
+                              <div key={i} className="relative group">
+                                <button onClick={() => setLightboxUrl(url)} className="relative w-12 h-12 rounded-lg overflow-hidden border border-border hover:ring-2 hover:ring-primary/50 transition-all">
+                                  <img src={url} alt={stay.belonging_labels?.[url] || `Pertence ${i + 1}`} className="w-full h-full object-cover" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeletePhoto(stay.id, url)}
+                                  className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-destructive text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <X size={8} />
+                                </button>
+                                {stay.belonging_labels?.[url] && (
+                                  <p className="text-[7px] text-center text-muted-foreground truncate w-12 mt-0.5">{stay.belonging_labels[url]}</p>
+                                )}
                               </div>
-                            )}
+                            ))}
                             <button
-                              onClick={() => { setUploadingStayId(stay.id); fileInputRef.current?.click(); }}
+                              onClick={() => {
+                                setUploadingStayId(stay.id);
+                                fileInputRef.current?.click();
+                              }}
                               disabled={uploadingStayId === stay.id}
                               className="w-12 h-12 rounded-lg border-2 border-dashed border-border flex items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors"
                             >
@@ -595,25 +697,62 @@ const HotelTab: React.FC = () => {
                             accept="image/*"
                             multiple
                             className="hidden"
-                            onChange={e => { if (uploadingStayId) handlePhotoUpload(uploadingStayId, e.target.files); e.target.value = ''; }}
+                            onChange={e => {
+                              if (uploadingStayId && e.target.files && e.target.files.length > 0) {
+                                const filesArr = Array.from(e.target.files);
+                                setPendingFiles({ stayId: uploadingStayId, files: filesArr });
+                                setUploadLabels({});
+                              }
+                              e.target.value = '';
+                            }}
                           />
                         </div>
+
+                        {/* Label dialog for pending uploads */}
+                        {pendingFiles && pendingFiles.stayId === stay.id && (
+                          <div className="bg-muted/50 border border-border rounded-lg p-3 space-y-2">
+                            <p className="text-xs font-medium text-foreground">Etiquetas para {pendingFiles.files.length} foto(s):</p>
+                            {pendingFiles.files.map((file, i) => (
+                              <div key={i} className="flex items-center gap-2">
+                                <img src={URL.createObjectURL(file)} alt="" className="w-10 h-10 rounded object-cover border border-border" />
+                                <Input
+                                  placeholder={`Ex: Coleira azul`}
+                                  value={uploadLabels[`file_${i}`] || ''}
+                                  onChange={e => setUploadLabels(prev => ({ ...prev, [`file_${i}`]: e.target.value }))}
+                                  className="h-7 text-xs flex-1"
+                                />
+                              </div>
+                            ))}
+                            <div className="flex gap-2">
+                              <Button size="sm" className="flex-1 h-7 text-xs" onClick={() => handlePhotoUploadWithLabels(pendingFiles.stayId, pendingFiles.files, uploadLabels)}>
+                                <Check size={12} className="mr-1" /> Enviar
+                              </Button>
+                              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => { setPendingFiles(null); setUploadLabels({}); setUploadingStayId(null); }}>
+                                <X size={12} />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
 
                         {/* Medications */}
                         <div>
                           <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-2">
                             <Pill size={12} /> Remédios
+                            {stayMeds.length > 0 && stay.expected_checkout && (
+                              <span className="text-[9px] text-muted-foreground ml-1">
+                                ({differenceInDays(new Date(stay.expected_checkout), new Date())} dias restantes)
+                              </span>
+                            )}
                           </label>
                           {stayMeds.length > 0 && (
                             <div className="space-y-1.5 mb-2">
                               {stayMeds.map(med => (
                                 <div
                                   key={med.id}
-                                  className={`flex items-center justify-between p-2 rounded-lg border text-xs ${
-                                    med.administered
-                                      ? 'bg-muted/50 border-border line-through text-muted-foreground'
-                                      : 'bg-card border-border'
-                                  }`}
+                                  className={cn(
+                                    "flex items-center justify-between p-2 rounded-lg border text-xs",
+                                    med.administered ? 'bg-muted/50 border-border line-through text-muted-foreground' : 'bg-card border-border'
+                                  )}
                                 >
                                   <div className="flex items-center gap-2">
                                     <Checkbox checked={med.administered} onCheckedChange={() => handleToggleMed(med)} />
@@ -638,28 +777,17 @@ const HotelTab: React.FC = () => {
                               </div>
                               <div className="flex gap-2 items-center">
                                 <Select value={medRecurrence} onValueChange={setMedRecurrence}>
-                                  <SelectTrigger className="h-8 text-xs flex-1">
-                                    <SelectValue placeholder="Recorrência" />
-                                  </SelectTrigger>
+                                  <SelectTrigger className="h-8 text-xs flex-1"><SelectValue placeholder="Recorrência" /></SelectTrigger>
                                   <SelectContent>
-                                    {RECURRENCE_OPTIONS.map(o => (
-                                      <SelectItem key={o.value} value={o.value} className="text-xs">{o.label}</SelectItem>
-                                    ))}
+                                    {RECURRENCE_OPTIONS.map(o => <SelectItem key={o.value} value={o.value} className="text-xs">{o.label}</SelectItem>)}
                                   </SelectContent>
                                 </Select>
-                                <Button size="sm" className="h-8" onClick={() => handleAddMedication(stay.id)}>
-                                  <Check size={14} />
-                                </Button>
-                                <Button size="sm" variant="ghost" className="h-8" onClick={() => setAddMedStayId(null)}>
-                                  <X size={14} />
-                                </Button>
+                                <Button size="sm" className="h-8" onClick={() => handleAddMedication(stay.id)}><Check size={14} /></Button>
+                                <Button size="sm" variant="ghost" className="h-8" onClick={() => setAddMedStayId(null)}><X size={14} /></Button>
                               </div>
                             </div>
                           ) : (
-                            <Button
-                              variant="outline" size="sm" className="gap-1 text-xs w-full"
-                              onClick={() => { setAddMedStayId(stay.id); setMedName(''); setMedTime(''); setMedRecurrence('once'); }}
-                            >
+                            <Button variant="outline" size="sm" className="gap-1 text-xs w-full" onClick={() => { setAddMedStayId(stay.id); setMedName(''); setMedTime(''); setMedRecurrence('once'); }}>
                               <Plus size={12} /> Adicionar Remédio
                             </Button>
                           )}
@@ -701,10 +829,7 @@ const HotelTab: React.FC = () => {
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                       {photos.map((url, i) => (
                         <div key={i} className="space-y-1.5 group">
-                          <button
-                            onClick={() => setLightboxUrl(url)}
-                            className="relative w-full aspect-square rounded-xl overflow-hidden border-2 border-border hover:border-primary/50 transition-all shadow-sm hover:shadow-md"
-                          >
+                          <button onClick={() => setLightboxUrl(url)} className="relative w-full aspect-square rounded-xl overflow-hidden border-2 border-border hover:border-primary/50 transition-all shadow-sm hover:shadow-md">
                             <img src={url} alt={labels[url] || `Pertence ${i + 1}`} className="w-full h-full object-cover" />
                             <div className="absolute inset-0 bg-black/0 hover:bg-black/20 transition-colors flex items-center justify-center">
                               <Eye size={24} className="text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
@@ -715,19 +840,11 @@ const HotelTab: React.FC = () => {
                             <Input
                               placeholder="Ex: Coleira azul"
                               value={labels[url] || ''}
-                              onChange={e => {
-                                const val = e.target.value;
-                                setStays(prev => prev.map(s => s.id === stay.id ? { ...s, belonging_labels: { ...s.belonging_labels, [url]: val } } : s));
-                              }}
+                              onChange={e => setStays(prev => prev.map(s => s.id === stay.id ? { ...s, belonging_labels: { ...s.belonging_labels, [url]: e.target.value } } : s))}
                               onBlur={e => handleUpdateLabel(stay.id, url, e.target.value)}
                               className="h-6 text-[10px] px-1.5"
                             />
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6 shrink-0"
-                              onClick={() => handleDeletePhoto(stay.id, url)}
-                            >
+                            <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => handleDeletePhoto(stay.id, url)}>
                               <Trash2 size={10} className="text-destructive" />
                             </Button>
                           </div>
@@ -761,25 +878,15 @@ const HotelTab: React.FC = () => {
                   mode="single"
                   selected={selectedDate}
                   onSelect={setSelectedDate}
-                  modifiers={{
-                    hasStay: (date) => datesWithStays.has(format(date, 'yyyy-MM-dd')),
-                  }}
-                  modifiersStyles={{
-                    hasStay: {
-                      backgroundColor: 'hsl(24, 95%, 60%)',
-                      color: 'white',
-                      borderRadius: '50%',
-                    },
-                  }}
+                  modifiers={{ hasStay: (date) => datesWithStays.has(format(date, 'yyyy-MM-dd')) }}
+                  modifiersStyles={{ hasStay: { backgroundColor: 'hsl(24, 95%, 60%)', color: 'white', borderRadius: '50%' } }}
                 />
               </div>
               <div className="flex-1 min-w-0">
                 {selectedDate ? (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-semibold text-foreground">
-                        {format(selectedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                      </h4>
+                      <h4 className="text-sm font-semibold text-foreground">{format(selectedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</h4>
                       {staysForSelectedDate.length > 0 && (
                         <Button variant="outline" size="sm" className="gap-1.5" onClick={copySelectedDateHotel}>
                           <Copy size={14} /> Copiar
@@ -821,17 +928,10 @@ const HotelTab: React.FC = () => {
       {lightboxUrl && (
         <Dialog open={!!lightboxUrl} onOpenChange={() => setLightboxUrl(null)}>
           <DialogContent className="max-w-[95vw] max-h-[95vh] p-2 bg-black/95 border-none">
-            <button
-              onClick={() => setLightboxUrl(null)}
-              className="absolute top-3 right-3 z-50 p-2 rounded-full bg-white/20 hover:bg-white/40 text-white transition-colors"
-            >
+            <button onClick={() => setLightboxUrl(null)} className="absolute top-3 right-3 z-50 p-2 rounded-full bg-white/20 hover:bg-white/40 text-white transition-colors">
               <X size={20} />
             </button>
-            <img
-              src={lightboxUrl}
-              alt="Pertence"
-              className="w-full h-full max-h-[90vh] object-contain rounded-lg"
-            />
+            <img src={lightboxUrl} alt="Pertence" className="w-full h-full max-h-[90vh] object-contain rounded-lg" />
           </DialogContent>
         </Dialog>
       )}
