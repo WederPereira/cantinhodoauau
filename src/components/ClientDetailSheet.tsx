@@ -218,7 +218,7 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
               {fillingField === 'weight' && (
                 <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 animate-in fade-in">
                   <p className="text-[10px] text-primary font-medium mb-1">⚖️ Peso do Pet</p>
-                  <InlineEditField icon={<Dog size={14} />} label="" value="" onSave={(v) => { inlineUpdate('weight', parseFloat(v) || undefined); }} placeholder="Ex: 12.5" autoFocus />
+                  <InlineEditField icon={<Dog size={14} />} label="" value="" onSave={(v) => { inlineUpdate('weight', parseFloat(v) || undefined); }} placeholder="Ex: 12.5" />
                 </div>
               )}
               {fillingField === 'petSize' && (
