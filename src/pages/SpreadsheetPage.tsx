@@ -14,6 +14,7 @@ import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { QRCodeSVG } from 'qrcode.react';
 import { downloadCardForClient } from '@/components/qrcode/DogIdCard';
+import * as XLSX from 'xlsx';
 
 const VACCINE_KEYS = Object.keys(VACCINE_LABELS) as Array<keyof Vaccines>;
 
@@ -92,17 +93,11 @@ const SpreadsheetPage: React.FC = () => {
     const rows = clients.map(client => {
       const fleaInfo = client.fleaHistory?.length > 0 ? client.fleaHistory[0].brand : '';
       return [
-        client.tutorName || '',
-        client.tutorPhone || '',
-        client.tutorEmail || '',
-        client.tutorCpf || '',
-        client.tutorAddress || '',
-        client.tutorNeighborhood || '',
-        client.name,
-        client.breed || '',
+        client.tutorName || '', client.tutorPhone || '', client.tutorEmail || '',
+        client.tutorCpf || '', client.tutorAddress || '', client.tutorNeighborhood || '',
+        client.name, client.breed || '',
         client.weight ? client.weight.toString().replace('.', ',') : '',
-        client.petSize || '',
-        client.gender || '',
+        client.petSize || '', client.gender || '',
         client.castrated ? 'Sim' : 'Não',
         client.birthDate ? format(new Date(client.birthDate), 'dd/MM/yyyy') : '',
         client.entryDate ? format(new Date(client.entryDate), 'dd/MM/yyyy') : '',
@@ -137,108 +132,134 @@ const SpreadsheetPage: React.FC = () => {
     return isNaN(d.getTime()) ? undefined : d;
   };
 
+  const processImportRows = (rows: Record<string, string>[]) => {
+    if (rows.length === 0) { toast.error('Nenhum dado encontrado no arquivo'); return; }
+
+    const findCol = (row: Record<string, string>, ...terms: string[]): string => {
+      const keys = Object.keys(row);
+      for (const term of terms) {
+        const found = keys.find(k => k.toLowerCase().includes(term.toLowerCase()));
+        if (found) return row[found] || '';
+      }
+      return '';
+    };
+
+    let imported = 0, skipped = 0;
+    for (const row of rows) {
+      const name = findCol(row, 'dog', 'nome do dog', 'nome do pet', 'nome');
+      if (!name) continue;
+      const tutorName = findCol(row, 'tutor');
+      const isDuplicate = clients.some(c =>
+        c.name.toLowerCase() === name.toLowerCase() &&
+        (!tutorName || !c.tutorName || c.tutorName.toLowerCase() === tutorName.toLowerCase())
+      );
+      if (isDuplicate) { skipped++; continue; }
+
+      const phone = findCol(row, 'telefone', 'fone', 'celular');
+      const email = findCol(row, 'email');
+      const cpf = findCol(row, 'cpf');
+      const address = findCol(row, 'endereço', 'endereco');
+      const neighborhood = findCol(row, 'bairro');
+      const gender = findCol(row, 'gênero', 'genero', 'sexo');
+      const castratedVal = findCol(row, 'castrad');
+      const castrated = castratedVal.toLowerCase() === 'sim';
+      const birthStr = findCol(row, 'nascimento', 'aniversário', 'aniversario');
+      const entryStr = findCol(row, 'entrada');
+      const breed = findCol(row, 'raça', 'raca');
+      const petSizeStr = findCol(row, 'porte');
+      const petSize = (['Pequeno', 'Médio', 'Grande', 'Gigante'].includes(petSizeStr) ? petSizeStr : undefined) as PetSize | undefined;
+      const weightStr = findCol(row, 'peso');
+      const weight = weightStr ? parseFloat(weightStr.replace(',', '.')) : undefined;
+
+      const existingTutor = tutorName ? clients.find(c => c.tutorName.toLowerCase() === tutorName.toLowerCase()) : null;
+
+      const newClient: any = {
+        name,
+        tutorName: tutorName || '',
+        tutorPhone: phone || existingTutor?.tutorPhone || '',
+        tutorEmail: email || existingTutor?.tutorEmail || '',
+        tutorCpf: cpf || existingTutor?.tutorCpf || '',
+        tutorAddress: address || existingTutor?.tutorAddress || '',
+        tutorNeighborhood: neighborhood || existingTutor?.tutorNeighborhood || '',
+        breed: breed || '',
+        petSize,
+        weight,
+        gender: (gender === 'Macho' || gender === 'Fêmea') ? gender as PetGender : undefined,
+        castrated,
+        birthDate: parseDate(birthStr),
+        entryDate: parseDate(entryStr),
+      };
+
+      const vaccines: any = { ...DEFAULT_VACCINES };
+      VACCINE_KEYS.forEach(k => {
+        const val = findCol(row, VACCINE_LABELS[k].toLowerCase());
+        if (val && val !== 'Não') {
+          const cleanVal = val.replace(/\s*\(.*\)/, '');
+          const d = parseDate(cleanVal);
+          if (d) vaccines[k] = d.toISOString();
+        }
+      });
+      newClient.vaccines = vaccines;
+
+      importClients([newClient]);
+      imported++;
+    }
+
+    if (imported === 0) {
+      toast.error(skipped > 0 ? `${skipped} duplicado(s) ignorado(s). Nenhum novo.` : 'Nenhum cliente válido encontrado.');
+    } else {
+      toast.success(skipped > 0 ? `${imported} importado(s), ${skipped} duplicado(s) ignorado(s).` : `${imported} cliente(s) importado(s)!`);
+    }
+  };
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const text = event.target?.result as string;
-        const lines = text.split('\n').filter(line => line.trim());
-        if (lines.length < 2) { toast.error('Arquivo CSV vazio ou inválido'); return; }
-        const header = lines[0].toLowerCase();
-        const separator = header.includes(';') ? ';' : ',';
-        const headers = header.split(separator).map(h => h.trim());
+    const ext = file.name.split('.').pop()?.toLowerCase();
 
-        const findCol = (...terms: string[]) => headers.findIndex(h => terms.some(t => h.includes(t)));
-        const nameIndex = findCol('dog', 'nome do dog', 'nome');
-        const tutorIndex = findCol('tutor');
-        const breedIndex = findCol('raça', 'raca');
-        const petSizeIndex = findCol('porte');
-        const phoneIndex = findCol('telefone', 'fone', 'celular');
-        const emailIndex = findCol('email');
-        const cpfIndex = findCol('cpf');
-        const addressIndex = findCol('endereço', 'endereco');
-        const neighborhoodIndex = findCol('bairro');
-        const genderIndex = findCol('gênero', 'genero', 'sexo');
-        const castratedIndex = findCol('castrad');
-        const birthIndex = findCol('nascimento', 'aniversário', 'aniversario');
-        const entryIndex = findCol('entrada');
-        const weightIndex = findCol('peso');
-
-        if (nameIndex === -1) { toast.error('Coluna "Nome/Dog" não encontrada no CSV'); return; }
-
-        let imported = 0, skipped = 0;
-        for (let i = 1; i < lines.length; i++) {
-          const values = lines[i].split(separator).map(v => v.trim().replace(/^["']|["']$/g, ''));
-          const name = values[nameIndex];
-          if (!name) continue;
-          const tutorName = tutorIndex !== -1 ? values[tutorIndex] : '';
-          const isDuplicate = clients.some(c =>
-            c.name.toLowerCase() === name.toLowerCase() &&
-            (!tutorName || !c.tutorName || c.tutorName.toLowerCase() === tutorName.toLowerCase())
-          );
-          if (isDuplicate) { skipped++; continue; }
-
-          const phone = phoneIndex !== -1 ? values[phoneIndex] : '';
-          const email = emailIndex !== -1 ? values[emailIndex] : '';
-          const cpf = cpfIndex !== -1 ? values[cpfIndex] : '';
-          const address = addressIndex !== -1 ? values[addressIndex] : '';
-          const neighborhood = neighborhoodIndex !== -1 ? values[neighborhoodIndex] : '';
-          const gender = genderIndex !== -1 ? values[genderIndex] : '';
-          const castrated = castratedIndex !== -1 ? values[castratedIndex]?.toLowerCase() === 'sim' : false;
-          const birthStr = birthIndex !== -1 ? values[birthIndex] : '';
-          const entryStr = entryIndex !== -1 ? values[entryIndex] : '';
-          const breed = breedIndex !== -1 ? values[breedIndex] : '';
-          const petSize = petSizeIndex !== -1 ? values[petSizeIndex] as PetSize : undefined;
-          const weightStr = weightIndex !== -1 ? values[weightIndex] : '';
-          const weight = weightStr ? parseFloat(weightStr.replace(',', '.')) : undefined;
-
-          const existingTutor = tutorName ? clients.find(c => c.tutorName.toLowerCase() === tutorName.toLowerCase()) : null;
-
-          const newClient: any = {
-            name,
-            tutorName: tutorName || '',
-            tutorPhone: phone || existingTutor?.tutorPhone || '',
-            tutorEmail: email || existingTutor?.tutorEmail || '',
-            tutorCpf: cpf || existingTutor?.tutorCpf || '',
-            tutorAddress: address || existingTutor?.tutorAddress || '',
-            tutorNeighborhood: neighborhood || existingTutor?.tutorNeighborhood || '',
-            breed: breed || '',
-            petSize,
-            weight,
-            gender: (gender === 'Macho' || gender === 'Fêmea') ? gender as PetGender : undefined,
-            castrated,
-            birthDate: parseDate(birthStr),
-            entryDate: parseDate(entryStr),
-          };
-
-          const vaccines: any = { ...DEFAULT_VACCINES };
-          VACCINE_KEYS.forEach(k => {
-            const idx = headers.findIndex(h => h.includes(VACCINE_LABELS[k].toLowerCase()));
-            if (idx !== -1 && values[idx] && values[idx] !== 'Não') {
-              const cleanVal = values[idx].replace(/\s*\(.*\)/, '');
-              const d = parseDate(cleanVal);
-              if (d) vaccines[k] = d.toISOString();
-            }
+    if (ext === 'csv' || ext === 'txt') {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const text = event.target?.result as string;
+          const lines = text.split('\n').filter(line => line.trim());
+          if (lines.length < 2) { toast.error('Arquivo vazio ou inválido'); return; }
+          const separator = lines[0].includes(';') ? ';' : ',';
+          const headers = lines[0].split(separator).map(h => h.trim().replace(/^["']|["']$/g, ''));
+          const rows = lines.slice(1).map(line => {
+            const values = line.split(separator).map(v => v.trim().replace(/^["']|["']$/g, ''));
+            const row: Record<string, string> = {};
+            headers.forEach((h, i) => { row[h] = values[i] || ''; });
+            return row;
           });
-          newClient.vaccines = vaccines;
-
-          importClients([newClient]);
-          imported++;
+          processImportRows(rows);
+        } catch { toast.error('Erro ao processar arquivo'); }
+      };
+      reader.readAsText(file);
+    } else if (ext === 'xlsx' || ext === 'xls' || ext === 'ods') {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const data = event.target?.result;
+          const workbook = XLSX.read(data, { type: 'array' });
+          const sheetName = workbook.SheetNames[0];
+          const sheet = workbook.Sheets[sheetName];
+          const rows = XLSX.utils.sheet_to_json<Record<string, string>>(sheet, { defval: '' });
+          processImportRows(rows);
+        } catch (err) {
+          console.error(err);
+          toast.error('Erro ao processar planilha');
         }
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      toast.error('Formato não suportado. Use CSV, XLSX, XLS ou ODS.');
+    }
 
-        if (imported === 0) {
-          toast.error(skipped > 0 ? `${skipped} duplicado(s) ignorado(s). Nenhum novo.` : 'Nenhum cliente válido encontrado.');
-        } else {
-          toast.success(skipped > 0 ? `${imported} importado(s), ${skipped} duplicado(s) ignorado(s).` : `${imported} cliente(s) importado(s)!`);
-        }
-      } catch { toast.error('Erro ao processar arquivo CSV'); }
-    };
-    reader.readAsText(file);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  // ... rest same as before
   const startEdit = (client: Client) => {
     setEditingId(client.id);
     setEditForm({
@@ -357,9 +378,9 @@ const SpreadsheetPage: React.FC = () => {
               <QrCode size={16} />
               {generatingAll ? 'Gerando...' : `Gerar Todos QR (${clients.filter(c => !generatedQrIds.has(c.id)).length})`}
             </Button>
-            <input type="file" ref={fileInputRef} accept=".csv" onChange={handleFileUpload} className="hidden" />
+            <input type="file" ref={fileInputRef} accept=".csv,.xlsx,.xls,.ods,.txt" onChange={handleFileUpload} className="hidden" />
             <Button variant="outline" size="sm" className="gap-2" onClick={() => fileInputRef.current?.click()}>
-              <Upload size={16} /> Importar CSV
+              <Upload size={16} /> Importar
             </Button>
             <Button variant="outline" size="sm" className="gap-2" onClick={exportToCSV}>
               <Download size={16} /> Exportar CSV
