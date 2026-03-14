@@ -212,7 +212,7 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
               {fillingField === 'tutorAddress' && (
                 <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 animate-in fade-in">
                   <p className="text-[10px] text-primary font-medium mb-1">📍 Endereço do Tutor</p>
-                  <InlineEditField icon={<MapPin size={14} />} label="" value="" onSave={(v) => { inlineUpdate('tutorAddress', v); }} placeholder="Rua, número, complemento" autoFocus />
+                  <InlineEditField icon={<MapPin size={14} />} label="" value="" onSave={(v) => { inlineUpdate('tutorAddress', v); }} placeholder="Rua, número, complemento" />
                 </div>
               )}
               {fillingField === 'weight' && (
