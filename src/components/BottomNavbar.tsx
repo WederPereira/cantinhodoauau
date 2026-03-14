@@ -1,12 +1,11 @@
 import React from 'react';
 import { NavLink as RouterNavLink, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Users, Bath, BarChart3, FileSpreadsheet } from 'lucide-react';
+import { LayoutDashboard, Users, BarChart3, FileSpreadsheet } from 'lucide-react';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Home' },
   { to: '/clients', icon: Users, label: 'Clientes' },
-  { to: '/banho', icon: Bath, label: 'Banho' },
   { to: '/reports', icon: BarChart3, label: 'Relatórios' },
   { to: '/spreadsheet', icon: FileSpreadsheet, label: 'Planilha' },
 ];

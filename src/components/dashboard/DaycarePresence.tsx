@@ -2,11 +2,11 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Utensils, UtensilsCrossed, Dog, RefreshCw, Calendar } from 'lucide-react';
+import { Utensils, UtensilsCrossed, Dog, RefreshCw, Calendar, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface TodayEntry {
   id: string;
@@ -153,24 +153,26 @@ const DaycarePresence: React.FC = () => {
         <div className="text-center py-12 text-muted-foreground">
           <Dog size={48} className="mx-auto mb-3 opacity-30" />
           <p className="text-sm font-medium">Nenhum dog deu entrada hoje</p>
-          <p className="text-xs mt-1">Leia um QR Code para registrar a entrada</p>
+          <p className="text-xs mt-1">Use o botão de Ler Entrada no Dashboard para registrar</p>
         </div>
       ) : (
         <div className="space-y-2">
           {entries.map((entry, idx) => (
-            <div
+            <button
               key={entry.id}
-              className={`flex items-center justify-between p-3 rounded-xl border transition-colors ${
+              onClick={() => toggleAte(entry)}
+              className={cn(
+                "w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all active:scale-[0.98]",
                 entry.ate
-                  ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-900'
-                  : 'bg-card border-border'
-              }`}
+                  ? 'bg-green-50 border-green-300 dark:bg-green-950/30 dark:border-green-800'
+                  : 'bg-card border-border hover:border-orange-300'
+              )}
             >
               <div className="flex items-center gap-3 min-w-0">
                 <span className="text-xs font-mono text-muted-foreground w-5 text-right shrink-0">
                   {idx + 1}.
                 </span>
-                <div className="min-w-0">
+                <div className="min-w-0 text-left">
                   <p className="font-semibold text-sm text-foreground truncate">{entry.dog}</p>
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] text-muted-foreground truncate">{entry.tutor}</span>
@@ -180,17 +182,19 @@ const DaycarePresence: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="text-[10px] text-muted-foreground">
-                  {entry.ate ? 'Comeu' : 'Não comeu'}
-                </span>
-                <Checkbox
-                  checked={entry.ate}
-                  onCheckedChange={() => toggleAte(entry)}
-                  className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
-                />
+              <div className={cn(
+                "flex items-center gap-2 shrink-0 px-3 py-1.5 rounded-lg font-semibold text-xs transition-all",
+                entry.ate
+                  ? "bg-green-200 text-green-800 dark:bg-green-900 dark:text-green-300"
+                  : "bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300"
+              )}>
+                {entry.ate ? (
+                  <><Utensils size={14} /> Comeu</>
+                ) : (
+                  <><UtensilsCrossed size={14} /> Não comeu</>
+                )}
               </div>
-            </div>
+            </button>
           ))}
         </div>
       )}
