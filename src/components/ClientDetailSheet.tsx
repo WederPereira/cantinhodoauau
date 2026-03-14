@@ -206,7 +206,7 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
               {fillingField === 'tutorEmail' && (
                 <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 animate-in fade-in">
                   <p className="text-[10px] text-primary font-medium mb-1">📧 Email do Tutor</p>
-                  <InlineEditField icon={<Mail size={14} />} label="" value="" onSave={(v) => { inlineUpdate('tutorEmail', v); }} placeholder="email@email.com" type="email" autoFocus />
+                  <InlineEditField icon={<Mail size={14} />} label="" value="" onSave={(v) => { inlineUpdate('tutorEmail', v); }} placeholder="email@email.com" type="email" />
                 </div>
               )}
               {fillingField === 'tutorAddress' && (
