@@ -200,7 +200,7 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
               {fillingField === 'tutorPhone' && (
                 <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 animate-in fade-in">
                   <p className="text-[10px] text-primary font-medium mb-1">📞 Telefone do Tutor</p>
-                  <InlineEditField icon={<Phone size={14} />} label="" value="" onSave={(v) => { inlineUpdate('tutorPhone', v); }} placeholder="(11) 99999-9999" autoFocus />
+                  <InlineEditField icon={<Phone size={14} />} label="" value="" onSave={(v) => { inlineUpdate('tutorPhone', v); }} placeholder="(11) 99999-9999" />
                 </div>
               )}
               {fillingField === 'tutorEmail' && (
