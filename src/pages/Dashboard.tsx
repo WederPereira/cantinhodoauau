@@ -7,12 +7,13 @@ import { BirthdaySection } from '@/components/dashboard/BirthdaySection';
 import { HealthControlTab } from '@/components/dashboard/HealthControlTab';
 import DaycareTab from '@/components/dashboard/DaycareTab';
 import HotelTab from '@/components/dashboard/HotelTab';
+import HotelAnalyticsTab from '@/components/dashboard/HotelAnalyticsTab';
 import HotelMedicationAlerts from '@/components/dashboard/HotelMedicationAlerts';
 import HotelFeedingAlerts from '@/components/dashboard/HotelFeedingAlerts';
 import HotelCheckoutAlerts from '@/components/dashboard/HotelCheckoutAlerts';
 import QrReader from '@/components/qrcode/QrReader';
 import { Client, getHealthAlerts } from '@/types/client';
-import { Users, LayoutDashboard, HeartPulse, PawPrint, Hotel, Camera } from 'lucide-react';
+import { Users, LayoutDashboard, HeartPulse, PawPrint, Hotel, Camera, BarChart3 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -60,8 +61,9 @@ const Dashboard: React.FC = () => {
           <div className="flex items-center gap-2">
             <Dialog open={qrOpen} onOpenChange={setQrOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" size="icon" className="h-10 w-10">
-                  <Camera size={20} />
+                <Button size="lg" className="gap-2 h-12 px-5 text-base font-bold shadow-lg bg-primary hover:bg-primary/90 animate-pulse hover:animate-none">
+                  <Camera size={22} />
+                  Ler Entrada
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
@@ -76,22 +78,26 @@ const Dashboard: React.FC = () => {
         </div>
 
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="w-full grid grid-cols-4">
+          <TabsList className="w-full grid grid-cols-5">
             <TabsTrigger value="overview" className="gap-1 text-xs sm:text-sm">
               <LayoutDashboard size={14} />
-              <span>Geral</span>
+              <span className="hidden sm:inline">Geral</span>
             </TabsTrigger>
             <TabsTrigger value="daycare" className="gap-1 text-xs sm:text-sm">
               <PawPrint size={14} />
-              Creche
+              <span className="hidden sm:inline">Creche</span>
             </TabsTrigger>
             <TabsTrigger value="hotel" className="gap-1 text-xs sm:text-sm">
               <Hotel size={14} />
-              Hotel
+              <span className="hidden sm:inline">Hotel</span>
+            </TabsTrigger>
+            <TabsTrigger value="hotel-analytics" className="gap-1 text-xs sm:text-sm">
+              <BarChart3 size={14} />
+              <span className="hidden sm:inline">Análise</span>
             </TabsTrigger>
             <TabsTrigger value="health" className="gap-1 text-xs sm:text-sm">
               <HeartPulse size={14} />
-              Saúde
+              <span className="hidden sm:inline">Saúde</span>
             </TabsTrigger>
           </TabsList>
 
@@ -121,6 +127,10 @@ const Dashboard: React.FC = () => {
 
           <TabsContent value="hotel" className="mt-4">
             <HotelTab />
+          </TabsContent>
+
+          <TabsContent value="hotel-analytics" className="mt-4">
+            <HotelAnalyticsTab />
           </TabsContent>
 
           <TabsContent value="health" className="mt-4">
