@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
-import { Client, VaccineType, DEFAULT_VACCINES, Vaccines, FleaRecord, VaccineRecord, PetGender } from '@/types/client';
+import { Client, VaccineType, DEFAULT_VACCINES, Vaccines, FleaRecord, VaccineRecord, PetGender, ClientPlan, ClientStatus } from '@/types/client';
 import { mockClients } from '@/data/mockClients';
 
 const STORAGE_KEY = 'pet-grooming-clients';
@@ -24,6 +24,9 @@ interface ClientContextType {
     birthDate?: Date;
     gender?: PetGender;
     castrated?: boolean;
+    plano?: ClientPlan;
+    valor?: number;
+    status?: ClientStatus;
   }) => void;
   importClients: (newClients: Array<{
     tutorName?: string;
@@ -126,6 +129,9 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     birthDate?: Date;
     gender?: PetGender;
     castrated?: boolean;
+    plano?: ClientPlan;
+    valor?: number;
+    status?: ClientStatus;
   }) => {
     const newClient: Client = {
       id: crypto.randomUUID(),
@@ -146,6 +152,9 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       vaccines: data.vaccines || { ...DEFAULT_VACCINES },
       vaccineHistory: [],
       fleaHistory: [],
+      plano: data.plano,
+      valor: data.valor,
+      status: data.status,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -168,6 +177,9 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     birthDate?: Date;
     weight?: number;
     vaccines?: Vaccines;
+    plano?: ClientPlan;
+    valor?: number;
+    status?: ClientStatus;
   }>) => {
     const clientsToAdd: Client[] = newClients.map(c => ({
       id: crypto.randomUUID(),
@@ -189,6 +201,9 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       vaccines: c.vaccines || { ...DEFAULT_VACCINES },
       vaccineHistory: [],
       fleaHistory: [],
+      plano: c.plano,
+      valor: c.valor,
+      status: c.status,
       createdAt: new Date(),
       updatedAt: new Date(),
     }));
