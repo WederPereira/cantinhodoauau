@@ -177,6 +177,9 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     birthDate?: Date;
     weight?: number;
     vaccines?: Vaccines;
+    plano?: ClientPlan;
+    valor?: number;
+    status?: ClientStatus;
   }>) => {
     const clientsToAdd: Client[] = newClients.map(c => ({
       id: crypto.randomUUID(),
