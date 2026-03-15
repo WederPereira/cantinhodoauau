@@ -201,6 +201,9 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       vaccines: c.vaccines || { ...DEFAULT_VACCINES },
       vaccineHistory: [],
       fleaHistory: [],
+      plano: c.plano,
+      valor: c.valor,
+      status: c.status,
       createdAt: new Date(),
       updatedAt: new Date(),
     }));
