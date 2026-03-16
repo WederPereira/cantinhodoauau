@@ -1,21 +1,17 @@
 import React from 'react';
 import { NavLink as RouterNavLink, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Users, BarChart3, FileSpreadsheet, UsersRound, LogOut } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { LayoutDashboard, Users, BarChart3, FileSpreadsheet } from 'lucide-react';
+
+const navItems = [
+  { to: '/', icon: LayoutDashboard, label: 'Home' },
+  { to: '/clients', icon: Users, label: 'Clientes' },
+  { to: '/reports', icon: BarChart3, label: 'Relatórios' },
+  { to: '/spreadsheet', icon: FileSpreadsheet, label: 'Planilha' },
+];
 
 export const BottomNavbar: React.FC = () => {
   const location = useLocation();
-  const { isAdmin, profile, signOut } = useAuth();
-
-  const navItems = [
-    { to: '/', icon: LayoutDashboard, label: 'Home', show: true },
-    { to: '/clients', icon: Users, label: 'Clientes', show: true },
-    { to: '/reports', icon: BarChart3, label: 'Relatórios', show: true },
-    { to: '/spreadsheet', icon: FileSpreadsheet, label: 'Planilha', show: isAdmin },
-    { to: '/team', icon: UsersRound, label: 'Equipe', show: isAdmin },
-  ].filter(i => i.show);
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-t border-border safe-area-bottom lg:hidden">
