@@ -1,5 +1,5 @@
 import React from 'react';
-import { Client, formatDate, getProfileCompleteness } from '@/types/client';
+import { Client, formatDate } from '@/types/client';
 import { cn } from '@/lib/utils';
 import { Calendar, ChevronRight } from 'lucide-react';
 
@@ -10,26 +10,12 @@ interface ClientCardProps {
   compact?: boolean;
 }
 
-const completenessStyles = {
-  complete: 'border-l-4 border-l-[hsl(142,70%,45%)]',
-  partial: 'border-l-4 border-l-[hsl(45,93%,47%)]',
-  incomplete: 'border-l-4 border-l-destructive',
-};
-
-const completenessLabelStyles = {
-  complete: 'bg-[hsl(142,70%,45%)]/10 text-[hsl(142,70%,40%)]',
-  partial: 'bg-[hsl(45,93%,47%)]/10 text-[hsl(45,93%,37%)]',
-  incomplete: 'bg-destructive/10 text-destructive',
-};
-
 export const ClientCard: React.FC<ClientCardProps> = ({
   client,
   onClick,
   className,
   compact = false,
 }) => {
-  const { percent, level } = getProfileCompleteness(client);
-
   if (compact) {
     return (
       <div
@@ -38,7 +24,6 @@ export const ClientCard: React.FC<ClientCardProps> = ({
           'bg-card border border-border rounded-lg p-3 shadow-soft',
           'transition-all duration-200 hover:shadow-medium hover:border-primary/30',
           'cursor-pointer group flex items-center gap-3',
-          completenessStyles[level],
           className
         )}
       >
@@ -57,9 +42,6 @@ export const ClientCard: React.FC<ClientCardProps> = ({
           <p className="font-medium text-foreground truncate text-sm">{client.name}</p>
           {client.breed && <p className="text-xs text-muted-foreground truncate">{client.breed}</p>}
         </div>
-        <span className={cn("text-[9px] font-bold px-1.5 py-0.5 rounded-full", completenessLabelStyles[level])}>
-          {percent}%
-        </span>
         <ChevronRight size={16} className="text-muted-foreground group-hover:text-primary transition-colors" />
       </div>
     );
@@ -72,7 +54,6 @@ export const ClientCard: React.FC<ClientCardProps> = ({
         'bg-card border border-border rounded-xl p-4 shadow-soft',
         'transition-all duration-200 hover:shadow-medium hover:border-primary/30 hover:-translate-y-0.5',
         'cursor-pointer group',
-        completenessStyles[level],
         className
       )}
     >
@@ -99,14 +80,9 @@ export const ClientCard: React.FC<ClientCardProps> = ({
             )}
           </div>
         </div>
-        <div className="flex flex-col items-end gap-1">
-          {client.petSize && (
-            <span className="text-[10px] bg-accent/10 text-accent px-1.5 py-0.5 rounded font-medium">{client.petSize}</span>
-          )}
-          <span className={cn("text-[9px] font-bold px-1.5 py-0.5 rounded-full", completenessLabelStyles[level])}>
-            {percent}%
-          </span>
-        </div>
+        {client.petSize && (
+          <span className="text-[10px] bg-accent/10 text-accent px-1.5 py-0.5 rounded font-medium">{client.petSize}</span>
+        )}
       </div>
 
       <div className="flex items-center justify-between pt-2.5 border-t border-border/60">
