@@ -123,7 +123,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logAction = async (action: string, entityType: string, entityId?: string, details?: Record<string, unknown>) => {
     if (!user) return;
-    await supabase.from('action_logs').insert({
+    await (supabase.from('action_logs') as any).insert({
       user_id: user.id,
       user_name: profile?.full_name || user.email || '',
       action,
