@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
@@ -98,7 +99,6 @@ const HotelTab: React.FC = () => {
   const [recentCheckouts, setRecentCheckouts] = useState<HotelStay[]>([]);
   const [uploadLabels, setUploadLabels] = useState<Record<string, string>>({});
   const [pendingFiles, setPendingFiles] = useState<{ stayId: string; files: File[] } | null>(null);
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -179,9 +179,13 @@ const HotelTab: React.FC = () => {
           alertedMeds.current.add(med.id);
           const stay = stays.find(s => s.id === med.hotel_stay_id);
           toast.warning(`⏰ Em ${diff} min: ${med.medication_name} para ${stay?.dog_name || 'dog'}`, { duration: 15000, icon: <Bell size={18} /> });
+          if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification(`Remédio em ${diff} min!`, { body: `${med.medication_name} - ${stay?.dog_name}`, icon: '/favicon.ico' });
+          }
         }
       });
     };
+    if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
     checkAlerts();
     const interval = setInterval(checkAlerts, 30000);
     return () => clearInterval(interval);
@@ -227,6 +231,7 @@ const HotelTab: React.FC = () => {
       });
       if (error) throw error;
 
+      // Pre-create meal records for the stay duration
       const days = eachDayOfInterval({ start: checkInDate, end: expectedCheckoutDate });
       const { data: newStay } = await supabase
         .from('hotel_stays')
@@ -272,7 +277,7 @@ const HotelTab: React.FC = () => {
         .update({ active: false, check_out: new Date().toISOString() })
         .eq('id', stay.id);
       if (error) throw error;
-      toast.success(`${stay.dog_name} fez checkout!`, {
+      toast.success(`${stay.dog_name} fez checkout! Fotos serão removidas em 24h.`, {
         duration: 8000,
         action: { label: 'Desfazer', onClick: () => handleUndoCheckout(stay.id) },
       });
@@ -287,19 +292,6 @@ const HotelTab: React.FC = () => {
       toast.success('Checkout desfeito! 🔄');
       fetchData();
     } catch { toast.error('Erro ao desfazer checkout'); }
-  };
-
-  const handleDeleteStay = async (stayId: string) => {
-    try {
-      // Delete related meals and medications first
-      await supabase.from('hotel_meals').delete().eq('hotel_stay_id', stayId);
-      await supabase.from('hotel_medications').delete().eq('hotel_stay_id', stayId);
-      const { error } = await supabase.from('hotel_stays').delete().eq('id', stayId);
-      if (error) throw error;
-      toast.success('Check-in apagado!');
-      setDeleteConfirmId(null);
-      fetchData();
-    } catch { toast.error('Erro ao apagar check-in'); }
   };
 
   const handleToggleMeal = async (stayId: string, date: string, mealType: string) => {
@@ -459,10 +451,7 @@ const HotelTab: React.FC = () => {
                       <button
                         key={c.id}
                         onClick={() => setSelectedClientId(c.id)}
-                        className={cn(
-                          "flex flex-col items-center p-3 rounded-xl border-2 transition-all text-center",
-                          selectedClientId === c.id ? 'border-primary bg-primary/5 ring-2 ring-primary/20' : 'border-border hover:border-primary/40 bg-card'
-                        )}
+                        className={`flex flex-col items-center p-3 rounded-xl border-2 transition-all text-center ${selectedClientId === c.id ? 'border-primary bg-primary/5 ring-2 ring-primary/20' : 'border-border hover:border-primary/40 bg-card'}`}
                       >
                         {c.photo ? (
                           <img src={c.photo} alt={c.name} className="w-12 h-12 rounded-full object-cover mb-1 border-2 border-border" />
@@ -476,6 +465,7 @@ const HotelTab: React.FC = () => {
                     {filteredClients.length === 0 && <p className="col-span-2 text-center text-sm text-muted-foreground py-8">Nenhum dog encontrado</p>}
                   </div>
 
+                  {/* Dates */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-medium text-foreground mb-1 block">Data Entrada</label>
@@ -523,6 +513,7 @@ const HotelTab: React.FC = () => {
             </Dialog>
           </div>
 
+          {/* Recent checkouts */}
           {recentCheckouts.length > 0 && (
             <div className="bg-muted/30 border border-border rounded-xl p-3 space-y-2">
               <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1">
@@ -545,6 +536,7 @@ const HotelTab: React.FC = () => {
             </div>
           )}
 
+          {/* Stay list */}
           {stays.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Hotel size={48} className="mx-auto mb-3 opacity-30" />
@@ -564,38 +556,34 @@ const HotelTab: React.FC = () => {
                 const daysElapsed = Math.max(1, differenceInDays(new Date(), new Date(stay.check_in)) + 1);
                 const mealsEaten = stayMeals.filter(m => m.ate).length;
                 const totalMealsExpected = totalDays * 3;
-                const mealPercent = totalMealsExpected > 0 ? Math.round((mealsEaten / totalMealsExpected) * 100) : 0;
 
                 return (
                   <div key={stay.id} className="bg-card border border-border rounded-xl overflow-hidden shadow-soft">
-                    {/* Collapsed header */}
                     <div className="flex items-center justify-between p-3 cursor-pointer" onClick={() => setExpandedStay(isExpanded ? null : stay.id)}>
                       <div className="flex items-center gap-3 min-w-0">
                         {client?.photo ? (
-                          <img src={client.photo} alt={stay.dog_name} className="w-11 h-11 rounded-full object-cover border-2 border-border shrink-0" />
+                          <img src={client.photo} alt={stay.dog_name} className="w-10 h-10 rounded-full object-cover border border-border shrink-0" />
                         ) : (
-                          <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center shrink-0"><Dog size={20} className="text-primary" /></div>
+                          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0"><Dog size={18} className="text-muted-foreground" /></div>
                         )}
                         <div className="min-w-0">
-                          <p className="font-bold text-sm text-foreground truncate">{stay.dog_name}</p>
+                          <p className="font-semibold text-sm text-foreground truncate">{stay.dog_name}</p>
                           <p className="text-[10px] text-muted-foreground truncate">
-                            👤 {stay.tutor_name} · 📅 {format(new Date(stay.check_in), 'dd/MM')} → {stay.expected_checkout ? format(new Date(stay.expected_checkout), 'dd/MM') : '?'}
+                            {stay.tutor_name} · {format(new Date(stay.check_in), 'dd/MM')}
+                            {stay.expected_checkout && ` → ${format(new Date(stay.expected_checkout), 'dd/MM')}`}
+                            {client?.breed && ` · ${client.breed}`}
                           </p>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            {client?.breed && <Badge variant="secondary" className="text-[8px] px-1 py-0">{client.breed}</Badge>}
-                            {client?.petSize && <Badge variant="outline" className="text-[8px] px-1 py-0">{client.petSize}</Badge>}
+                          <div className="flex items-center gap-1 mt-0.5">
                             <span className="text-[9px] text-muted-foreground">{daysElapsed}/{totalDays}d</span>
+                            <span className="text-[9px] text-muted-foreground">·</span>
+                            <Utensils size={9} className="text-muted-foreground" />
+                            <span className={cn("text-[9px] font-medium", mealsEaten < totalMealsExpected * 0.5 ? "text-destructive" : "text-muted-foreground")}>
+                              {mealsEaten}/{totalMealsExpected}
+                            </span>
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        {/* Meal progress mini */}
-                        <div className="flex flex-col items-center">
-                          <div className="w-10 h-1.5 bg-muted rounded-full overflow-hidden">
-                            <div className={cn("h-full rounded-full", mealPercent >= 70 ? "bg-green-500" : mealPercent >= 40 ? "bg-amber-500" : "bg-destructive")} style={{ width: `${mealPercent}%` }} />
-                          </div>
-                          <span className="text-[8px] text-muted-foreground">{mealsEaten}/{totalMealsExpected}</span>
-                        </div>
                         {pendingMeds > 0 && (
                           <Badge variant="destructive" className="text-[9px] px-1.5 py-0">
                             <Pill size={10} className="mr-0.5" />{pendingMeds}
@@ -609,37 +597,33 @@ const HotelTab: React.FC = () => {
                       <div className="border-t border-border p-3 space-y-4">
                         {/* Extra info */}
                         {client && (
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[10px] text-muted-foreground bg-muted/30 rounded-lg p-2.5">
-                            {client.petSize && <span>📏 Porte: <b className="text-foreground">{client.petSize}</b></span>}
-                            {client.weight && <span>⚖️ Peso: <b className="text-foreground">{client.weight}kg</b></span>}
-                            {client.gender && <span>{client.gender === 'Fêmea' ? '♀' : '♂'} Gênero: <b className="text-foreground">{client.gender}</b></span>}
-                            {client.castrated !== undefined && <span>✂️ Castrado: <b className="text-foreground">{client.castrated ? 'Sim' : 'Não'}</b></span>}
-                            {client.tutorPhone && <span>📞 Tel: <b className="text-foreground">{client.tutorPhone}</b></span>}
-                            {stay.observations && <span className="col-span-2 sm:col-span-3">📝 {stay.observations}</span>}
+                          <div className="grid grid-cols-2 gap-2 text-[10px] text-muted-foreground bg-muted/30 rounded-lg p-2">
+                            {client.petSize && <span>Porte: <b className="text-foreground">{client.petSize}</b></span>}
+                            {client.weight && <span>Peso: <b className="text-foreground">{client.weight}kg</b></span>}
+                            {client.gender && <span>Gênero: <b className="text-foreground">{client.gender}</b></span>}
+                            {client.castrated !== undefined && <span>Castrado: <b className="text-foreground">{client.castrated ? 'Sim' : 'Não'}</b></span>}
+                            {client.tutorPhone && <span>Tel: <b className="text-foreground">{client.tutorPhone}</b></span>}
                           </div>
                         )}
 
-                        {/* Meals - Interactive Grid */}
+                        {/* Meals Grid */}
                         <div>
-                          <label className="text-xs font-semibold text-foreground flex items-center gap-1 mb-2">
-                            <Utensils size={14} className="text-green-600" /> Refeições
-                            <span className="text-[10px] text-muted-foreground font-normal ml-1">({mealsEaten}/{totalMealsExpected})</span>
-                            <div className="flex-1 mx-2 h-1.5 bg-muted rounded-full overflow-hidden">
-                              <div className={cn("h-full rounded-full transition-all", mealPercent >= 70 ? "bg-green-500" : mealPercent >= 40 ? "bg-amber-500" : "bg-destructive")} style={{ width: `${mealPercent}%` }} />
-                            </div>
-                            <span className="text-[10px] font-bold">{mealPercent}%</span>
+                          <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-2">
+                            <Utensils size={12} /> Refeições ({mealsEaten}/{totalMealsExpected})
                           </label>
-                          <div className="overflow-x-auto -mx-1 px-1">
-                            <div className="inline-grid gap-1" style={{ gridTemplateColumns: `70px repeat(${Math.min(stayDays.length, 7)}, minmax(44px, 1fr))` }}>
-                              <div />
+                          <div className="overflow-x-auto">
+                            <div className="inline-grid gap-1" style={{ gridTemplateColumns: `80px repeat(${Math.min(stayDays.length, 7)}, 1fr)` }}>
+                              {/* Header */}
+                              <div></div>
                               {stayDays.slice(0, 7).map((day, i) => (
-                                <div key={i} className={cn("text-[9px] text-center font-medium px-1 py-0.5 rounded", isSameDay(day, new Date()) ? "bg-primary/10 text-primary font-bold" : "text-muted-foreground")}>
-                                  {format(day, 'EEE', { locale: ptBR })}<br />{format(day, 'dd/MM')}
+                                <div key={i} className={cn("text-[9px] text-center font-medium px-1 py-0.5 rounded", isSameDay(day, new Date()) ? "bg-primary/10 text-primary" : "text-muted-foreground")}>
+                                  {format(day, 'dd/MM')}
                                 </div>
                               ))}
+                              {/* Meal rows */}
                               {MEAL_TYPES.map(mt => (
                                 <React.Fragment key={mt.key}>
-                                  <div className="text-[10px] text-muted-foreground flex items-center gap-1">{mt.icon} <span className="hidden sm:inline">{mt.label.split(' ')[1]}</span></div>
+                                  <div className="text-[10px] text-muted-foreground flex items-center">{mt.icon} {mt.label.split(' ')[1]}</div>
                                   {stayDays.slice(0, 7).map((day, i) => {
                                     const dateStr = format(day, 'yyyy-MM-dd');
                                     const meal = stayMeals.find(m => m.date === dateStr && m.meal_type === mt.key);
@@ -649,10 +633,8 @@ const HotelTab: React.FC = () => {
                                         key={i}
                                         onClick={() => handleToggleMeal(stay.id, dateStr, mt.key)}
                                         className={cn(
-                                          "w-full h-9 rounded-lg border-2 text-sm font-bold transition-all active:scale-95",
-                                          ate
-                                            ? "bg-green-100 dark:bg-green-900/40 border-green-400 dark:border-green-700 text-green-700 dark:text-green-400"
-                                            : "bg-card border-border text-muted-foreground hover:border-primary/40 hover:bg-primary/5"
+                                          "w-8 h-8 mx-auto rounded-lg border text-[10px] font-bold transition-all",
+                                          ate ? "bg-green-100 dark:bg-green-900/30 border-green-400 text-green-700 dark:text-green-400" : "bg-card border-border text-muted-foreground hover:border-primary/40"
                                         )}
                                       >
                                         {ate ? '✓' : '·'}
@@ -684,26 +666,29 @@ const HotelTab: React.FC = () => {
                           <div className="flex flex-wrap gap-2">
                             {stay.belongings_photos?.map((url, i) => (
                               <div key={i} className="relative group">
-                                <button onClick={() => setLightboxUrl(url)} className="relative w-14 h-14 rounded-lg overflow-hidden border border-border hover:ring-2 hover:ring-primary/50 transition-all">
+                                <button onClick={() => setLightboxUrl(url)} className="relative w-12 h-12 rounded-lg overflow-hidden border border-border hover:ring-2 hover:ring-primary/50 transition-all">
                                   <img src={url} alt={stay.belonging_labels?.[url] || `Pertence ${i + 1}`} className="w-full h-full object-cover" />
                                 </button>
                                 <button
                                   onClick={() => handleDeletePhoto(stay.id, url)}
-                                  className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-destructive text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+                                  className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-destructive text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                                 >
-                                  <X size={10} />
+                                  <X size={8} />
                                 </button>
                                 {stay.belonging_labels?.[url] && (
-                                  <p className="text-[7px] text-center text-muted-foreground truncate w-14 mt-0.5">{stay.belonging_labels[url]}</p>
+                                  <p className="text-[7px] text-center text-muted-foreground truncate w-12 mt-0.5">{stay.belonging_labels[url]}</p>
                                 )}
                               </div>
                             ))}
                             <button
-                              onClick={() => { setUploadingStayId(stay.id); fileInputRef.current?.click(); }}
+                              onClick={() => {
+                                setUploadingStayId(stay.id);
+                                fileInputRef.current?.click();
+                              }}
                               disabled={uploadingStayId === stay.id}
-                              className="w-14 h-14 rounded-lg border-2 border-dashed border-border flex items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+                              className="w-12 h-12 rounded-lg border-2 border-dashed border-border flex items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors"
                             >
-                              {uploadingStayId === stay.id ? <span className="animate-spin text-xs">⏳</span> : <Plus size={16} />}
+                              {uploadingStayId === stay.id ? <span className="animate-spin text-xs">⏳</span> : <Plus size={14} />}
                             </button>
                           </div>
                           <input
@@ -723,6 +708,7 @@ const HotelTab: React.FC = () => {
                           />
                         </div>
 
+                        {/* Label dialog for pending uploads */}
                         {pendingFiles && pendingFiles.stayId === stay.id && (
                           <div className="bg-muted/50 border border-border rounded-lg p-3 space-y-2">
                             <p className="text-xs font-medium text-foreground">Etiquetas para {pendingFiles.files.length} foto(s):</p>
@@ -730,7 +716,7 @@ const HotelTab: React.FC = () => {
                               <div key={i} className="flex items-center gap-2">
                                 <img src={URL.createObjectURL(file)} alt="" className="w-10 h-10 rounded object-cover border border-border" />
                                 <Input
-                                  placeholder="Ex: Coleira azul"
+                                  placeholder={`Ex: Coleira azul`}
                                   value={uploadLabels[`file_${i}`] || ''}
                                   onChange={e => setUploadLabels(prev => ({ ...prev, [`file_${i}`]: e.target.value }))}
                                   className="h-7 text-xs flex-1"
@@ -750,11 +736,11 @@ const HotelTab: React.FC = () => {
 
                         {/* Medications */}
                         <div>
-                          <label className="text-xs font-semibold text-foreground flex items-center gap-1 mb-2">
-                            <Pill size={14} className="text-purple-600" /> Remédios
+                          <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-2">
+                            <Pill size={12} /> Remédios
                             {stayMeds.length > 0 && stay.expected_checkout && (
-                              <span className="text-[9px] text-muted-foreground ml-1 font-normal">
-                                ({Math.max(0, differenceInDays(new Date(stay.expected_checkout), new Date()))} dias restantes)
+                              <span className="text-[9px] text-muted-foreground ml-1">
+                                ({differenceInDays(new Date(stay.expected_checkout), new Date())} dias restantes)
                               </span>
                             )}
                           </label>
@@ -764,40 +750,27 @@ const HotelTab: React.FC = () => {
                                 <div
                                   key={med.id}
                                   className={cn(
-                                    "flex items-center justify-between p-2.5 rounded-lg border-2 text-xs transition-all",
-                                    med.administered ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900' : 'bg-card border-border hover:border-primary/30'
+                                    "flex items-center justify-between p-2 rounded-lg border text-xs",
+                                    med.administered ? 'bg-muted/50 border-border line-through text-muted-foreground' : 'bg-card border-border'
                                   )}
                                 >
-                                  <div className="flex items-center gap-2 min-w-0">
-                                    <button
-                                      onClick={() => handleToggleMed(med)}
-                                      className={cn(
-                                        "w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all",
-                                        med.administered ? "bg-green-500 border-green-500 text-white" : "border-muted-foreground/30 hover:border-primary"
-                                      )}
-                                    >
-                                      {med.administered && <Check size={12} />}
-                                    </button>
-                                    <Clock size={12} className="text-muted-foreground shrink-0" />
+                                  <div className="flex items-center gap-2">
+                                    <Checkbox checked={med.administered} onCheckedChange={() => handleToggleMed(med)} />
+                                    <Clock size={12} className="text-muted-foreground" />
                                     <span className="font-mono">{med.scheduled_time.slice(0, 5)}</span>
-                                    <span className="font-medium truncate">{med.medication_name}</span>
-                                    <Badge variant="outline" className="text-[8px] px-1 py-0 shrink-0">{recurrenceLabel(med.recurrence)}</Badge>
+                                    <span className="font-medium">{med.medication_name}</span>
+                                    <Badge variant="outline" className="text-[8px] px-1 py-0">{recurrenceLabel(med.recurrence)}</Badge>
                                   </div>
-                                  <div className="flex items-center gap-1 shrink-0">
-                                    {med.administered && med.administered_at && (
-                                      <span className="text-[9px] text-green-600">✓ {format(new Date(med.administered_at), 'HH:mm')}</span>
-                                    )}
-                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDeleteMed(med.id)}>
-                                      <Trash2 size={12} className="text-destructive" />
-                                    </Button>
-                                  </div>
+                                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDeleteMed(med.id)}>
+                                    <Trash2 size={12} className="text-destructive" />
+                                  </Button>
                                 </div>
                               ))}
                             </div>
                           )}
 
                           {addMedStayId === stay.id ? (
-                            <div className="space-y-2 bg-muted/30 rounded-lg p-2.5">
+                            <div className="space-y-2">
                               <div className="flex gap-2">
                                 <Input placeholder="Nome do remédio" value={medName} onChange={e => setMedName(e.target.value)} className="text-xs h-8 flex-1" />
                                 <Input type="time" value={medTime} onChange={e => setMedTime(e.target.value)} className="text-xs h-8 w-24" />
@@ -820,26 +793,10 @@ const HotelTab: React.FC = () => {
                           )}
                         </div>
 
-                        {/* Actions */}
-                        <div className="flex gap-2">
-                          <Button variant="destructive" size="sm" className="flex-1 gap-1" onClick={() => handleCheckout(stay)}>
-                            <Check size={14} /> Checkout
-                          </Button>
-                          {deleteConfirmId === stay.id ? (
-                            <div className="flex gap-1">
-                              <Button variant="destructive" size="sm" className="gap-1 text-[10px]" onClick={() => handleDeleteStay(stay.id)}>
-                                Confirmar
-                              </Button>
-                              <Button variant="outline" size="sm" className="text-[10px]" onClick={() => setDeleteConfirmId(null)}>
-                                Cancelar
-                              </Button>
-                            </div>
-                          ) : (
-                            <Button variant="outline" size="sm" className="gap-1 text-destructive hover:bg-destructive/10" onClick={() => setDeleteConfirmId(stay.id)}>
-                              <Trash2 size={14} /> Apagar
-                            </Button>
-                          )}
-                        </div>
+                        {/* Checkout */}
+                        <Button variant="destructive" size="sm" className="w-full gap-1" onClick={() => handleCheckout(stay)}>
+                          <AlertTriangle size={14} /> Fazer Checkout
+                        </Button>
                       </div>
                     )}
                   </div>
