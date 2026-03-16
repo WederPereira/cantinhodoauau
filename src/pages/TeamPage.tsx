@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth, AppRole } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Users, Shield, Moon, Eye, Pencil, Trash2, UserPlus, Camera } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Users, Shield, Moon, Eye, Pencil, Camera } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface TeamMember {
@@ -17,7 +16,6 @@ interface TeamMember {
   full_name: string;
   avatar_url: string | null;
   cargo: AppRole;
-  email?: string;
   roles: AppRole[];
 }
 
@@ -48,16 +46,14 @@ const TeamPage: React.FC = () => {
 
   const fetchMembers = async () => {
     setLoading(true);
-    const { data: profiles } = await supabase
-      .from('profiles')
+    const { data: profiles } = await (supabase.from('profiles') as any)
       .select('*')
       .order('full_name');
 
     if (profiles) {
       const membersWithRoles: TeamMember[] = [];
       for (const p of profiles) {
-        const { data: rolesData } = await supabase
-          .from('user_roles')
+        const { data: rolesData } = await (supabase.from('user_roles') as any)
           .select('role')
           .eq('user_id', p.id);
 
@@ -66,7 +62,7 @@ const TeamPage: React.FC = () => {
           full_name: p.full_name,
           avatar_url: p.avatar_url,
           cargo: p.cargo as AppRole,
-          roles: rolesData?.map(r => r.role as AppRole) || [],
+          roles: rolesData?.map((r: any) => r.role as AppRole) || [],
         });
       }
       setMembers(membersWithRoles);
@@ -77,12 +73,9 @@ const TeamPage: React.FC = () => {
   useEffect(() => { fetchMembers(); }, []);
 
   const handleUpdateRole = async (memberId: string, newCargo: AppRole) => {
-    // Update profile cargo
-    await supabase.from('profiles').update({ cargo: newCargo, updated_at: new Date().toISOString() }).eq('id', memberId);
-    
-    // Remove old roles and add new one
-    await supabase.from('user_roles').delete().eq('user_id', memberId);
-    await supabase.from('user_roles').insert({ user_id: memberId, role: newCargo });
+    await (supabase.from('profiles') as any).update({ cargo: newCargo, updated_at: new Date().toISOString() }).eq('id', memberId);
+    await (supabase.from('user_roles') as any).delete().eq('user_id', memberId);
+    await (supabase.from('user_roles') as any).insert({ user_id: memberId, role: newCargo });
     
     await logAction('update_role', 'profile', memberId, { new_cargo: newCargo });
     toast.success('Cargo atualizado!');
@@ -98,7 +91,7 @@ const TeamPage: React.FC = () => {
     if (error) { toast.error('Erro ao enviar foto'); return; }
 
     const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path);
-    await supabase.from('profiles').update({ avatar_url: publicUrl, updated_at: new Date().toISOString() }).eq('id', memberId);
+    await (supabase.from('profiles') as any).update({ avatar_url: publicUrl, updated_at: new Date().toISOString() }).eq('id', memberId);
     
     toast.success('Foto atualizada!');
     fetchMembers();
@@ -177,7 +170,6 @@ const TeamPage: React.FC = () => {
           </div>
         )}
 
-        {/* Edit Dialog */}
         <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
           <DialogContent>
             <DialogHeader>
