@@ -1,5 +1,5 @@
 import React from 'react';
-import { PawPrint, Moon, Sun, LayoutDashboard, Users, Bath, BarChart3, FileSpreadsheet } from 'lucide-react';
+import { PawPrint, Moon, Sun, LayoutDashboard, Users, BarChart3, FileSpreadsheet } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import { NavLink as RouterNavLink, useLocation } from 'react-router-dom';
@@ -15,7 +15,6 @@ const getGreeting = () => {
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Home' },
   { to: '/clients', icon: Users, label: 'Clientes' },
-  { to: '/banho', icon: Bath, label: 'Banho' },
   { to: '/reports', icon: BarChart3, label: 'Relatórios' },
   { to: '/spreadsheet', icon: FileSpreadsheet, label: 'Planilha' },
 ];
@@ -32,7 +31,7 @@ export const Header: React.FC = () => {
             <PawPrint size={18} className="text-primary-foreground" />
           </div>
           <div className="flex flex-col">
-            <span className="font-bold text-base text-foreground leading-tight"><span className="font-bold text-base text-foreground leading-tight">Cantinho do AuAu</span></span>
+            <span className="font-bold text-base text-foreground leading-tight">Cantinho do AuAu</span>
             <span className="text-[10px] text-muted-foreground leading-tight">{getGreeting()} 👋</span>
           </div>
         </div>

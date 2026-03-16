@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Client, PetSize, PetGender, formatDate, VACCINE_LABELS, Vaccines, formatVaccineDate, getVaccineExpiryDate, isExpired, isExpiringSoon, VaccineType, DEFAULT_VACCINES } from '@/types/client';
+import { Client, PetSize, PetGender, ClientPlan, ClientStatus, formatDate, VACCINE_LABELS, Vaccines, formatVaccineDate, getVaccineExpiryDate, isExpired, isExpiringSoon, VaccineType, DEFAULT_VACCINES, getProfileCompleteness, formatCurrency } from '@/types/client';
 import { useClients } from '@/context/ClientContext';
 import { toast } from 'sonner';
-import { Trash2, Pencil, Dog, Heart, User, MapPin, Phone, Mail, FileText, Home, X, Shield } from 'lucide-react';
+import { Trash2, Pencil, Dog, Heart, User, MapPin, Phone, Mail, FileText, Home, X, Shield, AlertCircle, DollarSign, Tag } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { HealthHistorySection } from './HealthHistorySection';
@@ -26,11 +26,18 @@ interface ClientDetailSheetProps {
   onOpenChange: (open: boolean) => void;
 }
 
+interface MissingField {
+  label: string;
+  field: string;
+  type: 'text' | 'select' | 'date' | 'toggle' | 'breed' | 'number';
+}
+
 export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, open, onOpenChange }) => {
   const { clients, deleteClient, updateClient } = useClients();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('info');
   const [editingBreed, setEditingBreed] = useState(false);
+  const [fillingField, setFillingField] = useState<string | null>(null);
 
   const healthSummary = useMemo(() => {
     if (!client) return { upToDate: 0, expiring: 0, expired: 0, total: 4 };
@@ -47,11 +54,34 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
     return { upToDate, expiring, expired, total: vaccineKeys.length };
   }, [client?.vaccines]);
 
+  const missingFields = useMemo((): MissingField[] => {
+    if (!client) return [];
+    const missing: MissingField[] = [];
+    if (!client.tutorName) missing.push({ label: 'Tutor', field: 'tutorName', type: 'text' });
+    if (!client.breed) missing.push({ label: 'Raça', field: 'breed', type: 'breed' });
+    if (!client.petSize) missing.push({ label: 'Porte', field: 'petSize', type: 'select' });
+    if (!client.gender) missing.push({ label: 'Gênero', field: 'gender', type: 'select' });
+    if (client.castrated === undefined || client.castrated === null) missing.push({ label: 'Castrado', field: 'castrated', type: 'toggle' });
+    if (!client.birthDate) missing.push({ label: 'Nascimento', field: 'birthDate', type: 'date' });
+    if (!client.weight) missing.push({ label: 'Peso', field: 'weight', type: 'number' });
+    if (!client.tutorPhone) missing.push({ label: 'Telefone', field: 'tutorPhone', type: 'text' });
+    if (!client.tutorEmail) missing.push({ label: 'Email', field: 'tutorEmail', type: 'text' });
+    if (!client.tutorCpf) missing.push({ label: 'CPF', field: 'tutorCpf', type: 'text' });
+    if (!client.tutorAddress) missing.push({ label: 'Endereço', field: 'tutorAddress', type: 'text' });
+    if (!client.plano) missing.push({ label: 'Plano', field: 'plano', type: 'select' });
+    if (!client.valor) missing.push({ label: 'Valor', field: 'valor', type: 'number' });
+    if (!client.status) missing.push({ label: 'Status', field: 'status', type: 'select' });
+    return missing;
+  }, [client]);
+
+  const completeness = useMemo(() => client ? getProfileCompleteness(client) : null, [client]);
+
   if (!client) return null;
 
   const inlineUpdate = (field: string, value: any) => {
     updateClient(client.id, { [field]: value });
     toast.success('Atualizado!');
+    setFillingField(null);
   };
 
   const handleDelete = () => {
@@ -74,6 +104,24 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
 
   const siblings = clients.filter(c => c.id !== client.id && c.tutorName && c.tutorName === client.tutorName);
 
+  const handleFillField = (field: MissingField) => {
+    if (field.type === 'breed') {
+      setEditingBreed(true);
+      setActiveTab('info');
+    } else if (field.type === 'toggle') {
+      inlineUpdate(field.field, false);
+    } else {
+      setFillingField(field.field);
+      setActiveTab('info');
+    }
+  };
+
+  const completenessColor = completeness?.level === 'complete'
+    ? 'text-[hsl(142,70%,40%)]'
+    : completeness?.level === 'partial'
+      ? 'text-[hsl(45,93%,37%)]'
+      : 'text-destructive';
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="p-0 flex flex-col overflow-hidden">
@@ -91,7 +139,14 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
             </div>
 
             <div className="flex-1 min-w-0 pt-1">
-              <SheetTitle className="text-lg truncate leading-tight">{client.name}</SheetTitle>
+              <div className="flex items-center gap-2">
+                <SheetTitle className="text-lg truncate leading-tight">{client.name}</SheetTitle>
+                {completeness && (
+                  <span className={cn("text-[10px] font-bold", completenessColor)}>
+                    {completeness.percent}%
+                  </span>
+                )}
+              </div>
               <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                 {client.breed && <span className="text-[11px] text-muted-foreground">🐕 {client.breed}</span>}
                 {client.petSize && (
@@ -112,6 +167,31 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
             </div>
           </div>
         </SheetHeader>
+
+        {/* Missing Fields Alert */}
+        {missingFields.length > 0 && (
+          <div className="px-4 pt-3">
+            <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertCircle size={14} className="text-amber-600 dark:text-amber-400" />
+                <span className="text-xs font-semibold text-amber-800 dark:text-amber-300">
+                  {missingFields.length} dado(s) faltando
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {missingFields.map(field => (
+                  <button
+                    key={field.field}
+                    onClick={() => handleFillField(field)}
+                    className="text-[10px] font-medium bg-amber-200/50 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 px-2 py-1 rounded-md hover:bg-amber-300/50 dark:hover:bg-amber-800/50 transition-colors border border-amber-300/50 dark:border-amber-700/50"
+                  >
+                    + {field.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
@@ -136,6 +216,98 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
           <ScrollArea className="flex-1">
             {/* === INFO TAB === */}
             <TabsContent value="info" className="p-4 space-y-4 mt-0">
+              {/* Quick fill dialogs */}
+              {fillingField === 'tutorName' && (
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 animate-in fade-in">
+                  <p className="text-[10px] text-primary font-medium mb-1">👤 Nome do Tutor</p>
+                  <InlineEditField icon={<User size={14} />} label="" value="" onSave={(v) => { inlineUpdate('tutorName', v); }} placeholder="Nome completo" />
+                </div>
+              )}
+              {fillingField === 'tutorPhone' && (
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 animate-in fade-in">
+                  <p className="text-[10px] text-primary font-medium mb-1">📞 Telefone do Tutor</p>
+                  <InlineEditField icon={<Phone size={14} />} label="" value="" onSave={(v) => { inlineUpdate('tutorPhone', v); }} placeholder="(11) 99999-9999" />
+                </div>
+              )}
+              {fillingField === 'tutorEmail' && (
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 animate-in fade-in">
+                  <p className="text-[10px] text-primary font-medium mb-1">📧 Email do Tutor</p>
+                  <InlineEditField icon={<Mail size={14} />} label="" value="" onSave={(v) => { inlineUpdate('tutorEmail', v); }} placeholder="email@email.com" type="email" />
+                </div>
+              )}
+              {fillingField === 'tutorCpf' && (
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 animate-in fade-in">
+                  <p className="text-[10px] text-primary font-medium mb-1">📄 CPF do Tutor</p>
+                  <InlineEditField icon={<FileText size={14} />} label="" value="" onSave={(v) => { inlineUpdate('tutorCpf', v); }} placeholder="000.000.000-00" />
+                </div>
+              )}
+              {fillingField === 'tutorAddress' && (
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 animate-in fade-in">
+                  <p className="text-[10px] text-primary font-medium mb-1">📍 Endereço do Tutor</p>
+                  <InlineEditField icon={<MapPin size={14} />} label="" value="" onSave={(v) => { inlineUpdate('tutorAddress', v); }} placeholder="Rua, número, complemento" />
+                </div>
+              )}
+              {fillingField === 'weight' && (
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 animate-in fade-in">
+                  <p className="text-[10px] text-primary font-medium mb-1">⚖️ Peso do Pet</p>
+                  <InlineEditField icon={<Dog size={14} />} label="" value="" onSave={(v) => { inlineUpdate('weight', parseFloat(v) || undefined); }} placeholder="Ex: 12.5" />
+                </div>
+              )}
+              {fillingField === 'valor' && (
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 animate-in fade-in">
+                  <p className="text-[10px] text-primary font-medium mb-1">💰 Valor do Plano</p>
+                  <InlineEditField icon={<DollarSign size={14} />} label="" value="" onSave={(v) => { inlineUpdate('valor', parseFloat(v) || undefined); }} placeholder="Ex: 500" />
+                </div>
+              )}
+              {fillingField === 'petSize' && (
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 animate-in fade-in">
+                  <p className="text-[10px] text-primary font-medium mb-1">📏 Porte do Pet</p>
+                  <div className="flex gap-2">
+                    {(['Pequeno', 'Médio', 'Grande', 'Gigante'] as PetSize[]).map(s => (
+                      <button key={s} onClick={() => inlineUpdate('petSize', s)} className="flex-1 py-2 px-1 rounded-lg border border-border text-xs font-medium hover:bg-primary/10 hover:border-primary transition-colors">
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {fillingField === 'gender' && (
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 animate-in fade-in">
+                  <p className="text-[10px] text-primary font-medium mb-1">Gênero do Pet</p>
+                  <div className="flex gap-2">
+                    <button onClick={() => inlineUpdate('gender', 'Macho')} className="flex-1 py-2 px-3 rounded-lg border border-border text-sm font-medium hover:bg-primary/10 hover:border-primary transition-colors">♂ Macho</button>
+                    <button onClick={() => inlineUpdate('gender', 'Fêmea')} className="flex-1 py-2 px-3 rounded-lg border border-border text-sm font-medium hover:bg-primary/10 hover:border-primary transition-colors">♀ Fêmea</button>
+                  </div>
+                </div>
+              )}
+              {fillingField === 'plano' && (
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 animate-in fade-in">
+                  <p className="text-[10px] text-primary font-medium mb-1">📋 Plano</p>
+                  <div className="flex gap-2">
+                    {(['Mensal', 'Avulso', 'Pacote'] as ClientPlan[]).map(p => (
+                      <button key={p} onClick={() => inlineUpdate('plano', p)} className="flex-1 py-2 px-1 rounded-lg border border-border text-xs font-medium hover:bg-primary/10 hover:border-primary transition-colors">
+                        {p}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {fillingField === 'status' && (
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 animate-in fade-in">
+                  <p className="text-[10px] text-primary font-medium mb-1">📊 Status</p>
+                  <div className="flex gap-2">
+                    <button onClick={() => inlineUpdate('status', 'Ativo')} className="flex-1 py-2 px-3 rounded-lg border border-border text-sm font-medium hover:bg-[hsl(142,70%,45%)]/10 hover:border-[hsl(142,70%,45%)] transition-colors">✓ Ativo</button>
+                    <button onClick={() => inlineUpdate('status', 'Inativo')} className="flex-1 py-2 px-3 rounded-lg border border-border text-sm font-medium hover:bg-destructive/10 hover:border-destructive transition-colors">✗ Inativo</button>
+                  </div>
+                </div>
+              )}
+              {fillingField === 'birthDate' && (
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 animate-in fade-in">
+                  <p className="text-[10px] text-primary font-medium mb-1">🎂 Data de Nascimento</p>
+                  <Calendar mode="single" selected={undefined} onSelect={(d) => { if (d) inlineUpdate('birthDate', d); }} className="pointer-events-auto mx-auto" locale={ptBR} />
+                </div>
+              )}
+
               {/* Pet Info */}
               <div className="space-y-1">
                 <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 mb-2">
@@ -168,7 +340,6 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
                       <Pencil size={11} className="text-muted-foreground/30 group-hover:text-primary transition-colors" />
                     </div>
                   )}
-                  {/* Pet Size */}
                   <div className="flex items-center gap-3 p-2.5 group hover:bg-muted/30 transition-all">
                     <span className="text-muted-foreground">📏</span>
                     <div className="flex-1 min-w-0">
@@ -185,7 +356,7 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
                       </Select>
                     </div>
                   </div>
-                  {/* Gender */}
+                  <InlineEditField icon={<span className="text-muted-foreground">⚖️</span>} label="Peso (kg)" value={client.weight?.toString() || ''} onSave={(v) => inlineUpdate('weight', parseFloat(v) || undefined)} placeholder="Ex: 12.5" />
                   <div className="flex items-center gap-3 p-2.5 group hover:bg-muted/30 transition-all">
                     <span className="text-muted-foreground">{client.gender === 'Fêmea' ? '♀' : '♂'}</span>
                     <div className="flex-1 min-w-0">
@@ -201,7 +372,6 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
                       </Select>
                     </div>
                   </div>
-                  {/* Castrated */}
                   <div className="flex items-center gap-3 p-2.5 group hover:bg-muted/30 transition-all">
                     <span className="text-muted-foreground">✂️</span>
                     <div className="flex-1 min-w-0">
@@ -210,7 +380,6 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
                     </div>
                     <Switch checked={client.castrated ?? false} onCheckedChange={(v) => inlineUpdate('castrated', v)} />
                   </div>
-                  {/* Birth date */}
                   <div className="flex items-center gap-3 p-2.5 group hover:bg-muted/30 transition-all">
                     <span className="text-muted-foreground">🎂</span>
                     <div className="flex-1 min-w-0">
@@ -226,6 +395,47 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
                             onSelect={(d) => inlineUpdate('birthDate', d)} initialFocus className="pointer-events-auto" locale={ptBR} />
                         </PopoverContent>
                       </Popover>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Plano & Status */}
+              <div className="space-y-1">
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 mb-2">
+                  <Tag size={13} /> Plano & Status
+                </h3>
+                <div className="bg-card border border-border rounded-xl overflow-hidden divide-y divide-border/50">
+                  <div className="flex items-center gap-3 p-2.5 group hover:bg-muted/30 transition-all">
+                    <span className="text-muted-foreground">📋</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Plano</p>
+                      <Select value={client.plano || ''} onValueChange={(v) => inlineUpdate('plano', v as ClientPlan)}>
+                        <SelectTrigger className="h-7 border-0 bg-transparent p-0 text-sm font-medium shadow-none focus:ring-0 w-auto">
+                          <SelectValue placeholder="Selecionar plano" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Mensal">Mensal</SelectItem>
+                          <SelectItem value="Avulso">Avulso</SelectItem>
+                          <SelectItem value="Pacote">Pacote</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <InlineEditField icon={<DollarSign size={14} />} label="Valor" value={client.valor?.toString() || ''} onSave={(v) => inlineUpdate('valor', parseFloat(v) || undefined)} placeholder="Ex: 500" />
+                  <div className="flex items-center gap-3 p-2.5 group hover:bg-muted/30 transition-all">
+                    <span className="text-muted-foreground">📊</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Status</p>
+                      <Select value={client.status || ''} onValueChange={(v) => inlineUpdate('status', v as ClientStatus)}>
+                        <SelectTrigger className="h-7 border-0 bg-transparent p-0 text-sm font-medium shadow-none focus:ring-0 w-auto">
+                          <SelectValue placeholder="Selecionar status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Ativo">✓ Ativo</SelectItem>
+                          <SelectItem value="Inativo">✗ Inativo</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                 </div>
@@ -258,7 +468,6 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
                     ) : undefined}
                   />
                   <InlineEditField icon={<MapPin size={14} />} label="Endereço" value={client.tutorAddress || ''} onSave={(v) => inlineUpdate('tutorAddress', v)} placeholder="Rua, número, complemento" />
-                  <InlineEditField icon={<Home size={14} />} label="Bairro" value={client.tutorNeighborhood || ''} onSave={(v) => inlineUpdate('tutorNeighborhood', v)} placeholder="Bairro" />
                 </div>
               </div>
 
@@ -289,7 +498,17 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
                     <span className="text-xs">📅</span>
                     <p className="text-[10px] text-muted-foreground">Entrada</p>
                   </div>
-                  <p className="text-sm font-semibold">{formatDate(client.entryDate)}</p>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button className="text-sm font-semibold text-left hover:text-primary transition-colors">
+                        {formatDate(client.entryDate)}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar mode="single" selected={new Date(client.entryDate)}
+                        onSelect={(d) => { if (d) inlineUpdate('entryDate', d); }} initialFocus className="pointer-events-auto" locale={ptBR} />
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
 
@@ -321,12 +540,13 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
           </ScrollArea>
         </Tabs>
 
-        {/* Delete Client Confirmation */}
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Remover {client.name}?</AlertDialogTitle>
-              <AlertDialogDescription>Essa ação é irreversível. Todos os dados e informações de saúde serão perdidos.</AlertDialogDescription>
+              <AlertDialogDescription>
+                Esta ação não pode ser desfeita. Todos os dados deste cliente serão removidos.
+              </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancelar</AlertDialogCancel>

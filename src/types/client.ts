@@ -27,6 +27,9 @@ export interface FleaRecord {
 
 export type PetGender = 'Macho' | 'Fêmea';
 
+export type ClientPlan = 'Mensal' | 'Avulso' | 'Pacote' | '';
+export type ClientStatus = 'Ativo' | 'Inativo' | '';
+
 export interface Client {
   id: string;
   tutorName: string;
@@ -47,9 +50,34 @@ export interface Client {
   vaccines: Vaccines;
   vaccineHistory: VaccineRecord[];
   fleaHistory: FleaRecord[];
+  plano?: ClientPlan;
+  valor?: number;
+  status?: ClientStatus;
   createdAt: Date;
   updatedAt: Date;
 }
+
+export const getProfileCompleteness = (client: Client): { percent: number; level: 'complete' | 'partial' | 'incomplete' } => {
+  const fields = [
+    !!client.tutorName,
+    !!client.tutorPhone,
+    !!client.tutorEmail,
+    !!client.tutorCpf,
+    !!client.tutorAddress,
+    !!client.breed,
+    !!client.petSize,
+    !!client.weight,
+    !!client.gender,
+    client.castrated !== undefined && client.castrated !== null,
+    !!client.birthDate,
+    !!client.plano,
+  ];
+  const filled = fields.filter(Boolean).length;
+  const percent = Math.round((filled / fields.length) * 100);
+  if (percent >= 80) return { percent, level: 'complete' };
+  if (percent >= 40) return { percent, level: 'partial' };
+  return { percent, level: 'incomplete' };
+};
 
 export type BathServiceType = 'Banho' | 'Banho + Tosa' | 'Tosa Higiênica' | 'Hidratação' | 'Banho + Hidratação' | 'Banho + Tosa + Hidratação';
 export type BathStatus = 'Agendado' | 'Em andamento' | 'Concluído' | 'Entregue';

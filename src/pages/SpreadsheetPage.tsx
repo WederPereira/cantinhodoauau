@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { useClients } from '@/context/ClientContext';
-import { Client, formatDate, Vaccines, VACCINE_LABELS, formatVaccineDate, DEFAULT_VACCINES, PetSize, PetGender } from '@/types/client';
+import { Client, formatDate, Vaccines, VACCINE_LABELS, formatVaccineDate, DEFAULT_VACCINES, PetSize, PetGender, ClientPlan, ClientStatus } from '@/types/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -14,6 +14,7 @@ import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { QRCodeSVG } from 'qrcode.react';
 import { downloadCardForClient } from '@/components/qrcode/DogIdCard';
+import * as XLSX from 'xlsx';
 
 const VACCINE_KEYS = Object.keys(VACCINE_LABELS) as Array<keyof Vaccines>;
 
@@ -27,11 +28,12 @@ const SpreadsheetPage: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<{
     tutorName: string; tutorPhone: string; tutorEmail: string;
-    tutorAddress: string; tutorNeighborhood: string; tutorCpf: string;
+    tutorAddress: string; tutorCpf: string;
     name: string; breed: string; petSize?: PetSize; weight?: number;
     gender?: PetGender; castrated?: boolean; vaccines: Vaccines;
     birthDate?: Date; entryDate?: Date;
-  }>({ tutorName: '', tutorPhone: '', tutorEmail: '', tutorAddress: '', tutorNeighborhood: '', tutorCpf: '', name: '', breed: '', petSize: undefined, weight: undefined, gender: undefined, castrated: false, vaccines: { ...DEFAULT_VACCINES }, birthDate: undefined, entryDate: undefined });
+    plano?: ClientPlan; valor?: number; status?: ClientStatus;
+  }>({ tutorName: '', tutorPhone: '', tutorEmail: '', tutorAddress: '', tutorCpf: '', name: '', breed: '', petSize: undefined, weight: undefined, gender: undefined, castrated: false, vaccines: { ...DEFAULT_VACCINES }, birthDate: undefined, entryDate: undefined, plano: undefined, valor: undefined, status: undefined });
 
   const downloadQrForClient = useCallback((client: Client): Promise<void> => {
     return new Promise((resolve) => {
@@ -88,21 +90,15 @@ const SpreadsheetPage: React.FC = () => {
   );
 
   const exportToCSV = () => {
-    const headers = ['Tutor', 'Telefone', 'Email', 'CPF', 'Endereço', 'Bairro', 'Dog', 'Raça', 'Peso (kg)', 'Porte', 'Gênero', 'Castrado', 'Nascimento', 'Entrada', ...VACCINE_KEYS.map(k => VACCINE_LABELS[k])];
+    const headers = ['Tutor', 'Telefone', 'Email', 'CPF', 'Endereço', 'Dog', 'Raça', 'Peso (kg)', 'Porte', 'Gênero', 'Castrado', 'Nascimento', 'Entrada', ...VACCINE_KEYS.map(k => VACCINE_LABELS[k]), 'Plano', 'Valor', 'Status'];
     const rows = clients.map(client => {
       const fleaInfo = client.fleaHistory?.length > 0 ? client.fleaHistory[0].brand : '';
       return [
-        client.tutorName || '',
-        client.tutorPhone || '',
-        client.tutorEmail || '',
-        client.tutorCpf || '',
-        client.tutorAddress || '',
-        client.tutorNeighborhood || '',
-        client.name,
-        client.breed || '',
+        client.tutorName || '', client.tutorPhone || '', client.tutorEmail || '',
+        client.tutorCpf || '', client.tutorAddress || '',
+        client.name, client.breed || '',
         client.weight ? client.weight.toString().replace('.', ',') : '',
-        client.petSize || '',
-        client.gender || '',
+        client.petSize || '', client.gender || '',
         client.castrated ? 'Sim' : 'Não',
         client.birthDate ? format(new Date(client.birthDate), 'dd/MM/yyyy') : '',
         client.entryDate ? format(new Date(client.entryDate), 'dd/MM/yyyy') : '',
@@ -113,6 +109,9 @@ const SpreadsheetPage: React.FC = () => {
           }
           return client.vaccines?.[k] ? formatVaccineDate(client.vaccines[k]) : 'Não';
         }),
+        client.plano || '',
+        client.valor ? client.valor.toString().replace('.', ',') : '',
+        client.status || '',
       ].join(';');
     });
     const csv = [headers.join(';'), ...rows].join('\n');
@@ -128,7 +127,9 @@ const SpreadsheetPage: React.FC = () => {
 
   const parseDate = (str: string): Date | undefined => {
     if (!str) return undefined;
-    const parts = str.split('/');
+    const clean = str.replace(/[()]/g, '').trim();
+    if (!clean) return undefined;
+    const parts = clean.split('/');
     if (parts.length === 3) {
       const d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
       if (!isNaN(d.getTime())) return d;
@@ -137,105 +138,135 @@ const SpreadsheetPage: React.FC = () => {
     return isNaN(d.getTime()) ? undefined : d;
   };
 
+  const processImportRows = (rows: Record<string, string>[]) => {
+    if (rows.length === 0) { toast.error('Nenhum dado encontrado no arquivo'); return; }
+
+    const findCol = (row: Record<string, string>, ...terms: string[]): string => {
+      const keys = Object.keys(row);
+      for (const term of terms) {
+        const found = keys.find(k => k.toLowerCase().includes(term.toLowerCase()));
+        if (found) return row[found] || '';
+      }
+      return '';
+    };
+
+    let imported = 0, skipped = 0;
+    for (const row of rows) {
+      const name = findCol(row, 'dog', 'nome do dog', 'nome do pet', 'nome');
+      if (!name) continue;
+      const tutorName = findCol(row, 'tutor');
+      const isDuplicate = clients.some(c =>
+        c.name.toLowerCase() === name.toLowerCase() &&
+        (!tutorName || !c.tutorName || c.tutorName.toLowerCase() === tutorName.toLowerCase())
+      );
+      if (isDuplicate) { skipped++; continue; }
+
+      const phone = findCol(row, 'telefone', 'fone', 'celular');
+      const email = findCol(row, 'email');
+      const cpf = findCol(row, 'cpf');
+      const address = findCol(row, 'endereço', 'endereco');
+      const gender = findCol(row, 'gênero', 'genero', 'sexo');
+      const castratedVal = findCol(row, 'castrad');
+      const castrated = castratedVal.toLowerCase() === 'sim';
+      const birthStr = findCol(row, 'nascimento', 'aniversário', 'aniversario');
+      const entryStr = findCol(row, 'entrada');
+      const breed = findCol(row, 'raça', 'raca');
+      const petSizeStr = findCol(row, 'porte');
+      const petSize = (['Pequeno', 'Médio', 'Grande', 'Gigante'].includes(petSizeStr) ? petSizeStr : undefined) as PetSize | undefined;
+      const weightStr = findCol(row, 'peso');
+      const weight = weightStr ? parseFloat(weightStr.replace(',', '.')) : undefined;
+      const plano = findCol(row, 'plano') as ClientPlan || undefined;
+      const valorStr = findCol(row, 'valor');
+      const valor = valorStr ? parseFloat(valorStr.replace(',', '.')) : undefined;
+      const status = findCol(row, 'status') as ClientStatus || undefined;
+
+      const existingTutor = tutorName ? clients.find(c => c.tutorName.toLowerCase() === tutorName.toLowerCase()) : null;
+
+      const newClient: any = {
+        name,
+        tutorName: tutorName || '',
+        tutorPhone: phone || existingTutor?.tutorPhone || '',
+        tutorEmail: email || existingTutor?.tutorEmail || '',
+        tutorCpf: cpf || existingTutor?.tutorCpf || '',
+        tutorAddress: address || existingTutor?.tutorAddress || '',
+        breed: breed || '',
+        petSize,
+        weight,
+        gender: (gender === 'Macho' || gender === 'Fêmea') ? gender as PetGender : undefined,
+        castrated,
+        birthDate: parseDate(birthStr),
+        entryDate: parseDate(entryStr),
+        plano,
+        valor,
+        status,
+      };
+
+      const vaccines: any = { ...DEFAULT_VACCINES };
+      VACCINE_KEYS.forEach(k => {
+        const val = findCol(row, VACCINE_LABELS[k].toLowerCase());
+        if (val && val !== 'Não') {
+          const cleanVal = val.replace(/\s*\(.*\)/, '');
+          const d = parseDate(cleanVal);
+          if (d) vaccines[k] = d.toISOString();
+        }
+      });
+      newClient.vaccines = vaccines;
+
+      importClients([newClient]);
+      imported++;
+    }
+
+    if (imported === 0) {
+      toast.error(skipped > 0 ? `${skipped} duplicado(s) ignorado(s). Nenhum novo.` : 'Nenhum cliente válido encontrado.');
+    } else {
+      toast.success(skipped > 0 ? `${imported} importado(s), ${skipped} duplicado(s) ignorado(s).` : `${imported} cliente(s) importado(s)!`);
+    }
+  };
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const text = event.target?.result as string;
-        const lines = text.split('\n').filter(line => line.trim());
-        if (lines.length < 2) { toast.error('Arquivo CSV vazio ou inválido'); return; }
-        const header = lines[0].toLowerCase();
-        const separator = header.includes(';') ? ';' : ',';
-        const headers = header.split(separator).map(h => h.trim());
+    const ext = file.name.split('.').pop()?.toLowerCase();
 
-        const findCol = (...terms: string[]) => headers.findIndex(h => terms.some(t => h.includes(t)));
-        const nameIndex = findCol('dog', 'nome do dog', 'nome');
-        const tutorIndex = findCol('tutor');
-        const breedIndex = findCol('raça', 'raca');
-        const petSizeIndex = findCol('porte');
-        const phoneIndex = findCol('telefone', 'fone', 'celular');
-        const emailIndex = findCol('email');
-        const cpfIndex = findCol('cpf');
-        const addressIndex = findCol('endereço', 'endereco');
-        const neighborhoodIndex = findCol('bairro');
-        const genderIndex = findCol('gênero', 'genero', 'sexo');
-        const castratedIndex = findCol('castrad');
-        const birthIndex = findCol('nascimento', 'aniversário', 'aniversario');
-        const entryIndex = findCol('entrada');
-        const weightIndex = findCol('peso');
-
-        if (nameIndex === -1) { toast.error('Coluna "Nome/Dog" não encontrada no CSV'); return; }
-
-        let imported = 0, skipped = 0;
-        for (let i = 1; i < lines.length; i++) {
-          const values = lines[i].split(separator).map(v => v.trim().replace(/^["']|["']$/g, ''));
-          const name = values[nameIndex];
-          if (!name) continue;
-          const tutorName = tutorIndex !== -1 ? values[tutorIndex] : '';
-          const isDuplicate = clients.some(c =>
-            c.name.toLowerCase() === name.toLowerCase() &&
-            (!tutorName || !c.tutorName || c.tutorName.toLowerCase() === tutorName.toLowerCase())
-          );
-          if (isDuplicate) { skipped++; continue; }
-
-          const phone = phoneIndex !== -1 ? values[phoneIndex] : '';
-          const email = emailIndex !== -1 ? values[emailIndex] : '';
-          const cpf = cpfIndex !== -1 ? values[cpfIndex] : '';
-          const address = addressIndex !== -1 ? values[addressIndex] : '';
-          const neighborhood = neighborhoodIndex !== -1 ? values[neighborhoodIndex] : '';
-          const gender = genderIndex !== -1 ? values[genderIndex] : '';
-          const castrated = castratedIndex !== -1 ? values[castratedIndex]?.toLowerCase() === 'sim' : false;
-          const birthStr = birthIndex !== -1 ? values[birthIndex] : '';
-          const entryStr = entryIndex !== -1 ? values[entryIndex] : '';
-          const breed = breedIndex !== -1 ? values[breedIndex] : '';
-          const petSize = petSizeIndex !== -1 ? values[petSizeIndex] as PetSize : undefined;
-          const weightStr = weightIndex !== -1 ? values[weightIndex] : '';
-          const weight = weightStr ? parseFloat(weightStr.replace(',', '.')) : undefined;
-
-          const existingTutor = tutorName ? clients.find(c => c.tutorName.toLowerCase() === tutorName.toLowerCase()) : null;
-
-          const newClient: any = {
-            name,
-            tutorName: tutorName || '',
-            tutorPhone: phone || existingTutor?.tutorPhone || '',
-            tutorEmail: email || existingTutor?.tutorEmail || '',
-            tutorCpf: cpf || existingTutor?.tutorCpf || '',
-            tutorAddress: address || existingTutor?.tutorAddress || '',
-            tutorNeighborhood: neighborhood || existingTutor?.tutorNeighborhood || '',
-            breed: breed || '',
-            petSize,
-            weight,
-            gender: (gender === 'Macho' || gender === 'Fêmea') ? gender as PetGender : undefined,
-            castrated,
-            birthDate: parseDate(birthStr),
-            entryDate: parseDate(entryStr),
-          };
-
-          const vaccines: any = { ...DEFAULT_VACCINES };
-          VACCINE_KEYS.forEach(k => {
-            const idx = headers.findIndex(h => h.includes(VACCINE_LABELS[k].toLowerCase()));
-            if (idx !== -1 && values[idx] && values[idx] !== 'Não') {
-              const cleanVal = values[idx].replace(/\s*\(.*\)/, '');
-              const d = parseDate(cleanVal);
-              if (d) vaccines[k] = d.toISOString();
-            }
+    if (ext === 'csv' || ext === 'txt') {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const text = event.target?.result as string;
+          const lines = text.split('\n').filter(line => line.trim());
+          if (lines.length < 2) { toast.error('Arquivo vazio ou inválido'); return; }
+          const separator = lines[0].includes(';') ? ';' : ',';
+          const headers = lines[0].split(separator).map(h => h.trim().replace(/^["']|["']$/g, ''));
+          const rows = lines.slice(1).map(line => {
+            const values = line.split(separator).map(v => v.trim().replace(/^["']|["']$/g, ''));
+            const row: Record<string, string> = {};
+            headers.forEach((h, i) => { row[h] = values[i] || ''; });
+            return row;
           });
-          newClient.vaccines = vaccines;
-
-          importClients([newClient]);
-          imported++;
+          processImportRows(rows);
+        } catch { toast.error('Erro ao processar arquivo'); }
+      };
+      reader.readAsText(file);
+    } else if (ext === 'xlsx' || ext === 'xls' || ext === 'ods') {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const data = event.target?.result;
+          const workbook = XLSX.read(data, { type: 'array' });
+          const sheetName = workbook.SheetNames[0];
+          const sheet = workbook.Sheets[sheetName];
+          const rows = XLSX.utils.sheet_to_json<Record<string, string>>(sheet, { defval: '' });
+          processImportRows(rows);
+        } catch (err) {
+          console.error(err);
+          toast.error('Erro ao processar planilha');
         }
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      toast.error('Formato não suportado. Use CSV, XLSX, XLS ou ODS.');
+    }
 
-        if (imported === 0) {
-          toast.error(skipped > 0 ? `${skipped} duplicado(s) ignorado(s). Nenhum novo.` : 'Nenhum cliente válido encontrado.');
-        } else {
-          toast.success(skipped > 0 ? `${imported} importado(s), ${skipped} duplicado(s) ignorado(s).` : `${imported} cliente(s) importado(s)!`);
-        }
-      } catch { toast.error('Erro ao processar arquivo CSV'); }
-    };
-    reader.readAsText(file);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -244,12 +275,13 @@ const SpreadsheetPage: React.FC = () => {
     setEditForm({
       tutorName: client.tutorName || '', tutorPhone: client.tutorPhone || '',
       tutorEmail: client.tutorEmail || '', tutorAddress: client.tutorAddress || '',
-      tutorNeighborhood: client.tutorNeighborhood || '', tutorCpf: client.tutorCpf || '',
+      tutorCpf: client.tutorCpf || '',
       name: client.name, breed: client.breed || '', petSize: client.petSize,
       weight: client.weight, gender: client.gender, castrated: client.castrated,
       vaccines: client.vaccines || { ...DEFAULT_VACCINES },
       birthDate: client.birthDate ? new Date(client.birthDate) : undefined,
       entryDate: client.entryDate ? new Date(client.entryDate) : undefined,
+      plano: client.plano, valor: client.valor, status: client.status,
     });
   };
 
@@ -259,11 +291,12 @@ const SpreadsheetPage: React.FC = () => {
     updateClient(client.id, {
       tutorName: editForm.tutorName.trim(), tutorPhone: editForm.tutorPhone.trim(),
       tutorEmail: editForm.tutorEmail.trim(), tutorAddress: editForm.tutorAddress.trim(),
-      tutorNeighborhood: editForm.tutorNeighborhood.trim(), tutorCpf: editForm.tutorCpf.trim(),
+      tutorCpf: editForm.tutorCpf.trim(),
       name: editForm.name.trim() || client.name, breed: editForm.breed.trim(),
       petSize: editForm.petSize, weight: editForm.weight, gender: editForm.gender,
       castrated: editForm.castrated, vaccines: editForm.vaccines,
       birthDate: editForm.birthDate, entryDate: editForm.entryDate || client.entryDate,
+      plano: editForm.plano, valor: editForm.valor, status: editForm.status,
     });
     setEditingId(null);
     toast.success('Cliente atualizado!');
@@ -357,9 +390,9 @@ const SpreadsheetPage: React.FC = () => {
               <QrCode size={16} />
               {generatingAll ? 'Gerando...' : `Gerar Todos QR (${clients.filter(c => !generatedQrIds.has(c.id)).length})`}
             </Button>
-            <input type="file" ref={fileInputRef} accept=".csv" onChange={handleFileUpload} className="hidden" />
+            <input type="file" ref={fileInputRef} accept=".csv,.xlsx,.xls,.ods,.txt" onChange={handleFileUpload} className="hidden" />
             <Button variant="outline" size="sm" className="gap-2" onClick={() => fileInputRef.current?.click()}>
-              <Upload size={16} /> Importar CSV
+              <Upload size={16} /> Importar
             </Button>
             <Button variant="outline" size="sm" className="gap-2" onClick={exportToCSV}>
               <Download size={16} /> Exportar CSV
@@ -393,7 +426,6 @@ const SpreadsheetPage: React.FC = () => {
                   <TableHead className="font-semibold text-xs p-2">Email</TableHead>
                   <TableHead className="font-semibold text-xs p-2">CPF</TableHead>
                   <TableHead className="font-semibold text-xs p-2">Endereço</TableHead>
-                  <TableHead className="font-semibold text-xs p-2">Bairro</TableHead>
                   <TableHead className="font-semibold text-xs p-2">Dog</TableHead>
                   <TableHead className="font-semibold text-xs p-2">Raça</TableHead>
                   <TableHead className="font-semibold text-xs p-2 text-right">Peso</TableHead>
@@ -405,6 +437,9 @@ const SpreadsheetPage: React.FC = () => {
                   {VACCINE_KEYS.map(k => (
                     <TableHead key={k} className="font-semibold text-xs p-2 text-center">{VACCINE_LABELS[k]}</TableHead>
                   ))}
+                  <TableHead className="font-semibold text-xs p-2">Plano</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 text-right">Valor</TableHead>
+                  <TableHead className="font-semibold text-xs p-2">Status</TableHead>
                   <TableHead className="font-semibold text-xs p-2 text-center w-20 sticky right-0 bg-muted">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -456,9 +491,6 @@ const SpreadsheetPage: React.FC = () => {
                         </TableCell>
                         <TableCell className="p-2 max-w-[150px]">
                           {isEditing ? <Input value={editForm.tutorAddress} onChange={(e) => setEditForm({ ...editForm, tutorAddress: e.target.value })} className="h-7 text-sm w-36" /> : <span className="text-sm text-muted-foreground break-words line-clamp-2">{client.tutorAddress || '—'}</span>}
-                        </TableCell>
-                        <TableCell className="p-2">
-                          {isEditing ? <Input value={editForm.tutorNeighborhood} onChange={(e) => setEditForm({ ...editForm, tutorNeighborhood: e.target.value })} className="h-7 text-sm w-24" /> : <span className="text-sm text-muted-foreground">{client.tutorNeighborhood || '—'}</span>}
                         </TableCell>
                         <TableCell className="p-2">
                           {isEditing ? <Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className="h-7 text-sm w-24" /> : <span className="font-medium text-sm">{client.name}</span>}
@@ -520,6 +552,39 @@ const SpreadsheetPage: React.FC = () => {
                             <TableCell key={key} className="p-2"><VaccineIndicator value={client.vaccines?.[key] || null} /></TableCell>
                           ))
                         )}
+                        {/* Plano */}
+                        <TableCell className="p-2">
+                          {isEditing ? (
+                            <Select value={editForm.plano || ''} onValueChange={(v) => setEditForm({ ...editForm, plano: (v || undefined) as ClientPlan })}>
+                              <SelectTrigger className="h-7 text-xs w-20"><SelectValue placeholder="—" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Mensal" className="text-xs">Mensal</SelectItem>
+                                <SelectItem value="Avulso" className="text-xs">Avulso</SelectItem>
+                                <SelectItem value="Pacote" className="text-xs">Pacote</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          ) : <span className="text-sm text-muted-foreground">{client.plano || '—'}</span>}
+                        </TableCell>
+                        {/* Valor */}
+                        <TableCell className="text-right p-2">
+                          {isEditing ? <Input type="number" step="0.01" value={editForm.valor ?? ''} onChange={(e) => setEditForm({ ...editForm, valor: e.target.value ? parseFloat(e.target.value) : undefined })} className="h-7 text-sm w-20" /> : <span className="text-sm text-muted-foreground">{client.valor ? `R$ ${client.valor.toFixed(2).replace('.', ',')}` : '—'}</span>}
+                        </TableCell>
+                        {/* Status */}
+                        <TableCell className="p-2">
+                          {isEditing ? (
+                            <Select value={editForm.status || ''} onValueChange={(v) => setEditForm({ ...editForm, status: (v || undefined) as ClientStatus })}>
+                              <SelectTrigger className="h-7 text-xs w-20"><SelectValue placeholder="—" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Ativo" className="text-xs">Ativo</SelectItem>
+                                <SelectItem value="Inativo" className="text-xs">Inativo</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <span className={cn("text-sm font-medium", client.status === 'Ativo' ? 'text-[hsl(142,70%,40%)]' : client.status === 'Inativo' ? 'text-destructive' : 'text-muted-foreground')}>
+                              {client.status || '—'}
+                            </span>
+                          )}
+                        </TableCell>
                         <TableCell className="p-2 sticky right-0 bg-card">
                           <div className="flex items-center justify-center gap-1">
                             {isEditing ? (
@@ -548,7 +613,7 @@ const SpreadsheetPage: React.FC = () => {
                   })
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={17 + VACCINE_KEYS.length} className="text-center py-8 text-muted-foreground text-sm">
+                    <TableCell colSpan={20 + VACCINE_KEYS.length} className="text-center py-8 text-muted-foreground text-sm">
                       {searchQuery ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}
                     </TableCell>
                   </TableRow>
