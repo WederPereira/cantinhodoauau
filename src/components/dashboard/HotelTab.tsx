@@ -984,6 +984,10 @@ const HotelTab: React.FC = () => {
             </div>
           </div>
         </TabsContent>
+
+        <TabsContent value="analytics" className="mt-4">
+          <HotelAnalyticsTab />
+        </TabsContent>
       </Tabs>
 
       {/* Lightbox */}
