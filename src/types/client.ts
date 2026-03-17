@@ -27,8 +27,6 @@ export interface FleaRecord {
 
 export type PetGender = 'Macho' | 'Fêmea';
 
-export type ClientPlan = 'Mensal' | 'Avulso' | 'Pacote' | '';
-export type ClientStatus = 'Ativo' | 'Inativo' | '';
 
 export interface Client {
   id: string;
