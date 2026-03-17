@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import HotelAnalyticsTab from '@/components/dashboard/HotelAnalyticsTab';
 import { useClients } from '@/context/ClientContext';
 import { format, startOfDay, differenceInDays, addDays, eachDayOfInterval, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
