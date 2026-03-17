@@ -250,12 +250,6 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
                   <InlineEditField icon={<Dog size={14} />} label="" value="" onSave={(v) => { inlineUpdate('weight', parseFloat(v) || undefined); }} placeholder="Ex: 12.5" />
                 </div>
               )}
-              {fillingField === 'valor' && (
-                <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 animate-in fade-in">
-                  <p className="text-[10px] text-primary font-medium mb-1">💰 Valor do Plano</p>
-                  <InlineEditField icon={<DollarSign size={14} />} label="" value="" onSave={(v) => { inlineUpdate('valor', parseFloat(v) || undefined); }} placeholder="Ex: 500" />
-                </div>
-              )}
               {fillingField === 'petSize' && (
                 <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 animate-in fade-in">
                   <p className="text-[10px] text-primary font-medium mb-1">📏 Porte do Pet</p>
