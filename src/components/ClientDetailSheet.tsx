@@ -271,27 +271,6 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
                   </div>
                 </div>
               )}
-              {fillingField === 'plano' && (
-                <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 animate-in fade-in">
-                  <p className="text-[10px] text-primary font-medium mb-1">📋 Plano</p>
-                  <div className="flex gap-2">
-                    {(['Mensal', 'Avulso', 'Pacote'] as ClientPlan[]).map(p => (
-                      <button key={p} onClick={() => inlineUpdate('plano', p)} className="flex-1 py-2 px-1 rounded-lg border border-border text-xs font-medium hover:bg-primary/10 hover:border-primary transition-colors">
-                        {p}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {fillingField === 'status' && (
-                <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 animate-in fade-in">
-                  <p className="text-[10px] text-primary font-medium mb-1">📊 Status</p>
-                  <div className="flex gap-2">
-                    <button onClick={() => inlineUpdate('status', 'Ativo')} className="flex-1 py-2 px-3 rounded-lg border border-border text-sm font-medium hover:bg-[hsl(142,70%,45%)]/10 hover:border-[hsl(142,70%,45%)] transition-colors">✓ Ativo</button>
-                    <button onClick={() => inlineUpdate('status', 'Inativo')} className="flex-1 py-2 px-3 rounded-lg border border-border text-sm font-medium hover:bg-destructive/10 hover:border-destructive transition-colors">✗ Inativo</button>
-                  </div>
-                </div>
-              )}
               {fillingField === 'birthDate' && (
                 <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 animate-in fade-in">
                   <p className="text-[10px] text-primary font-medium mb-1">🎂 Data de Nascimento</p>
