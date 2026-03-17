@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import HotelAnalyticsTab from '@/components/dashboard/HotelAnalyticsTab';
 import { useClients } from '@/context/ClientContext';
 import { format, startOfDay, differenceInDays, addDays, eachDayOfInterval, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -422,7 +423,7 @@ const HotelTab: React.FC = () => {
   return (
     <>
       <Tabs defaultValue="active" className="space-y-4">
-        <TabsList className="w-full grid grid-cols-3">
+        <TabsList className="w-full grid grid-cols-4">
           <TabsTrigger value="active" className="gap-1 text-xs">
             <Hotel size={14} /> Hospedados
           </TabsTrigger>
@@ -431,6 +432,9 @@ const HotelTab: React.FC = () => {
           </TabsTrigger>
           <TabsTrigger value="history" className="gap-1 text-xs">
             <CalendarIcon size={14} /> Histórico
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className="gap-1 text-xs">
+            <Timer size={14} /> Análise
           </TabsTrigger>
         </TabsList>
 
@@ -979,6 +983,10 @@ const HotelTab: React.FC = () => {
               </div>
             </div>
           </div>
+        </TabsContent>
+
+        <TabsContent value="analytics" className="mt-4">
+          <HotelAnalyticsTab />
         </TabsContent>
       </Tabs>
 
