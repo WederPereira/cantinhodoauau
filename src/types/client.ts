@@ -48,9 +48,6 @@ export interface Client {
   vaccines: Vaccines;
   vaccineHistory: VaccineRecord[];
   fleaHistory: FleaRecord[];
-  plano?: ClientPlan;
-  valor?: number;
-  status?: ClientStatus;
   createdAt: Date;
   updatedAt: Date;
 }
