@@ -126,9 +126,6 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     birthDate?: Date;
     gender?: PetGender;
     castrated?: boolean;
-    plano?: ClientPlan;
-    valor?: number;
-    status?: ClientStatus;
   }) => {
     const newClient: Client = {
       id: crypto.randomUUID(),
