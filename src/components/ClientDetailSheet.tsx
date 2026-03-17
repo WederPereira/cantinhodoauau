@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Client, PetSize, PetGender, formatDate, VACCINE_LABELS, Vaccines, formatVaccineDate, getVaccineExpiryDate, isExpired, isExpiringSoon, VaccineType, DEFAULT_VACCINES, getProfileCompleteness } from '@/types/client';
 import { useClients } from '@/context/ClientContext';
 import { toast } from 'sonner';
-import { Trash2, Pencil, Dog, Heart, User, MapPin, Phone, Mail, FileText, Home, X, Shield, AlertCircle, DollarSign, Tag } from 'lucide-react';
+import { Trash2, Pencil, Dog, Heart, User, MapPin, Phone, Mail, FileText, Home, X, Shield, AlertCircle } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { HealthHistorySection } from './HealthHistorySection';
