@@ -7,7 +7,7 @@ import { BirthdaySection } from '@/components/dashboard/BirthdaySection';
 import { HealthControlTab } from '@/components/dashboard/HealthControlTab';
 import DaycareTab from '@/components/dashboard/DaycareTab';
 import HotelTab from '@/components/dashboard/HotelTab';
-import HotelAnalyticsTab from '@/components/dashboard/HotelAnalyticsTab';
+import HotelTab from '@/components/dashboard/HotelTab';
 import HotelMedicationAlerts from '@/components/dashboard/HotelMedicationAlerts';
 import HotelFeedingAlerts from '@/components/dashboard/HotelFeedingAlerts';
 import HotelCheckoutAlerts from '@/components/dashboard/HotelCheckoutAlerts';
