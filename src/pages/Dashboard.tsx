@@ -78,7 +78,7 @@ const Dashboard: React.FC = () => {
         </div>
 
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="w-full grid grid-cols-5">
+          <TabsList className="w-full grid grid-cols-4">
             <TabsTrigger value="overview" className="gap-1 text-xs sm:text-sm">
               <LayoutDashboard size={14} />
               <span className="hidden sm:inline">Geral</span>
@@ -90,10 +90,6 @@ const Dashboard: React.FC = () => {
             <TabsTrigger value="hotel" className="gap-1 text-xs sm:text-sm">
               <Hotel size={14} />
               <span className="hidden sm:inline">Hotel</span>
-            </TabsTrigger>
-            <TabsTrigger value="hotel-analytics" className="gap-1 text-xs sm:text-sm">
-              <BarChart3 size={14} />
-              <span className="hidden sm:inline">Análise</span>
             </TabsTrigger>
             <TabsTrigger value="health" className="gap-1 text-xs sm:text-sm">
               <HeartPulse size={14} />
