@@ -24,9 +24,6 @@ interface ClientContextType {
     birthDate?: Date;
     gender?: PetGender;
     castrated?: boolean;
-    plano?: ClientPlan;
-    valor?: number;
-    status?: ClientStatus;
   }) => void;
   importClients: (newClients: Array<{
     tutorName?: string;
