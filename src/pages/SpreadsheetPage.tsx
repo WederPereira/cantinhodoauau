@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { useClients } from '@/context/ClientContext';
-import { Client, formatDate, Vaccines, VACCINE_LABELS, formatVaccineDate, DEFAULT_VACCINES, PetSize, PetGender, ClientPlan, ClientStatus } from '@/types/client';
+import { Client, formatDate, Vaccines, VACCINE_LABELS, formatVaccineDate, DEFAULT_VACCINES, PetSize, PetGender } from '@/types/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -32,8 +32,7 @@ const SpreadsheetPage: React.FC = () => {
     name: string; breed: string; petSize?: PetSize; weight?: number;
     gender?: PetGender; castrated?: boolean; vaccines: Vaccines;
     birthDate?: Date; entryDate?: Date;
-    plano?: ClientPlan; valor?: number; status?: ClientStatus;
-  }>({ tutorName: '', tutorPhone: '', tutorEmail: '', tutorAddress: '', tutorCpf: '', name: '', breed: '', petSize: undefined, weight: undefined, gender: undefined, castrated: false, vaccines: { ...DEFAULT_VACCINES }, birthDate: undefined, entryDate: undefined, plano: undefined, valor: undefined, status: undefined });
+  }>({ tutorName: '', tutorPhone: '', tutorEmail: '', tutorAddress: '', tutorCpf: '', name: '', breed: '', petSize: undefined, weight: undefined, gender: undefined, castrated: false, vaccines: { ...DEFAULT_VACCINES }, birthDate: undefined, entryDate: undefined });
 
   const downloadQrForClient = useCallback((client: Client): Promise<void> => {
     return new Promise((resolve) => {
@@ -90,7 +89,7 @@ const SpreadsheetPage: React.FC = () => {
   );
 
   const exportToCSV = () => {
-    const headers = ['Tutor', 'Telefone', 'Email', 'CPF', 'Endereço', 'Dog', 'Raça', 'Peso (kg)', 'Porte', 'Gênero', 'Castrado', 'Nascimento', 'Entrada', ...VACCINE_KEYS.map(k => VACCINE_LABELS[k]), 'Plano', 'Valor', 'Status'];
+    const headers = ['Tutor', 'Telefone', 'Email', 'CPF', 'Endereço', 'Dog', 'Raça', 'Peso (kg)', 'Porte', 'Gênero', 'Castrado', 'Nascimento', 'Entrada', ...VACCINE_KEYS.map(k => VACCINE_LABELS[k])];
     const rows = clients.map(client => {
       const fleaInfo = client.fleaHistory?.length > 0 ? client.fleaHistory[0].brand : '';
       return [
@@ -109,9 +108,6 @@ const SpreadsheetPage: React.FC = () => {
           }
           return client.vaccines?.[k] ? formatVaccineDate(client.vaccines[k]) : 'Não';
         }),
-        client.plano || '',
-        client.valor ? client.valor.toString().replace('.', ',') : '',
-        client.status || '',
       ].join(';');
     });
     const csv = [headers.join(';'), ...rows].join('\n');
@@ -175,10 +171,6 @@ const SpreadsheetPage: React.FC = () => {
       const petSize = (['Pequeno', 'Médio', 'Grande', 'Gigante'].includes(petSizeStr) ? petSizeStr : undefined) as PetSize | undefined;
       const weightStr = findCol(row, 'peso');
       const weight = weightStr ? parseFloat(weightStr.replace(',', '.')) : undefined;
-      const plano = findCol(row, 'plano') as ClientPlan || undefined;
-      const valorStr = findCol(row, 'valor');
-      const valor = valorStr ? parseFloat(valorStr.replace(',', '.')) : undefined;
-      const status = findCol(row, 'status') as ClientStatus || undefined;
 
       const existingTutor = tutorName ? clients.find(c => c.tutorName.toLowerCase() === tutorName.toLowerCase()) : null;
 
@@ -196,9 +188,6 @@ const SpreadsheetPage: React.FC = () => {
         castrated,
         birthDate: parseDate(birthStr),
         entryDate: parseDate(entryStr),
-        plano,
-        valor,
-        status,
       };
 
       const vaccines: any = { ...DEFAULT_VACCINES };
@@ -281,7 +270,6 @@ const SpreadsheetPage: React.FC = () => {
       vaccines: client.vaccines || { ...DEFAULT_VACCINES },
       birthDate: client.birthDate ? new Date(client.birthDate) : undefined,
       entryDate: client.entryDate ? new Date(client.entryDate) : undefined,
-      plano: client.plano, valor: client.valor, status: client.status,
     });
   };
 
@@ -296,7 +284,6 @@ const SpreadsheetPage: React.FC = () => {
       petSize: editForm.petSize, weight: editForm.weight, gender: editForm.gender,
       castrated: editForm.castrated, vaccines: editForm.vaccines,
       birthDate: editForm.birthDate, entryDate: editForm.entryDate || client.entryDate,
-      plano: editForm.plano, valor: editForm.valor, status: editForm.status,
     });
     setEditingId(null);
     toast.success('Cliente atualizado!');
@@ -372,256 +359,217 @@ const SpreadsheetPage: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container px-4 py-6 max-w-full mx-auto">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+    <div className="h-screen flex flex-col bg-background overflow-hidden">
+      {/* Header */}
+      <div className="shrink-0 px-4 py-3 border-b border-border bg-card">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 max-w-full">
           <div className="flex items-center gap-3">
-            <FileSpreadsheet className="text-primary" size={28} />
-            <h1 className="text-2xl font-bold text-foreground">Planilha</h1>
-            <span className="text-sm text-muted-foreground">({clients.length} clientes)</span>
+            <FileSpreadsheet className="text-primary" size={24} />
+            <h1 className="text-xl font-bold text-foreground">Planilha</h1>
+            <span className="text-sm text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{clients.length}</span>
           </div>
           <div className="flex gap-2 flex-wrap">
             {selectedIds.size > 0 && (
-              <Button variant="destructive" size="sm" className="gap-2" onClick={deleteSelected}>
-                <Trash2 size={16} /> Excluir ({selectedIds.size})
+              <Button variant="destructive" size="sm" className="gap-1.5 h-8 text-xs" onClick={deleteSelected}>
+                <Trash2 size={14} /> Excluir ({selectedIds.size})
               </Button>
             )}
-            <Button variant="outline" size="sm" className="gap-2" onClick={generateAllQrCodes} disabled={generatingAll}>
-              <QrCode size={16} />
-              {generatingAll ? 'Gerando...' : `Gerar Todos QR (${clients.filter(c => !generatedQrIds.has(c.id)).length})`}
+            <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs" onClick={generateAllQrCodes} disabled={generatingAll}>
+              <QrCode size={14} />
+              {generatingAll ? 'Gerando...' : `QR (${clients.filter(c => !generatedQrIds.has(c.id)).length})`}
             </Button>
             <input type="file" ref={fileInputRef} accept=".csv,.xlsx,.xls,.ods,.txt" onChange={handleFileUpload} className="hidden" />
-            <Button variant="outline" size="sm" className="gap-2" onClick={() => fileInputRef.current?.click()}>
-              <Upload size={16} /> Importar
+            <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs" onClick={() => fileInputRef.current?.click()}>
+              <Upload size={14} /> Importar
             </Button>
-            <Button variant="outline" size="sm" className="gap-2" onClick={exportToCSV}>
-              <Download size={16} /> Exportar CSV
+            <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs" onClick={exportToCSV}>
+              <Download size={14} /> CSV
             </Button>
           </div>
         </div>
 
-        <div className="bg-card border border-border rounded-lg p-3 mb-4 shadow-soft">
-          <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Buscar por tutor, dog ou raça..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9 h-9 text-sm" />
-            {searchQuery && (
-              <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setSearchQuery('')}>
-                <X size={14} />
-              </Button>
-            )}
-          </div>
+        {/* Search */}
+        <div className="relative mt-2 max-w-md">
+          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input placeholder="Buscar tutor, dog ou raça..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-8 h-8 text-sm" />
+          {searchQuery && (
+            <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6" onClick={() => setSearchQuery('')}>
+              <X size={12} />
+            </Button>
+          )}
         </div>
+      </div>
 
-        <div className="bg-card border border-border rounded-lg shadow-soft overflow-hidden">
-          <div className="overflow-auto max-h-[calc(100vh-220px)]">
-            <Table>
-              <TableHeader className="sticky top-0 z-10 bg-muted">
-                <TableRow>
-                  <TableHead className="w-10 p-2">
-                    <input type="checkbox" checked={selectedIds.size === filteredClients.length && filteredClients.length > 0} onChange={toggleSelectAll} />
-                  </TableHead>
-                  <TableHead className="font-semibold text-xs p-2">QR</TableHead>
-                  <TableHead className="font-semibold text-xs p-2">Tutor</TableHead>
-                  <TableHead className="font-semibold text-xs p-2">Telefone</TableHead>
-                  <TableHead className="font-semibold text-xs p-2">Email</TableHead>
-                  <TableHead className="font-semibold text-xs p-2">CPF</TableHead>
-                  <TableHead className="font-semibold text-xs p-2">Endereço</TableHead>
-                  <TableHead className="font-semibold text-xs p-2">Dog</TableHead>
-                  <TableHead className="font-semibold text-xs p-2">Raça</TableHead>
-                  <TableHead className="font-semibold text-xs p-2 text-right">Peso</TableHead>
-                  <TableHead className="font-semibold text-xs p-2">Porte</TableHead>
-                  <TableHead className="font-semibold text-xs p-2">Gênero</TableHead>
-                  <TableHead className="font-semibold text-xs p-2">Castrado</TableHead>
-                  <TableHead className="font-semibold text-xs p-2">Nascimento</TableHead>
-                  <TableHead className="font-semibold text-xs p-2">Entrada</TableHead>
-                  {VACCINE_KEYS.map(k => (
-                    <TableHead key={k} className="font-semibold text-xs p-2 text-center">{VACCINE_LABELS[k]}</TableHead>
-                  ))}
-                  <TableHead className="font-semibold text-xs p-2">Plano</TableHead>
-                  <TableHead className="font-semibold text-xs p-2 text-right">Valor</TableHead>
-                  <TableHead className="font-semibold text-xs p-2">Status</TableHead>
-                  <TableHead className="font-semibold text-xs p-2 text-center w-20 sticky right-0 bg-muted">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredClients.length > 0 ? (
-                  filteredClients.map((client) => {
-                    const isEditing = editingId === client.id;
-                    const qrValue = `Tutor: ${client.tutorName}\nDog: ${client.name}\nRaça: ${client.breed || 'N/A'}`;
-                    const isQrGenerated = generatedQrIds.has(client.id);
-                    return (
-                      <TableRow key={client.id} className="hover:bg-muted/30">
-                        <TableCell className="p-2">
-                          <input type="checkbox" checked={selectedIds.has(client.id)} onChange={() => toggleSelect(client.id)} />
-                        </TableCell>
-                        <TableCell className="p-2">
-                          <div className="flex flex-col items-center gap-1">
-                            <div data-qr-id={client.id} className="w-10 h-10">
-                              <QRCodeSVG value={qrValue} size={40} level="L" />
-                            </div>
-                            <div className="flex gap-0.5">
-                              <Button variant="ghost" size="icon"
-                                className={cn("h-6 w-6", isQrGenerated ? "text-[hsl(var(--status-ok))]" : "text-primary")}
-                                onClick={() => downloadQrForClient(client)}
-                                title={isQrGenerated ? "QR já baixado" : "Baixar QR Code"}>
-                                {isQrGenerated ? <Check size={12} /> : <Download size={12} />}
-                              </Button>
-                              <Button variant="ghost" size="icon" className="h-6 w-6 text-primary"
-                                onClick={() => { downloadCardForClient(client); toast.success(`Carteirinha de ${client.name} baixada!`); }}
-                                title="Baixar Carteirinha">
-                                <CreditCard size={12} />
-                              </Button>
-                            </div>
-                            <div data-card-qr={client.id} className="hidden">
-                              <QRCodeSVG value={qrValue} size={200} level="M" />
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="p-2">
-                          {isEditing ? <Input value={editForm.tutorName} onChange={(e) => setEditForm({ ...editForm, tutorName: e.target.value })} className="h-7 text-sm w-24" /> : <span className="text-sm text-muted-foreground">{client.tutorName || '—'}</span>}
-                        </TableCell>
-                        <TableCell className="p-2">
-                          {isEditing ? <Input value={editForm.tutorPhone} onChange={(e) => setEditForm({ ...editForm, tutorPhone: e.target.value })} className="h-7 text-sm w-28" /> : <span className="text-sm text-muted-foreground">{client.tutorPhone || '—'}</span>}
-                        </TableCell>
-                        <TableCell className="p-2">
-                          {isEditing ? <Input value={editForm.tutorEmail} onChange={(e) => setEditForm({ ...editForm, tutorEmail: e.target.value })} className="h-7 text-sm w-32" /> : <span className="text-sm text-muted-foreground">{client.tutorEmail || '—'}</span>}
-                        </TableCell>
-                        <TableCell className="p-2">
-                          {isEditing ? <Input value={editForm.tutorCpf} onChange={(e) => setEditForm({ ...editForm, tutorCpf: e.target.value })} className="h-7 text-sm w-28" /> : <span className="text-sm text-muted-foreground">{client.tutorCpf || '—'}</span>}
-                        </TableCell>
-                        <TableCell className="p-2 max-w-[150px]">
-                          {isEditing ? <Input value={editForm.tutorAddress} onChange={(e) => setEditForm({ ...editForm, tutorAddress: e.target.value })} className="h-7 text-sm w-36" /> : <span className="text-sm text-muted-foreground break-words line-clamp-2">{client.tutorAddress || '—'}</span>}
-                        </TableCell>
-                        <TableCell className="p-2">
-                          {isEditing ? <Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className="h-7 text-sm w-24" /> : <span className="font-medium text-sm">{client.name}</span>}
-                        </TableCell>
-                        <TableCell className="p-2">
-                          {isEditing ? <Input value={editForm.breed} onChange={(e) => setEditForm({ ...editForm, breed: e.target.value })} className="h-7 text-sm w-24" /> : <span className="text-sm text-muted-foreground">{client.breed || '—'}</span>}
-                        </TableCell>
-                        <TableCell className="text-right p-2">
-                          {isEditing ? <Input type="number" step="0.1" value={editForm.weight ?? ''} onChange={(e) => setEditForm({ ...editForm, weight: e.target.value ? parseFloat(e.target.value) : undefined })} className="h-7 text-sm w-16" /> : <span className="text-sm text-muted-foreground">{client.weight ? client.weight.toFixed(1).replace('.', ',') : '—'}</span>}
-                        </TableCell>
-                        <TableCell className="p-2">
-                          {isEditing ? (
-                            <Select value={editForm.petSize || ''} onValueChange={(v) => setEditForm({ ...editForm, petSize: (v || undefined) as PetSize })}>
-                              <SelectTrigger className="h-7 text-xs w-24"><SelectValue placeholder="—" /></SelectTrigger>
-                              <SelectContent>
-                                {(['Pequeno', 'Médio', 'Grande', 'Gigante'] as PetSize[]).map(s => (
-                                  <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          ) : <span className="text-sm text-muted-foreground">{client.petSize || '—'}</span>}
-                        </TableCell>
-                        <TableCell className="p-2">
-                          {isEditing ? (
-                            <Select value={editForm.gender || ''} onValueChange={(v) => setEditForm({ ...editForm, gender: (v || undefined) as PetGender })}>
-                              <SelectTrigger className="h-7 text-xs w-20"><SelectValue placeholder="—" /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Macho" className="text-xs">♂ Macho</SelectItem>
-                                <SelectItem value="Fêmea" className="text-xs">♀ Fêmea</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          ) : <span className="text-sm text-muted-foreground">{client.gender ? (client.gender === 'Macho' ? '♂' : '♀') : '—'}</span>}
-                        </TableCell>
-                        <TableCell className="p-2 text-center">
-                          {isEditing ? (
-                            <input type="checkbox" checked={editForm.castrated ?? false} onChange={(e) => setEditForm({ ...editForm, castrated: e.target.checked })} />
-                          ) : <span className="text-sm">{client.castrated ? '✓' : '—'}</span>}
-                        </TableCell>
-                        <TableCell className="p-2">
-                          {isEditing ? (
-                            <DateEditCell value={editForm.birthDate} onChange={(d) => setEditForm(prev => ({ ...prev, birthDate: d }))} />
-                          ) : (
-                            <span className="text-sm text-muted-foreground">{client.birthDate ? format(new Date(client.birthDate), 'dd/MM/yy') : '—'}</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="p-2">
-                          {isEditing ? (
-                            <DateEditCell value={editForm.entryDate} onChange={(d) => setEditForm(prev => ({ ...prev, entryDate: d }))} />
-                          ) : (
-                            <span className="text-sm text-muted-foreground">{client.entryDate ? format(new Date(client.entryDate), 'dd/MM/yy') : '—'}</span>
-                          )}
-                        </TableCell>
+      {/* Table with proper scroll */}
+      <div className="flex-1 overflow-auto relative">
+        <Table className="text-xs">
+          <TableHeader className="sticky top-0 z-20">
+            <TableRow className="bg-muted border-b-2 border-border">
+              <TableHead className="w-8 p-1.5 sticky left-0 z-30 bg-muted">
+                <input type="checkbox" checked={selectedIds.size === filteredClients.length && filteredClients.length > 0} onChange={toggleSelectAll} className="rounded" />
+              </TableHead>
+              <TableHead className="p-1.5 text-[11px] font-bold bg-muted">QR</TableHead>
+              <TableHead className="p-1.5 text-[11px] font-bold bg-muted min-w-[120px]">Tutor</TableHead>
+              <TableHead className="p-1.5 text-[11px] font-bold bg-muted min-w-[110px]">Telefone</TableHead>
+              <TableHead className="p-1.5 text-[11px] font-bold bg-muted min-w-[140px]">Email</TableHead>
+              <TableHead className="p-1.5 text-[11px] font-bold bg-muted min-w-[110px]">CPF</TableHead>
+              <TableHead className="p-1.5 text-[11px] font-bold bg-muted min-w-[160px]">Endereço</TableHead>
+              <TableHead className="p-1.5 text-[11px] font-bold bg-muted min-w-[100px]">Dog</TableHead>
+              <TableHead className="p-1.5 text-[11px] font-bold bg-muted min-w-[100px]">Raça</TableHead>
+              <TableHead className="p-1.5 text-[11px] font-bold bg-muted text-right w-16">Peso</TableHead>
+              <TableHead className="p-1.5 text-[11px] font-bold bg-muted w-20">Porte</TableHead>
+              <TableHead className="p-1.5 text-[11px] font-bold bg-muted w-16">Gênero</TableHead>
+              <TableHead className="p-1.5 text-[11px] font-bold bg-muted w-16 text-center">Cast.</TableHead>
+              <TableHead className="p-1.5 text-[11px] font-bold bg-muted w-20">Nasc.</TableHead>
+              <TableHead className="p-1.5 text-[11px] font-bold bg-muted w-20">Entrada</TableHead>
+              {VACCINE_KEYS.map(k => (
+                <TableHead key={k} className="p-1.5 text-[11px] font-bold bg-muted text-center w-20">{VACCINE_LABELS[k]}</TableHead>
+              ))}
+              <TableHead className="p-1.5 text-[11px] font-bold text-center w-16 sticky right-0 z-30 bg-muted shadow-[-2px_0_4px_rgba(0,0,0,0.05)]">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredClients.length > 0 ? (
+              filteredClients.map((client) => {
+                const isEditing = editingId === client.id;
+                const qrValue = `Tutor: ${client.tutorName}\nDog: ${client.name}\nRaça: ${client.breed || 'N/A'}`;
+                const isQrGenerated = generatedQrIds.has(client.id);
+                return (
+                  <TableRow key={client.id} className={cn("hover:bg-muted/40 transition-colors", isEditing && "bg-primary/5")}>
+                    <TableCell className="p-1.5 sticky left-0 z-10 bg-card">
+                      <input type="checkbox" checked={selectedIds.has(client.id)} onChange={() => toggleSelect(client.id)} className="rounded" />
+                    </TableCell>
+                    <TableCell className="p-1.5">
+                      <div className="flex items-center gap-0.5">
+                        <div data-qr-id={client.id} className="w-8 h-8">
+                          <QRCodeSVG value={qrValue} size={32} level="L" />
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <Button variant="ghost" size="icon"
+                            className={cn("h-5 w-5", isQrGenerated ? "text-[hsl(var(--status-ok))]" : "text-primary")}
+                            onClick={() => downloadQrForClient(client)}>
+                            {isQrGenerated ? <Check size={10} /> : <Download size={10} />}
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-5 w-5 text-primary"
+                            onClick={() => { downloadCardForClient(client); toast.success(`Carteirinha baixada!`); }}>
+                            <CreditCard size={10} />
+                          </Button>
+                        </div>
+                        <div data-card-qr={client.id} className="hidden">
+                          <QRCodeSVG value={qrValue} size={200} level="M" />
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="p-1.5">
+                      {isEditing ? <Input value={editForm.tutorName} onChange={(e) => setEditForm({ ...editForm, tutorName: e.target.value })} className="h-6 text-xs w-28" /> : <span className="text-muted-foreground truncate block max-w-[140px]">{client.tutorName || '—'}</span>}
+                    </TableCell>
+                    <TableCell className="p-1.5">
+                      {isEditing ? <Input value={editForm.tutorPhone} onChange={(e) => setEditForm({ ...editForm, tutorPhone: e.target.value })} className="h-6 text-xs w-28" /> : <span className="text-muted-foreground">{client.tutorPhone || '—'}</span>}
+                    </TableCell>
+                    <TableCell className="p-1.5">
+                      {isEditing ? <Input value={editForm.tutorEmail} onChange={(e) => setEditForm({ ...editForm, tutorEmail: e.target.value })} className="h-6 text-xs w-32" /> : <span className="text-muted-foreground truncate block max-w-[160px]">{client.tutorEmail || '—'}</span>}
+                    </TableCell>
+                    <TableCell className="p-1.5">
+                      {isEditing ? <Input value={editForm.tutorCpf} onChange={(e) => setEditForm({ ...editForm, tutorCpf: e.target.value })} className="h-6 text-xs w-28" /> : <span className="text-muted-foreground">{client.tutorCpf || '—'}</span>}
+                    </TableCell>
+                    <TableCell className="p-1.5">
+                      {isEditing ? <Input value={editForm.tutorAddress} onChange={(e) => setEditForm({ ...editForm, tutorAddress: e.target.value })} className="h-6 text-xs w-36" /> : <span className="text-muted-foreground truncate block max-w-[180px]" title={client.tutorAddress}>{client.tutorAddress || '—'}</span>}
+                    </TableCell>
+                    <TableCell className="p-1.5">
+                      {isEditing ? <Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className="h-6 text-xs w-24" /> : <span className="font-semibold text-foreground">{client.name}</span>}
+                    </TableCell>
+                    <TableCell className="p-1.5">
+                      {isEditing ? <Input value={editForm.breed} onChange={(e) => setEditForm({ ...editForm, breed: e.target.value })} className="h-6 text-xs w-24" /> : <span className="text-muted-foreground">{client.breed || '—'}</span>}
+                    </TableCell>
+                    <TableCell className="text-right p-1.5">
+                      {isEditing ? <Input type="number" step="0.1" value={editForm.weight ?? ''} onChange={(e) => setEditForm({ ...editForm, weight: e.target.value ? parseFloat(e.target.value) : undefined })} className="h-6 text-xs w-14" /> : <span className="text-muted-foreground">{client.weight ? client.weight.toFixed(1).replace('.', ',') : '—'}</span>}
+                    </TableCell>
+                    <TableCell className="p-1.5">
+                      {isEditing ? (
+                        <Select value={editForm.petSize || ''} onValueChange={(v) => setEditForm({ ...editForm, petSize: (v || undefined) as PetSize })}>
+                          <SelectTrigger className="h-6 text-xs w-20"><SelectValue placeholder="—" /></SelectTrigger>
+                          <SelectContent>
+                            {(['Pequeno', 'Médio', 'Grande', 'Gigante'] as PetSize[]).map(s => (
+                              <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : <span className="text-muted-foreground">{client.petSize || '—'}</span>}
+                    </TableCell>
+                    <TableCell className="p-1.5">
+                      {isEditing ? (
+                        <Select value={editForm.gender || ''} onValueChange={(v) => setEditForm({ ...editForm, gender: (v || undefined) as PetGender })}>
+                          <SelectTrigger className="h-6 text-xs w-16"><SelectValue placeholder="—" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Macho" className="text-xs">♂</SelectItem>
+                            <SelectItem value="Fêmea" className="text-xs">♀</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : <span className="text-muted-foreground">{client.gender ? (client.gender === 'Macho' ? '♂' : '♀') : '—'}</span>}
+                    </TableCell>
+                    <TableCell className="p-1.5 text-center">
+                      {isEditing ? (
+                        <input type="checkbox" checked={editForm.castrated ?? false} onChange={(e) => setEditForm({ ...editForm, castrated: e.target.checked })} className="rounded" />
+                      ) : <span>{client.castrated ? '✓' : '—'}</span>}
+                    </TableCell>
+                    <TableCell className="p-1.5">
+                      {isEditing ? (
+                        <DateEditCell value={editForm.birthDate} onChange={(d) => setEditForm(prev => ({ ...prev, birthDate: d }))} />
+                      ) : (
+                        <span className="text-muted-foreground">{client.birthDate ? format(new Date(client.birthDate), 'dd/MM/yy') : '—'}</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="p-1.5">
+                      {isEditing ? (
+                        <DateEditCell value={editForm.entryDate} onChange={(d) => setEditForm(prev => ({ ...prev, entryDate: d }))} />
+                      ) : (
+                        <span className="text-muted-foreground">{client.entryDate ? format(new Date(client.entryDate), 'dd/MM/yy') : '—'}</span>
+                      )}
+                    </TableCell>
+                    {isEditing ? (
+                      VACCINE_KEYS.map(key => (
+                        <TableCell key={key} className="p-1.5"><VaccineDateCell vaccineKey={key} /></TableCell>
+                      ))
+                    ) : (
+                      VACCINE_KEYS.map(key => (
+                        <TableCell key={key} className="p-1.5"><VaccineIndicator value={client.vaccines?.[key] || null} /></TableCell>
+                      ))
+                    )}
+                    <TableCell className="p-1.5 sticky right-0 z-10 bg-card shadow-[-2px_0_4px_rgba(0,0,0,0.05)]">
+                      <div className="flex items-center justify-center gap-0.5">
                         {isEditing ? (
-                          VACCINE_KEYS.map(key => (
-                            <TableCell key={key} className="p-2"><VaccineDateCell vaccineKey={key} /></TableCell>
-                          ))
+                          <>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 text-[hsl(var(--status-ok))] hover:bg-[hsl(var(--status-ok))]/10" onClick={() => saveEdit(client)}>
+                              <Check size={12} />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:bg-destructive/10" onClick={cancelEdit}>
+                              <XCircle size={12} />
+                            </Button>
+                          </>
                         ) : (
-                          VACCINE_KEYS.map(key => (
-                            <TableCell key={key} className="p-2"><VaccineIndicator value={client.vaccines?.[key] || null} /></TableCell>
-                          ))
+                          <>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 text-primary hover:bg-primary/10" onClick={() => startEdit(client)}>
+                              <Pencil size={12} />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:bg-destructive/10" onClick={() => { deleteClient(client.id); toast.success('Removido'); }}>
+                              <Trash2 size={12} />
+                            </Button>
+                          </>
                         )}
-                        {/* Plano */}
-                        <TableCell className="p-2">
-                          {isEditing ? (
-                            <Select value={editForm.plano || ''} onValueChange={(v) => setEditForm({ ...editForm, plano: (v || undefined) as ClientPlan })}>
-                              <SelectTrigger className="h-7 text-xs w-20"><SelectValue placeholder="—" /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Mensal" className="text-xs">Mensal</SelectItem>
-                                <SelectItem value="Avulso" className="text-xs">Avulso</SelectItem>
-                                <SelectItem value="Pacote" className="text-xs">Pacote</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          ) : <span className="text-sm text-muted-foreground">{client.plano || '—'}</span>}
-                        </TableCell>
-                        {/* Valor */}
-                        <TableCell className="text-right p-2">
-                          {isEditing ? <Input type="number" step="0.01" value={editForm.valor ?? ''} onChange={(e) => setEditForm({ ...editForm, valor: e.target.value ? parseFloat(e.target.value) : undefined })} className="h-7 text-sm w-20" /> : <span className="text-sm text-muted-foreground">{client.valor ? `R$ ${client.valor.toFixed(2).replace('.', ',')}` : '—'}</span>}
-                        </TableCell>
-                        {/* Status */}
-                        <TableCell className="p-2">
-                          {isEditing ? (
-                            <Select value={editForm.status || ''} onValueChange={(v) => setEditForm({ ...editForm, status: (v || undefined) as ClientStatus })}>
-                              <SelectTrigger className="h-7 text-xs w-20"><SelectValue placeholder="—" /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Ativo" className="text-xs">Ativo</SelectItem>
-                                <SelectItem value="Inativo" className="text-xs">Inativo</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          ) : (
-                            <span className={cn("text-sm font-medium", client.status === 'Ativo' ? 'text-[hsl(142,70%,40%)]' : client.status === 'Inativo' ? 'text-destructive' : 'text-muted-foreground')}>
-                              {client.status || '—'}
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell className="p-2 sticky right-0 bg-card">
-                          <div className="flex items-center justify-center gap-1">
-                            {isEditing ? (
-                              <>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 text-[hsl(var(--status-ok))] hover:bg-[hsl(var(--status-ok))]/10" onClick={() => saveEdit(client)}>
-                                  <Check size={14} />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:bg-destructive/10" onClick={cancelEdit}>
-                                  <XCircle size={14} />
-                                </Button>
-                              </>
-                            ) : (
-                              <>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 text-primary hover:bg-primary/10" onClick={() => startEdit(client)}>
-                                  <Pencil size={14} />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:bg-destructive/10" onClick={() => { deleteClient(client.id); toast.success('Cliente removido'); }}>
-                                  <Trash2 size={14} />
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={20 + VACCINE_KEYS.length} className="text-center py-8 text-muted-foreground text-sm">
-                      {searchQuery ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}
+                      </div>
                     </TableCell>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
+                );
+              })
+            ) : (
+              <TableRow>
+                <TableCell colSpan={16 + VACCINE_KEYS.length} className="text-center py-12 text-muted-foreground">
+                  {searchQuery ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
