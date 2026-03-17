@@ -68,9 +68,6 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
     if (!client.tutorEmail) missing.push({ label: 'Email', field: 'tutorEmail', type: 'text' });
     if (!client.tutorCpf) missing.push({ label: 'CPF', field: 'tutorCpf', type: 'text' });
     if (!client.tutorAddress) missing.push({ label: 'Endereço', field: 'tutorAddress', type: 'text' });
-    if (!client.plano) missing.push({ label: 'Plano', field: 'plano', type: 'select' });
-    if (!client.valor) missing.push({ label: 'Valor', field: 'valor', type: 'number' });
-    if (!client.status) missing.push({ label: 'Status', field: 'status', type: 'select' });
     return missing;
   }, [client]);
 
