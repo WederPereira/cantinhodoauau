@@ -65,7 +65,7 @@ export const getProfileCompleteness = (client: Client): { percent: number; level
     !!client.gender,
     client.castrated !== undefined && client.castrated !== null,
     !!client.birthDate,
-    !!client.plano,
+    
   ];
   const filled = fields.filter(Boolean).length;
   const percent = Math.round((filled / fields.length) * 100);

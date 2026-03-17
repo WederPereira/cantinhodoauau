@@ -370,46 +370,6 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
                 </div>
               </div>
 
-              {/* Plano & Status */}
-              <div className="space-y-1">
-                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 mb-2">
-                  <Tag size={13} /> Plano & Status
-                </h3>
-                <div className="bg-card border border-border rounded-xl overflow-hidden divide-y divide-border/50">
-                  <div className="flex items-center gap-3 p-2.5 group hover:bg-muted/30 transition-all">
-                    <span className="text-muted-foreground">📋</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Plano</p>
-                      <Select value={client.plano || ''} onValueChange={(v) => inlineUpdate('plano', v as ClientPlan)}>
-                        <SelectTrigger className="h-7 border-0 bg-transparent p-0 text-sm font-medium shadow-none focus:ring-0 w-auto">
-                          <SelectValue placeholder="Selecionar plano" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Mensal">Mensal</SelectItem>
-                          <SelectItem value="Avulso">Avulso</SelectItem>
-                          <SelectItem value="Pacote">Pacote</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <InlineEditField icon={<DollarSign size={14} />} label="Valor" value={client.valor?.toString() || ''} onSave={(v) => inlineUpdate('valor', parseFloat(v) || undefined)} placeholder="Ex: 500" />
-                  <div className="flex items-center gap-3 p-2.5 group hover:bg-muted/30 transition-all">
-                    <span className="text-muted-foreground">📊</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Status</p>
-                      <Select value={client.status || ''} onValueChange={(v) => inlineUpdate('status', v as ClientStatus)}>
-                        <SelectTrigger className="h-7 border-0 bg-transparent p-0 text-sm font-medium shadow-none focus:ring-0 w-auto">
-                          <SelectValue placeholder="Selecionar status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Ativo">✓ Ativo</SelectItem>
-                          <SelectItem value="Inativo">✗ Inativo</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-              </div>
 
               {/* Tutor Info */}
               <div className="space-y-1">
