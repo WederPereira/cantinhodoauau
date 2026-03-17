@@ -948,10 +948,25 @@ const HotelTab: React.FC = () => {
                               <div className="min-w-0 flex-1">
                                 <p className="font-semibold text-xs text-foreground truncate">{s.dog_name}</p>
                                 <p className="text-[10px] text-muted-foreground truncate">{s.tutor_name}</p>
+                                {s.check_out && <p className="text-[10px] text-muted-foreground">Checkout: {format(new Date(s.check_out), 'dd/MM HH:mm')}</p>}
                               </div>
                               <Badge variant={s.active ? 'default' : 'secondary'} className="text-[9px]">
                                 {s.active ? 'Ativo' : 'Checkout'}
                               </Badge>
+                              {deleteConfirmId === s.id ? (
+                                <div className="flex gap-1">
+                                  <Button variant="destructive" size="icon" className="h-7 w-7" onClick={() => handleDeleteStay(s.id)}>
+                                    <Check size={12} />
+                                  </Button>
+                                  <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => setDeleteConfirmId(null)}>
+                                    <X size={12} />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:bg-destructive/10" onClick={() => setDeleteConfirmId(s.id)}>
+                                  <Trash2 size={14} />
+                                </Button>
+                              )}
                             </div>
                           ))}
                         </div>
