@@ -13,7 +13,7 @@ import HotelFeedingAlerts from '@/components/dashboard/HotelFeedingAlerts';
 import HotelCheckoutAlerts from '@/components/dashboard/HotelCheckoutAlerts';
 import QrReader from '@/components/qrcode/QrReader';
 import { Client, getHealthAlerts } from '@/types/client';
-import { Users, LayoutDashboard, HeartPulse, PawPrint, Hotel, Camera, BarChart3 } from 'lucide-react';
+import { Users, LayoutDashboard, HeartPulse, PawPrint, Hotel, Camera } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
