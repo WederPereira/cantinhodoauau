@@ -49,23 +49,36 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container px-4 py-6 max-w-6xl mx-auto space-y-5">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {clients.length} pets cadastrados
-            </p>
+      <div className="container px-3 sm:px-4 py-4 sm:py-6 max-w-6xl mx-auto space-y-4">
+        {/* Header com botões centralizados no mobile */}
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground">Dashboard</h1>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                {clients.length} pets cadastrados
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-xl lg:hidden"
+              onClick={() => {}}
+              aria-hidden
+              style={{ visibility: 'hidden' }}
+            />
           </div>
-          <div className="flex items-center gap-2">
+
+          {/* Botões de ação centralizados */}
+          <div className="flex items-center justify-center gap-2 sm:gap-3">
             <Dialog open={qrOpen} onOpenChange={setQrOpen}>
               <DialogTrigger asChild>
-                <Button size="lg" className="gap-2 h-12 px-5 text-base font-bold shadow-lg bg-primary hover:bg-primary/90 animate-pulse hover:animate-none">
-                  <Camera size={22} />
+                <Button size="default" className="gap-2 h-11 px-4 sm:px-5 text-sm font-semibold shadow-md bg-primary hover:bg-primary/90 rounded-xl flex-1 max-w-[200px]">
+                  <Camera size={18} />
                   Ler Entrada
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+              <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg max-h-[85vh] overflow-y-auto mx-auto">
                 <DialogHeader>
                   <DialogTitle>Leitor QR Code</DialogTitle>
                 </DialogHeader>
@@ -76,23 +89,24 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
+        {/* Tabs */}
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="w-full grid grid-cols-4">
-            <TabsTrigger value="overview" className="gap-1 text-xs sm:text-sm">
-              <LayoutDashboard size={14} />
-              <span className="hidden sm:inline">Geral</span>
+          <TabsList className="w-full grid grid-cols-4 h-11 rounded-xl">
+            <TabsTrigger value="overview" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-sm">
+              <LayoutDashboard size={15} />
+              <span className="hidden xs:inline sm:inline">Geral</span>
             </TabsTrigger>
-            <TabsTrigger value="daycare" className="gap-1 text-xs sm:text-sm">
-              <PawPrint size={14} />
-              <span className="hidden sm:inline">Creche</span>
+            <TabsTrigger value="daycare" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-sm">
+              <PawPrint size={15} />
+              <span className="hidden xs:inline sm:inline">Creche</span>
             </TabsTrigger>
-            <TabsTrigger value="hotel" className="gap-1 text-xs sm:text-sm">
-              <Hotel size={14} />
-              <span className="hidden sm:inline">Hotel</span>
+            <TabsTrigger value="hotel" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-sm">
+              <Hotel size={15} />
+              <span className="hidden xs:inline sm:inline">Hotel</span>
             </TabsTrigger>
-            <TabsTrigger value="health" className="gap-1 text-xs sm:text-sm">
-              <HeartPulse size={14} />
-              <span className="hidden sm:inline">Saúde</span>
+            <TabsTrigger value="health" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-sm">
+              <HeartPulse size={15} />
+              <span className="hidden xs:inline sm:inline">Saúde</span>
             </TabsTrigger>
           </TabsList>
 

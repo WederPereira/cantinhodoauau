@@ -25,13 +25,14 @@ export const Header: React.FC = () => {
 
   return (
     <header className="sticky top-0 z-50 w-full bg-card/95 backdrop-blur-md supports-[backdrop-filter]:bg-card/80 border-b border-border">
-      <div className="container flex h-14 items-center justify-between px-4 max-w-6xl mx-auto">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-sm">
-            <PawPrint size={18} className="text-primary-foreground" />
+      <div className="container flex h-13 sm:h-14 items-center justify-between px-3 sm:px-4 max-w-6xl mx-auto">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-sm">
+            <PawPrint size={16} className="text-primary-foreground sm:hidden" />
+            <PawPrint size={18} className="text-primary-foreground hidden sm:block" />
           </div>
           <div className="flex flex-col">
-            <span className="font-bold text-base text-foreground leading-tight">Cantinho do AuAu</span>
+            <span className="font-bold text-sm sm:text-base text-foreground leading-tight">Cantinho do AuAu</span>
             <span className="text-[10px] text-muted-foreground leading-tight">{getGreeting()} 👋</span>
           </div>
         </div>
