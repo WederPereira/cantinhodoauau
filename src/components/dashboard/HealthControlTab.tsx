@@ -171,26 +171,26 @@ export const HealthControlTab: React.FC = () => {
     info.flea.status === 'expired' || info.flea.status === 'expiring';
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-destructive/5 border border-destructive/20 rounded-xl p-3 text-center cursor-pointer hover:bg-destructive/10 transition-colors"
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        <div className="bg-destructive/5 border border-destructive/20 rounded-xl p-2.5 sm:p-3 text-center cursor-pointer hover:bg-destructive/10 transition-colors"
           onClick={() => setFilter(f => f === 'expired' ? 'all' : 'expired')}>
-          <XCircle size={20} className="text-destructive mx-auto mb-1" />
-          <p className="text-2xl font-bold text-destructive">{stats.expired}</p>
-          <p className="text-xs text-muted-foreground">Vencidas</p>
+          <XCircle size={18} className="text-destructive mx-auto mb-0.5 sm:mb-1" />
+          <p className="text-xl sm:text-2xl font-bold text-destructive">{stats.expired}</p>
+          <p className="text-[10px] sm:text-xs text-muted-foreground">Vencidas</p>
         </div>
-        <div className="bg-[hsl(var(--status-warning-bg))] border border-[hsl(var(--status-warning)/0.2)] rounded-xl p-3 text-center cursor-pointer hover:opacity-80 transition-colors"
+        <div className="bg-[hsl(var(--status-warning-bg))] border border-[hsl(var(--status-warning)/0.2)] rounded-xl p-2.5 sm:p-3 text-center cursor-pointer hover:opacity-80 transition-colors"
           onClick={() => setFilter(f => f === 'expiring' ? 'all' : 'expiring')}>
-          <AlertTriangle size={20} className="text-[hsl(var(--status-warning))] mx-auto mb-1" />
-          <p className="text-2xl font-bold text-[hsl(var(--status-warning))]">{stats.expiring}</p>
-          <p className="text-xs text-muted-foreground">Vencendo</p>
+          <AlertTriangle size={18} className="text-[hsl(var(--status-warning))] mx-auto mb-0.5 sm:mb-1" />
+          <p className="text-xl sm:text-2xl font-bold text-[hsl(var(--status-warning))]">{stats.expiring}</p>
+          <p className="text-[10px] sm:text-xs text-muted-foreground">Vencendo</p>
         </div>
-        <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-3 text-center cursor-pointer hover:opacity-80 transition-colors"
+        <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-2.5 sm:p-3 text-center cursor-pointer hover:opacity-80 transition-colors"
           onClick={() => setFilter(f => f === 'ok' ? 'all' : 'ok')}>
-          <CheckCircle2 size={20} className="text-emerald-600 dark:text-emerald-400 mx-auto mb-1" />
-          <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{stats.ok}</p>
-          <p className="text-xs text-muted-foreground">Em dia</p>
+          <CheckCircle2 size={18} className="text-emerald-600 dark:text-emerald-400 mx-auto mb-0.5 sm:mb-1" />
+          <p className="text-xl sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400">{stats.ok}</p>
+          <p className="text-[10px] sm:text-xs text-muted-foreground">Em dia</p>
         </div>
       </div>
 
@@ -202,55 +202,55 @@ export const HealthControlTab: React.FC = () => {
             placeholder="Buscar pet ou tutor..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="pl-9"
+            className="pl-9 h-10 text-sm"
           />
         </div>
         {filter !== 'all' && (
-          <Button variant="outline" size="sm" onClick={() => setFilter('all')} className="shrink-0">
+          <Button variant="outline" size="sm" onClick={() => setFilter('all')} className="shrink-0 h-10">
             <Filter size={14} className="mr-1" /> Limpar
           </Button>
         )}
       </div>
 
       {/* List */}
-      <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+      <div className="space-y-3 max-h-[55vh] sm:max-h-[60vh] overflow-y-auto pr-0.5 sm:pr-1">
         {filtered.length === 0 && (
           <p className="text-sm text-muted-foreground text-center py-8">Nenhum resultado encontrado.</p>
         )}
         {filtered.map(info => (
-          <div key={info.client.id} className="bg-card border border-border rounded-xl p-4 space-y-3 shadow-soft">
+          <div key={info.client.id} className="bg-card border border-border rounded-xl p-3 sm:p-4 space-y-2.5 sm:space-y-3 shadow-soft">
             {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-semibold text-foreground">{info.client.name}</p>
-                <p className="text-xs text-muted-foreground">{info.client.tutorName} • {info.client.breed || 'SRD'}</p>
+            <div className="flex items-start sm:items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="font-semibold text-sm sm:text-base text-foreground truncate">{info.client.name}</p>
+                <p className="text-[11px] sm:text-xs text-muted-foreground truncate">{info.client.tutorName} • {info.client.breed || 'SRD'}</p>
               </div>
               {hasIssues(info) && info.client.tutorPhone && (
                 <Button
                   size="sm"
                   variant="outline"
-                  className="text-emerald-600 border-emerald-300 hover:bg-emerald-50 dark:text-emerald-400 dark:border-emerald-700 dark:hover:bg-emerald-950/30 gap-1.5"
+                  className="text-emerald-600 border-emerald-300 hover:bg-emerald-50 dark:text-emerald-400 dark:border-emerald-700 dark:hover:bg-emerald-950/30 gap-1 text-xs shrink-0 h-8 px-2.5"
                   onClick={() => openWhatsApp(info.client.tutorPhone, buildWhatsAppMessage(info.client, info))}
                 >
-                  <MessageCircle size={14} />
-                  Avisar Tutor
+                  <MessageCircle size={13} />
+                  <span className="hidden sm:inline">Avisar</span>
                 </Button>
               )}
             </div>
 
             {/* Vaccines grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1.5 sm:gap-2">
               {info.vaccines.map(v => (
-                <div key={v.type} className="space-y-1">
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <div key={v.type} className="space-y-0.5 sm:space-y-1">
+                  <div className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground">
                     <Syringe size={10} />
                     {v.label}
                   </div>
                   <StatusBadge status={v.status} expiryDate={v.expiryDate} />
                 </div>
               ))}
-              <div className="space-y-1">
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <div className="space-y-0.5 sm:space-y-1">
+                <div className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground">
                   <Bug size={10} />
                   {info.flea.label}
                 </div>
@@ -258,9 +258,8 @@ export const HealthControlTab: React.FC = () => {
               </div>
             </div>
 
-            {/* WhatsApp for mobile when no phone */}
             {hasIssues(info) && !info.client.tutorPhone && (
-              <p className="text-xs text-muted-foreground italic">⚠️ Sem telefone cadastrado para enviar aviso.</p>
+              <p className="text-[11px] text-muted-foreground italic">⚠️ Sem telefone cadastrado.</p>
             )}
           </div>
         ))}
