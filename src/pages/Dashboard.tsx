@@ -49,33 +49,23 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container px-3 sm:px-4 py-4 sm:py-6 max-w-6xl mx-auto space-y-4">
-        {/* Header com botões centralizados no mobile */}
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-foreground">Dashboard</h1>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                {clients.length} pets cadastrados
-              </p>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 rounded-xl lg:hidden"
-              onClick={() => {}}
-              aria-hidden
-              style={{ visibility: 'hidden' }}
-            />
+      <div className="container px-3 sm:px-4 md:px-6 py-4 sm:py-6 max-w-6xl mx-auto space-y-4 sm:space-y-5">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Dashboard</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+              {clients.length} pets cadastrados
+            </p>
           </div>
 
-          {/* Botões de ação centralizados */}
-          <div className="flex items-center justify-center gap-2 sm:gap-3">
+          {/* Botões de ação */}
+          <div className="flex items-center justify-center sm:justify-end gap-2 sm:gap-3">
             <Dialog open={qrOpen} onOpenChange={setQrOpen}>
               <DialogTrigger asChild>
-                <Button size="default" className="gap-2 h-11 px-4 sm:px-5 text-sm font-semibold shadow-md bg-primary hover:bg-primary/90 rounded-xl flex-1 max-w-[200px]">
+                <Button size="default" className="gap-2 h-10 sm:h-11 px-4 sm:px-5 text-sm font-semibold shadow-md bg-primary hover:bg-primary/90 rounded-xl transition-all duration-200 hover:shadow-lg active:scale-[0.98]">
                   <Camera size={18} />
-                  Ler Entrada
+                  <span>Ler Entrada</span>
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg max-h-[85vh] overflow-y-auto mx-auto">
@@ -91,34 +81,36 @@ const Dashboard: React.FC = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="w-full grid grid-cols-4 h-11 rounded-xl">
-            <TabsTrigger value="overview" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-sm">
-              <LayoutDashboard size={15} />
-              <span className="hidden xs:inline sm:inline">Geral</span>
+          <TabsList className="w-full grid grid-cols-4 h-11 sm:h-12 rounded-xl p-1 bg-muted/60 backdrop-blur-sm">
+            <TabsTrigger value="overview" className="gap-1.5 text-[11px] sm:text-sm rounded-lg data-[state=active]:shadow-md transition-all duration-200">
+              <LayoutDashboard size={15} className="shrink-0" />
+              <span className="hidden sm:inline">Geral</span>
             </TabsTrigger>
-            <TabsTrigger value="daycare" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-sm">
-              <PawPrint size={15} />
-              <span className="hidden xs:inline sm:inline">Creche</span>
+            <TabsTrigger value="daycare" className="gap-1.5 text-[11px] sm:text-sm rounded-lg data-[state=active]:shadow-md transition-all duration-200">
+              <PawPrint size={15} className="shrink-0" />
+              <span className="hidden sm:inline">Creche</span>
             </TabsTrigger>
-            <TabsTrigger value="hotel" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-sm">
-              <Hotel size={15} />
-              <span className="hidden xs:inline sm:inline">Hotel</span>
+            <TabsTrigger value="hotel" className="gap-1.5 text-[11px] sm:text-sm rounded-lg data-[state=active]:shadow-md transition-all duration-200">
+              <Hotel size={15} className="shrink-0" />
+              <span className="hidden sm:inline">Hotel</span>
             </TabsTrigger>
-            <TabsTrigger value="health" className="gap-1.5 text-xs sm:text-sm rounded-lg data-[state=active]:shadow-sm">
-              <HeartPulse size={15} />
-              <span className="hidden xs:inline sm:inline">Saúde</span>
+            <TabsTrigger value="health" className="gap-1.5 text-[11px] sm:text-sm rounded-lg data-[state=active]:shadow-md transition-all duration-200">
+              <HeartPulse size={15} className="shrink-0" />
+              <span className="hidden sm:inline">Saúde</span>
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-5 mt-4">
-            <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
+          <TabsContent value="overview" className="space-y-4 sm:space-y-5 mt-4">
+            {/* Stats card */}
+            <div className="bg-card border border-border rounded-xl p-3 sm:p-4 shadow-soft">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-primary/10">
-                  <Users size={22} className="text-primary" />
+                <div className="p-2 sm:p-2.5 rounded-xl bg-primary/10">
+                  <Users size={20} className="text-primary sm:hidden" />
+                  <Users size={22} className="text-primary hidden sm:block" />
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-muted-foreground">Total de Clientes</p>
-                  <p className="text-3xl font-bold text-foreground">{clients.length}</p>
+                  <p className="text-[11px] sm:text-xs font-medium text-muted-foreground">Total de Clientes</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-foreground">{clients.length}</p>
                 </div>
               </div>
             </div>
@@ -137,7 +129,6 @@ const Dashboard: React.FC = () => {
           <TabsContent value="hotel" className="mt-4">
             <HotelTab />
           </TabsContent>
-
 
           <TabsContent value="health" className="mt-4">
             <HealthControlTab />
