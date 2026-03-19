@@ -29,8 +29,6 @@ const AppContent = () => {
         <img src="/app-icon.png" alt="Cantinho do AuAu" className="w-20 h-20 rounded-2xl shadow-lg" />
         <Loader2 className="w-6 h-6 animate-spin text-primary" />
       </div>
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
-      </div>
     );
   }
 
