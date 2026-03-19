@@ -1,5 +1,5 @@
 import React from 'react';
-import { PawPrint, Moon, Sun, LayoutDashboard, Users, BarChart3, FileSpreadsheet } from 'lucide-react';
+import { Moon, Sun, LayoutDashboard, Users, BarChart3, FileSpreadsheet, UserCircle } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import { NavLink as RouterNavLink, useLocation } from 'react-router-dom';
