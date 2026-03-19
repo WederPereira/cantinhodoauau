@@ -13,9 +13,10 @@ import Index from "./pages/Index";
 import ClientsPage from "./pages/ClientsPage";
 import SpreadsheetPage from "./pages/SpreadsheetPage";
 import ReportsPage from "./pages/ReportsPage";
+import AccountPage from "./pages/AccountPage";
 import LoginPage from "./pages/LoginPage";
 import NotFound from "./pages/NotFound";
-import { Dog, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
 
@@ -25,9 +26,7 @@ const AppContent = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
-        <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center">
-          <Dog className="w-8 h-8 text-primary-foreground" />
-        </div>
+        <img src="/app-icon.png" alt="Cantinho do AuAu" className="w-20 h-20 rounded-2xl shadow-lg" />
         <Loader2 className="w-6 h-6 animate-spin text-primary" />
       </div>
     );
@@ -47,6 +46,7 @@ const AppContent = () => {
             <Route path="/clients" element={<ClientsPage />} />
             <Route path="/spreadsheet" element={<SpreadsheetPage />} />
             <Route path="/reports" element={<ReportsPage />} />
+            <Route path="/account" element={<AccountPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </main>

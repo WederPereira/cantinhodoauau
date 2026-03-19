@@ -1,0 +1,156 @@
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { toast } from "sonner";
+import { LogOut, User, Mail, Shield, Loader2, Save, KeyRound } from "lucide-react";
+
+const AccountPage = () => {
+  const { session, signOut } = useAuth();
+  const [fullName, setFullName] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [savingName, setSavingName] = useState(false);
+  const [role, setRole] = useState<string>("—");
+
+  useEffect(() => {
+    if (session?.user) {
+      setFullName(session.user.user_metadata?.full_name || "");
+      fetchRole();
+    }
+  }, [session]);
+
+  const fetchRole = async () => {
+    if (!session?.user) return;
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", session.user.id)
+      .maybeSingle();
+    if (data) {
+      const labels: Record<string, string> = {
+        admin: "Administrador",
+        monitor: "Monitor",
+        noturnista: "Noturnista",
+      };
+      setRole(labels[data.role] || data.role);
+    }
+  };
+
+  const handleUpdateName = async () => {
+    setSavingName(true);
+    const { error } = await supabase.auth.updateUser({
+      data: { full_name: fullName },
+    });
+    if (error) {
+      toast.error("Erro ao atualizar nome");
+    } else {
+      toast.success("Nome atualizado!");
+    }
+    setSavingName(false);
+  };
+
+  const handleChangePassword = async () => {
+    if (newPassword.length < 6) {
+      toast.error("A senha deve ter no mínimo 6 caracteres");
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) {
+      toast.error("Erro ao alterar senha");
+    } else {
+      toast.success("Senha alterada com sucesso!");
+      setNewPassword("");
+    }
+    setLoading(false);
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+    toast.success("Você saiu da conta");
+  };
+
+  return (
+    <div className="container max-w-lg mx-auto px-4 py-6 space-y-4 animate-fade-in-up">
+      <h1 className="text-xl font-bold text-foreground">Minha Conta</h1>
+
+      {/* Profile Info */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <User className="w-4 h-4 text-primary" /> Perfil
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+              <User className="w-6 h-6 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm text-foreground truncate">
+                {session?.user?.user_metadata?.full_name || "Usuário"}
+              </p>
+              <p className="text-xs text-muted-foreground flex items-center gap-1 truncate">
+                <Mail className="w-3 h-3" /> {session?.user?.email}
+              </p>
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Shield className="w-3 h-3" /> {role}
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="name">Nome Completo</Label>
+            <div className="flex gap-2">
+              <Input
+                id="name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Seu nome"
+              />
+              <Button size="icon" onClick={handleUpdateName} disabled={savingName}>
+                {savingName ? <Loader2 className="animate-spin w-4 h-4" /> : <Save className="w-4 h-4" />}
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Change Password */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <KeyRound className="w-4 h-4 text-primary" /> Alterar Senha
+          </CardTitle>
+          <CardDescription className="text-xs">Mínimo de 6 caracteres</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Input
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            placeholder="Nova senha"
+            minLength={6}
+          />
+          <Button onClick={handleChangePassword} disabled={loading} className="w-full">
+            {loading ? <Loader2 className="animate-spin" /> : "Salvar Nova Senha"}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Separator />
+
+      {/* Logout */}
+      <Button variant="destructive" onClick={handleLogout} className="w-full">
+        <LogOut className="mr-2 w-4 h-4" /> Sair da Conta
+      </Button>
+    </div>
+  );
+};
+
+export default AccountPage;

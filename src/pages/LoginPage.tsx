@@ -54,9 +54,7 @@ const LoginPage = () => {
       <div className="w-full max-w-sm space-y-6 animate-fade-in-up">
         {/* Logo */}
         <div className="text-center space-y-2">
-          <div className="mx-auto w-20 h-20 rounded-2xl bg-primary flex items-center justify-center shadow-lg">
-            <Dog className="w-10 h-10 text-primary-foreground" />
-          </div>
+          <img src="/app-icon.png" alt="Cantinho do AuAu" className="mx-auto w-24 h-24 rounded-2xl shadow-lg" />
           <h1 className="text-2xl font-bold text-foreground">Cantinho do AuAu</h1>
           <p className="text-sm text-muted-foreground">Gestão de Creche & Hotel Pet</p>
         </div>
