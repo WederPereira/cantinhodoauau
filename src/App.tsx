@@ -48,6 +48,7 @@ const AppContent = () => {
             <Route path="/clients" element={<ClientsPage />} />
             <Route path="/spreadsheet" element={<SpreadsheetPage />} />
             <Route path="/reports" element={<ReportsPage />} />
+            <Route path="/account" element={<AccountPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
