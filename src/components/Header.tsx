@@ -17,6 +17,7 @@ const navItems = [
   { to: '/clients', icon: Users, label: 'Clientes' },
   { to: '/reports', icon: BarChart3, label: 'Relatórios' },
   { to: '/spreadsheet', icon: FileSpreadsheet, label: 'Planilha' },
+  { to: '/account', icon: UserCircle, label: 'Conta' },
 ];
 
 export const Header: React.FC = () => {
