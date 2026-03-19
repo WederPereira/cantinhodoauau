@@ -13,9 +13,10 @@ import Index from "./pages/Index";
 import ClientsPage from "./pages/ClientsPage";
 import SpreadsheetPage from "./pages/SpreadsheetPage";
 import ReportsPage from "./pages/ReportsPage";
+import AccountPage from "./pages/AccountPage";
 import LoginPage from "./pages/LoginPage";
 import NotFound from "./pages/NotFound";
-import { Dog, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
 
