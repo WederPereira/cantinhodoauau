@@ -92,6 +92,7 @@ const HotelTab: React.FC = () => {
   const [addMedStayId, setAddMedStayId] = useState<string | null>(null);
   const alertedMeds = useRef<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const [uploadingStayId, setUploadingStayId] = useState<string | null>(null);
   const [searchFilter, setSearchFilter] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
