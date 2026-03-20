@@ -92,6 +92,7 @@ const HotelTab: React.FC = () => {
   const [addMedStayId, setAddMedStayId] = useState<string | null>(null);
   const alertedMeds = useRef<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const [uploadingStayId, setUploadingStayId] = useState<string | null>(null);
   const [searchFilter, setSearchFilter] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
@@ -703,13 +704,41 @@ const HotelTab: React.FC = () => {
                               </div>
                             ))}
                             <button
+                              onClick={() => { setUploadingStayId(stay.id); cameraInputRef.current?.click(); }}
+                              disabled={uploadingStayId === stay.id}
+                              className="w-14 h-14 rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+                            >
+                              {uploadingStayId === stay.id ? <span className="animate-spin text-xs">⏳</span> : (
+                                <>
+                                  <Camera size={14} />
+                                  <span className="text-[7px] mt-0.5">Foto</span>
+                                </>
+                              )}
+                            </button>
+                            <button
                               onClick={() => { setUploadingStayId(stay.id); fileInputRef.current?.click(); }}
                               disabled={uploadingStayId === stay.id}
-                              className="w-14 h-14 rounded-lg border-2 border-dashed border-border flex items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+                              className="w-14 h-14 rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors"
                             >
-                              {uploadingStayId === stay.id ? <span className="animate-spin text-xs">⏳</span> : <Plus size={16} />}
+                              <Plus size={14} />
+                              <span className="text-[7px] mt-0.5">Arquivo</span>
                             </button>
                           </div>
+                          <input
+                            ref={cameraInputRef}
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            className="hidden"
+                            onChange={e => {
+                              if (uploadingStayId && e.target.files && e.target.files.length > 0) {
+                                const filesArr = Array.from(e.target.files);
+                                setPendingFiles({ stayId: uploadingStayId, files: filesArr });
+                                setUploadLabels({});
+                              }
+                              e.target.value = '';
+                            }}
+                          />
                           <input
                             ref={fileInputRef}
                             type="file"
