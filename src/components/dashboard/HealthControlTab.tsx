@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Syringe, Bug, MessageCircle, Search, CheckCircle2, AlertTriangle, XCircle, Filter } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
+type HealthCategory = 'vaccines' | 'flea';
 type HealthStatus = 'ok' | 'expiring' | 'expired' | 'none';
 
 interface VaccineStatus {
