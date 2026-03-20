@@ -105,6 +105,7 @@ export const HealthControlTab: React.FC = () => {
   const { clients } = useClients();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'expired' | 'expiring' | 'ok'>('all');
+  const [category, setCategory] = useState<HealthCategory>('vaccines');
 
   const clientHealthData = useMemo((): ClientHealthInfo[] => {
     return clients.map(client => {
@@ -144,6 +145,35 @@ export const HealthControlTab: React.FC = () => {
     });
   }, [clients]);
 
+  // Compute separate stats for vaccines and flea
+  const vaccineStats = useMemo(() => {
+    let expired = 0, expiring = 0, ok = 0;
+    clientHealthData.forEach(d => {
+      const worst = d.vaccines.reduce<HealthStatus>((acc, v) => {
+        if (v.status === 'expired') return 'expired';
+        if (v.status === 'expiring' && acc !== 'expired') return 'expiring';
+        if (v.status === 'ok' && acc === 'none') return 'ok';
+        return acc;
+      }, 'none');
+      if (worst === 'expired') expired++;
+      else if (worst === 'expiring') expiring++;
+      else if (worst === 'ok') ok++;
+    });
+    return { expired, expiring, ok };
+  }, [clientHealthData]);
+
+  const fleaStats = useMemo(() => {
+    let expired = 0, expiring = 0, ok = 0;
+    clientHealthData.forEach(d => {
+      if (d.flea.status === 'expired') expired++;
+      else if (d.flea.status === 'expiring') expiring++;
+      else if (d.flea.status === 'ok') ok++;
+    });
+    return { expired, expiring, ok };
+  }, [clientHealthData]);
+
+  const stats = category === 'vaccines' ? vaccineStats : fleaStats;
+
   const filtered = useMemo(() => {
     let data = clientHealthData;
 
@@ -152,27 +182,63 @@ export const HealthControlTab: React.FC = () => {
       data = data.filter(d => d.client.name.toLowerCase().includes(s) || d.client.tutorName.toLowerCase().includes(s));
     }
 
-    if (filter === 'expired') data = data.filter(d => d.worstStatus === 'expired');
-    else if (filter === 'expiring') data = data.filter(d => d.worstStatus === 'expiring');
-    else if (filter === 'ok') data = data.filter(d => d.worstStatus === 'ok' && d.vaccines.some(v => v.status !== 'none'));
+    if (category === 'vaccines') {
+      if (filter === 'expired') data = data.filter(d => d.vaccines.some(v => v.status === 'expired'));
+      else if (filter === 'expiring') data = data.filter(d => d.vaccines.some(v => v.status === 'expiring'));
+      else if (filter === 'ok') data = data.filter(d => d.vaccines.every(v => v.status === 'ok' || v.status === 'none') && d.vaccines.some(v => v.status === 'ok'));
+    } else {
+      if (filter === 'expired') data = data.filter(d => d.flea.status === 'expired');
+      else if (filter === 'expiring') data = data.filter(d => d.flea.status === 'expiring');
+      else if (filter === 'ok') data = data.filter(d => d.flea.status === 'ok');
+    }
 
-    data.sort((a, b) => getStatusPriority(a.worstStatus) - getStatusPriority(b.worstStatus));
+    data.sort((a, b) => {
+      const aStatus = category === 'vaccines'
+        ? (a.vaccines.some(v => v.status === 'expired') ? 'expired' : a.vaccines.some(v => v.status === 'expiring') ? 'expiring' : 'ok')
+        : a.flea.status;
+      const bStatus = category === 'vaccines'
+        ? (b.vaccines.some(v => v.status === 'expired') ? 'expired' : b.vaccines.some(v => v.status === 'expiring') ? 'expiring' : 'ok')
+        : b.flea.status;
+      return getStatusPriority(aStatus as HealthStatus) - getStatusPriority(bStatus as HealthStatus);
+    });
     return data;
-  }, [clientHealthData, search, filter]);
+  }, [clientHealthData, search, filter, category]);
 
-  const stats = useMemo(() => {
-    const expired = clientHealthData.filter(d => d.worstStatus === 'expired').length;
-    const expiring = clientHealthData.filter(d => d.worstStatus === 'expiring').length;
-    const ok = clientHealthData.filter(d => d.worstStatus === 'ok' && d.vaccines.some(v => v.status !== 'none')).length;
-    return { expired, expiring, ok };
-  }, [clientHealthData]);
-
-  const hasIssues = (info: ClientHealthInfo) =>
-    info.vaccines.some(v => v.status === 'expired' || v.status === 'expiring') ||
-    info.flea.status === 'expired' || info.flea.status === 'expiring';
+  const hasIssues = (info: ClientHealthInfo) => {
+    if (category === 'vaccines') return info.vaccines.some(v => v.status === 'expired' || v.status === 'expiring');
+    return info.flea.status === 'expired' || info.flea.status === 'expiring';
+  };
 
   return (
     <div className="space-y-3 sm:space-y-4">
+      {/* Category Toggle */}
+      <div className="flex rounded-xl bg-muted/50 p-1 gap-1">
+        <button
+          onClick={() => { setCategory('vaccines'); setFilter('all'); }}
+          className={cn(
+            'flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-sm font-medium transition-all',
+            category === 'vaccines'
+              ? 'bg-background shadow-sm text-foreground'
+              : 'text-muted-foreground hover:text-foreground'
+          )}
+        >
+          <Syringe size={15} />
+          Vacinas
+        </button>
+        <button
+          onClick={() => { setCategory('flea'); setFilter('all'); }}
+          className={cn(
+            'flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-sm font-medium transition-all',
+            category === 'flea'
+              ? 'bg-background shadow-sm text-foreground'
+              : 'text-muted-foreground hover:text-foreground'
+          )}
+        >
+          <Bug size={15} />
+          Antipulgas
+        </button>
+      </div>
+
       {/* Stats */}
       <div className="grid grid-cols-3 gap-2 sm:gap-3">
         <div className="bg-destructive/5 border border-destructive/20 rounded-xl p-2.5 sm:p-3 text-center cursor-pointer hover:bg-destructive/10 transition-colors"
@@ -239,25 +305,31 @@ export const HealthControlTab: React.FC = () => {
               )}
             </div>
 
-            {/* Vaccines grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1.5 sm:gap-2">
-              {info.vaccines.map(v => (
-                <div key={v.type} className="space-y-0.5 sm:space-y-1">
-                  <div className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground">
-                    <Syringe size={10} />
-                    {v.label}
+            {/* Category-specific content */}
+            {category === 'vaccines' ? (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
+                {info.vaccines.map(v => (
+                  <div key={v.type} className="space-y-0.5 sm:space-y-1">
+                    <div className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground">
+                      <Syringe size={10} />
+                      {v.label}
+                    </div>
+                    <StatusBadge status={v.status} expiryDate={v.expiryDate} />
                   </div>
-                  <StatusBadge status={v.status} expiryDate={v.expiryDate} />
-                </div>
-              ))}
+                ))}
+              </div>
+            ) : (
               <div className="space-y-0.5 sm:space-y-1">
                 <div className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground">
                   <Bug size={10} />
                   {info.flea.label}
                 </div>
                 <StatusBadge status={info.flea.status} expiryDate={info.flea.expiryDate} />
+                {info.flea.lastDate && (
+                  <p className="text-[10px] text-muted-foreground">Última aplicação: {formatDate(new Date(info.flea.lastDate))}</p>
+                )}
               </div>
-            </div>
+            )}
 
             {hasIssues(info) && !info.client.tutorPhone && (
               <p className="text-[11px] text-muted-foreground italic">⚠️ Sem telefone cadastrado.</p>
