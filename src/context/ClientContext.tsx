@@ -4,7 +4,7 @@ import { mockClients } from '@/data/mockClients';
 
 const STORAGE_KEY = 'pet-grooming-clients';
 const DATA_VERSION_KEY = 'pet-grooming-data-version';
-const CURRENT_DATA_VERSION = '2';
+const CURRENT_DATA_VERSION = '3';
 
 interface ClientContextType {
   clients: Client[];
