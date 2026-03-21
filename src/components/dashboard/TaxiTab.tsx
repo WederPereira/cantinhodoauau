@@ -1,9 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useClients } from '@/context/ClientContext';
-import { Car, Copy, Check, Plus, Trash2, ArrowRight, ArrowLeft, ArrowLeftRight } from 'lucide-react';
+import { Car, Copy, Check, Plus, Trash2, ArrowRight, ArrowLeft, ArrowLeftRight, Search, X, Dog } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 
@@ -51,24 +52,33 @@ const saveTaxiList = (list: TaxiEntry[]) => {
 const TaxiTab: React.FC = () => {
   const { clients } = useClients();
   const [taxiList, setTaxiList] = useState<TaxiEntry[]>(loadTaxiList);
-  const [selectedClientId, setSelectedClientId] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedDirection, setSelectedDirection] = useState<TaxiDirection>('ida_volta');
   const [copied, setCopied] = useState(false);
   const [filter, setFilter] = useState<'all' | TaxiDirection>('all');
+  const [showSelector, setShowSelector] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   const availableClients = useMemo(() => {
     const usedIds = new Set(taxiList.map(e => e.clientId));
     return clients.filter(c => !usedIds.has(c.id));
   }, [clients, taxiList]);
 
+  const filteredClients = useMemo(() => {
+    if (!searchQuery.trim()) return availableClients;
+    const q = searchQuery.toLowerCase();
+    return availableClients.filter(c =>
+      c.name.toLowerCase().includes(q) || c.tutorName.toLowerCase().includes(q)
+    );
+  }, [availableClients, searchQuery]);
+
   const filteredList = useMemo(() => {
     if (filter === 'all') return taxiList;
     return taxiList.filter(e => e.direction === filter);
   }, [taxiList, filter]);
 
-  const handleAdd = () => {
-    if (!selectedClientId) return;
-    const client = clients.find(c => c.id === selectedClientId);
+  const handleAdd = (clientId: string) => {
+    const client = clients.find(c => c.id === clientId);
     if (!client) return;
 
     const entry: TaxiEntry = {
@@ -82,7 +92,7 @@ const TaxiTab: React.FC = () => {
     const updated = [...taxiList, entry];
     setTaxiList(updated);
     saveTaxiList(updated);
-    setSelectedClientId('');
+    setSearchQuery('');
     toast.success(`${client.name} adicionado à lista de táxi`);
   };
 
@@ -147,41 +157,88 @@ const TaxiTab: React.FC = () => {
         </button>
       </div>
 
-      {/* Add new */}
-      <Card className="border-dashed">
-        <CardContent className="p-3 space-y-2">
-          <div className="flex gap-2">
-            <Select value={selectedClientId} onValueChange={setSelectedClientId}>
-              <SelectTrigger className="flex-1 h-10 text-sm">
-                <SelectValue placeholder="Selecionar pet..." />
-              </SelectTrigger>
-              <SelectContent>
-                {availableClients.map(c => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name} ({c.tutorName})
-                  </SelectItem>
+      {/* Direction selector */}
+      <div className="flex gap-1.5">
+        {(['ida', 'volta', 'ida_volta'] as TaxiDirection[]).map(dir => (
+          <button
+            key={dir}
+            onClick={() => setSelectedDirection(dir)}
+            className={`flex-1 flex items-center justify-center gap-1.5 rounded-lg py-2 px-2 text-xs font-medium transition-all border ${
+              selectedDirection === dir
+                ? DIRECTION_COLORS[dir] + ' border-current shadow-sm'
+                : 'border-border bg-card text-muted-foreground'
+            }`}
+          >
+            {DIRECTION_ICONS[dir]}
+            {DIRECTION_LABELS[dir]}
+          </button>
+        ))}
+      </div>
+
+      {/* Search + Add */}
+      <div className="space-y-2">
+        <div className="relative">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            ref={searchRef}
+            value={searchQuery}
+            onChange={e => { setSearchQuery(e.target.value); setShowSelector(true); }}
+            onFocus={() => setShowSelector(true)}
+            placeholder="Buscar pet pelo nome ou tutor..."
+            className="pl-9 pr-9 h-11"
+          />
+          {searchQuery && (
+            <button onClick={() => { setSearchQuery(''); setShowSelector(false); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+              <X size={16} />
+            </button>
+          )}
+        </div>
+
+        {/* Pet cards grid */}
+        {showSelector && (
+          <div className="space-y-1.5">
+            {filteredClients.length === 0 ? (
+              <p className="text-center text-sm text-muted-foreground py-4">
+                {searchQuery ? 'Nenhum pet encontrado' : 'Todos os pets já estão na lista'}
+              </p>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 max-h-[240px] overflow-y-auto pr-1">
+                {filteredClients.slice(0, 20).map(client => (
+                  <button
+                    key={client.id}
+                    onClick={() => handleAdd(client.id)}
+                    className="flex items-center gap-2.5 rounded-xl border border-border bg-card p-2.5 text-left transition-all hover:border-primary hover:bg-primary/5 hover:shadow-sm active:scale-[0.97]"
+                  >
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                      <Dog size={16} className="text-primary" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-foreground truncate">{client.name}</p>
+                      <p className="text-[11px] text-muted-foreground truncate">{client.tutorName}</p>
+                    </div>
+                    <Plus size={14} className="shrink-0 text-primary" />
+                  </button>
                 ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex gap-2">
-            <Select value={selectedDirection} onValueChange={(v) => setSelectedDirection(v as TaxiDirection)}>
-              <SelectTrigger className="flex-1 h-10 text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ida">🔵 Só ida</SelectItem>
-                <SelectItem value="volta">🟠 Só volta</SelectItem>
-                <SelectItem value="ida_volta">🟢 Ida e volta</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button onClick={handleAdd} disabled={!selectedClientId} size="sm" className="h-10 gap-1.5 px-4">
-              <Plus size={16} />
-              Adicionar
+              </div>
+            )}
+            {filteredClients.length > 20 && (
+              <p className="text-center text-[11px] text-muted-foreground">
+                Mostrando 20 de {filteredClients.length} — use a busca para filtrar
+              </p>
+            )}
+            <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => setShowSelector(false)}>
+              Fechar
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        )}
+
+        {!showSelector && (
+          <Button variant="outline" className="w-full h-11 gap-2 border-dashed" onClick={() => { setShowSelector(true); setTimeout(() => searchRef.current?.focus(), 100); }}>
+            <Plus size={16} />
+            Adicionar pet ao táxi
+          </Button>
+        )}
+      </div>
 
       {/* Copy button */}
       {filteredList.length > 0 && (
@@ -204,6 +261,9 @@ const TaxiTab: React.FC = () => {
           filteredList.map((entry) => (
             <Card key={entry.id} className="overflow-hidden">
               <CardContent className="p-3 flex items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                  <Dog size={16} className="text-primary" />
+                </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-sm text-foreground truncate">{entry.dogName}</p>
                   <p className="text-xs text-muted-foreground truncate">{entry.tutorName}</p>
