@@ -1,0 +1,236 @@
+import React, { useState, useMemo } from 'react';
+import { useClients } from '@/context/ClientContext';
+import { Car, Copy, Check, Plus, Trash2, ArrowRight, ArrowLeft, ArrowLeftRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
+
+type TaxiDirection = 'ida' | 'volta' | 'ida_volta';
+
+interface TaxiEntry {
+  id: string;
+  clientId: string;
+  dogName: string;
+  tutorName: string;
+  direction: TaxiDirection;
+}
+
+const DIRECTION_LABELS: Record<TaxiDirection, string> = {
+  ida: 'Só ida',
+  volta: 'Só volta',
+  ida_volta: 'Ida e volta',
+};
+
+const DIRECTION_ICONS: Record<TaxiDirection, React.ReactNode> = {
+  ida: <ArrowRight size={14} />,
+  volta: <ArrowLeft size={14} />,
+  ida_volta: <ArrowLeftRight size={14} />,
+};
+
+const DIRECTION_COLORS: Record<TaxiDirection, string> = {
+  ida: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  volta: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+  ida_volta: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+};
+
+const STORAGE_KEY = 'taxi-dog-list';
+
+const loadTaxiList = (): TaxiEntry[] => {
+  try {
+    const data = localStorage.getItem(STORAGE_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch { return []; }
+};
+
+const saveTaxiList = (list: TaxiEntry[]) => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+};
+
+const TaxiTab: React.FC = () => {
+  const { clients } = useClients();
+  const [taxiList, setTaxiList] = useState<TaxiEntry[]>(loadTaxiList);
+  const [selectedClientId, setSelectedClientId] = useState<string>('');
+  const [selectedDirection, setSelectedDirection] = useState<TaxiDirection>('ida_volta');
+  const [copied, setCopied] = useState(false);
+  const [filter, setFilter] = useState<'all' | TaxiDirection>('all');
+
+  const availableClients = useMemo(() => {
+    const usedIds = new Set(taxiList.map(e => e.clientId));
+    return clients.filter(c => !usedIds.has(c.id));
+  }, [clients, taxiList]);
+
+  const filteredList = useMemo(() => {
+    if (filter === 'all') return taxiList;
+    return taxiList.filter(e => e.direction === filter);
+  }, [taxiList, filter]);
+
+  const handleAdd = () => {
+    if (!selectedClientId) return;
+    const client = clients.find(c => c.id === selectedClientId);
+    if (!client) return;
+
+    const entry: TaxiEntry = {
+      id: crypto.randomUUID(),
+      clientId: client.id,
+      dogName: client.name,
+      tutorName: client.tutorName,
+      direction: selectedDirection,
+    };
+
+    const updated = [...taxiList, entry];
+    setTaxiList(updated);
+    saveTaxiList(updated);
+    setSelectedClientId('');
+    toast.success(`${client.name} adicionado à lista de táxi`);
+  };
+
+  const handleRemove = (id: string) => {
+    const updated = taxiList.filter(e => e.id !== id);
+    setTaxiList(updated);
+    saveTaxiList(updated);
+    toast.success('Removido da lista');
+  };
+
+  const handleChangeDirection = (id: string, direction: TaxiDirection) => {
+    const updated = taxiList.map(e => e.id === id ? { ...e, direction } : e);
+    setTaxiList(updated);
+    saveTaxiList(updated);
+  };
+
+  const handleCopy = () => {
+    const lines = filteredList.map(e => {
+      const dir = DIRECTION_LABELS[e.direction];
+      return `🐾 ${e.dogName} (${e.tutorName}) — ${dir}`;
+    });
+
+    const header = `🚕 Lista Táxi Dog — ${filteredList.length} pets\n${'─'.repeat(30)}`;
+    const idaCount = filteredList.filter(e => e.direction === 'ida' || e.direction === 'ida_volta').length;
+    const voltaCount = filteredList.filter(e => e.direction === 'volta' || e.direction === 'ida_volta').length;
+    const summary = `\n${'─'.repeat(30)}\n📊 Ida: ${idaCount} | Volta: ${voltaCount}`;
+
+    const text = `${header}\n${lines.join('\n')}${summary}`;
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      toast.success('Lista copiada!');
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  const counts = useMemo(() => ({
+    total: taxiList.length,
+    ida: taxiList.filter(e => e.direction === 'ida').length,
+    volta: taxiList.filter(e => e.direction === 'volta').length,
+    ida_volta: taxiList.filter(e => e.direction === 'ida_volta').length,
+  }), [taxiList]);
+
+  return (
+    <div className="space-y-4">
+      {/* Stats */}
+      <div className="grid grid-cols-4 gap-2">
+        <button onClick={() => setFilter('all')} className={`rounded-xl p-2.5 text-center transition-all border ${filter === 'all' ? 'border-primary bg-primary/10 shadow-sm' : 'border-border bg-card'}`}>
+          <p className="text-lg font-bold text-foreground">{counts.total}</p>
+          <p className="text-[10px] text-muted-foreground">Total</p>
+        </button>
+        <button onClick={() => setFilter('ida')} className={`rounded-xl p-2.5 text-center transition-all border ${filter === 'ida' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-sm' : 'border-border bg-card'}`}>
+          <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{counts.ida}</p>
+          <p className="text-[10px] text-muted-foreground">Só ida</p>
+        </button>
+        <button onClick={() => setFilter('volta')} className={`rounded-xl p-2.5 text-center transition-all border ${filter === 'volta' ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20 shadow-sm' : 'border-border bg-card'}`}>
+          <p className="text-lg font-bold text-orange-600 dark:text-orange-400">{counts.volta}</p>
+          <p className="text-[10px] text-muted-foreground">Só volta</p>
+        </button>
+        <button onClick={() => setFilter('ida_volta')} className={`rounded-xl p-2.5 text-center transition-all border ${filter === 'ida_volta' ? 'border-green-500 bg-green-50 dark:bg-green-900/20 shadow-sm' : 'border-border bg-card'}`}>
+          <p className="text-lg font-bold text-green-600 dark:text-green-400">{counts.ida_volta}</p>
+          <p className="text-[10px] text-muted-foreground">Ida/Volta</p>
+        </button>
+      </div>
+
+      {/* Add new */}
+      <Card className="border-dashed">
+        <CardContent className="p-3 space-y-2">
+          <div className="flex gap-2">
+            <Select value={selectedClientId} onValueChange={setSelectedClientId}>
+              <SelectTrigger className="flex-1 h-10 text-sm">
+                <SelectValue placeholder="Selecionar pet..." />
+              </SelectTrigger>
+              <SelectContent>
+                {availableClients.map(c => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name} ({c.tutorName})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex gap-2">
+            <Select value={selectedDirection} onValueChange={(v) => setSelectedDirection(v as TaxiDirection)}>
+              <SelectTrigger className="flex-1 h-10 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ida">🔵 Só ida</SelectItem>
+                <SelectItem value="volta">🟠 Só volta</SelectItem>
+                <SelectItem value="ida_volta">🟢 Ida e volta</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button onClick={handleAdd} disabled={!selectedClientId} size="sm" className="h-10 gap-1.5 px-4">
+              <Plus size={16} />
+              Adicionar
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Copy button */}
+      {filteredList.length > 0 && (
+        <Button onClick={handleCopy} variant="outline" className="w-full gap-2 h-10">
+          {copied ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
+          {copied ? 'Copiado!' : `Copiar lista (${filteredList.length} pets)`}
+        </Button>
+      )}
+
+      {/* List */}
+      <div className="space-y-2">
+        {filteredList.length === 0 ? (
+          <Card>
+            <CardContent className="p-6 text-center">
+              <Car size={32} className="mx-auto text-muted-foreground/40 mb-2" />
+              <p className="text-sm text-muted-foreground">Nenhum pet na lista de táxi</p>
+            </CardContent>
+          </Card>
+        ) : (
+          filteredList.map((entry) => (
+            <Card key={entry.id} className="overflow-hidden">
+              <CardContent className="p-3 flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm text-foreground truncate">{entry.dogName}</p>
+                  <p className="text-xs text-muted-foreground truncate">{entry.tutorName}</p>
+                </div>
+                <Select value={entry.direction} onValueChange={(v) => handleChangeDirection(entry.id, v as TaxiDirection)}>
+                  <SelectTrigger className="w-auto h-8 text-xs gap-1 border-0 bg-transparent p-0 pr-2 shadow-none">
+                    <Badge className={`${DIRECTION_COLORS[entry.direction]} gap-1 text-[11px] font-medium px-2 py-0.5`}>
+                      {DIRECTION_ICONS[entry.direction]}
+                      {DIRECTION_LABELS[entry.direction]}
+                    </Badge>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ida">🔵 Só ida</SelectItem>
+                    <SelectItem value="volta">🟠 Só volta</SelectItem>
+                    <SelectItem value="ida_volta">🟢 Ida e volta</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70 hover:text-destructive" onClick={() => handleRemove(entry.id)}>
+                  <Trash2 size={15} />
+                </Button>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default TaxiTab;
