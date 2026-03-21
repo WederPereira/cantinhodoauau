@@ -82,21 +82,25 @@ const Dashboard: React.FC = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="w-full grid grid-cols-4 h-11 sm:h-12 rounded-xl p-1 bg-muted/60">
-            <TabsTrigger value="overview" className="gap-1 text-[11px] sm:text-sm rounded-lg data-[state=active]:shadow-md transition-all duration-200 px-1 sm:px-3">
-              <LayoutDashboard size={16} className="shrink-0" />
+          <TabsList className="w-full grid grid-cols-5 h-11 sm:h-12 rounded-xl p-1 bg-muted/60">
+            <TabsTrigger value="overview" className="gap-1 text-[10px] sm:text-sm rounded-lg data-[state=active]:shadow-md transition-all duration-200 px-0.5 sm:px-3">
+              <LayoutDashboard size={15} className="shrink-0" />
               <span className="hidden sm:inline">Geral</span>
             </TabsTrigger>
-            <TabsTrigger value="daycare" className="gap-1 text-[11px] sm:text-sm rounded-lg data-[state=active]:shadow-md transition-all duration-200 px-1 sm:px-3">
-              <PawPrint size={16} className="shrink-0" />
+            <TabsTrigger value="daycare" className="gap-1 text-[10px] sm:text-sm rounded-lg data-[state=active]:shadow-md transition-all duration-200 px-0.5 sm:px-3">
+              <PawPrint size={15} className="shrink-0" />
               <span className="hidden sm:inline">Creche</span>
             </TabsTrigger>
-            <TabsTrigger value="hotel" className="gap-1 text-[11px] sm:text-sm rounded-lg data-[state=active]:shadow-md transition-all duration-200 px-1 sm:px-3">
-              <Hotel size={16} className="shrink-0" />
+            <TabsTrigger value="taxi" className="gap-1 text-[10px] sm:text-sm rounded-lg data-[state=active]:shadow-md transition-all duration-200 px-0.5 sm:px-3">
+              <Car size={15} className="shrink-0" />
+              <span className="hidden sm:inline">Táxi</span>
+            </TabsTrigger>
+            <TabsTrigger value="hotel" className="gap-1 text-[10px] sm:text-sm rounded-lg data-[state=active]:shadow-md transition-all duration-200 px-0.5 sm:px-3">
+              <Hotel size={15} className="shrink-0" />
               <span className="hidden sm:inline">Hotel</span>
             </TabsTrigger>
-            <TabsTrigger value="health" className="gap-1 text-[11px] sm:text-sm rounded-lg data-[state=active]:shadow-md transition-all duration-200 px-1 sm:px-3">
-              <HeartPulse size={16} className="shrink-0" />
+            <TabsTrigger value="health" className="gap-1 text-[10px] sm:text-sm rounded-lg data-[state=active]:shadow-md transition-all duration-200 px-0.5 sm:px-3">
+              <HeartPulse size={15} className="shrink-0" />
               <span className="hidden sm:inline">Saúde</span>
             </TabsTrigger>
           </TabsList>
