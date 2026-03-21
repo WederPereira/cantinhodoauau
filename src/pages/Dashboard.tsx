@@ -130,6 +130,9 @@ const Dashboard: React.FC = () => {
           <TabsContent value="daycare" className="mt-4">
             <DaycareTab />
           </TabsContent>
+          <TabsContent value="taxi" className="mt-4">
+            <TaxiTab />
+          </TabsContent>
 
           <TabsContent value="hotel" className="mt-4">
             <HotelTab />
