@@ -2,14 +2,18 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useClients } from '@/context/ClientContext';
 import { AddClientDialog } from '@/components/AddClientDialog';
 import { ClientDetailSheet } from '@/components/ClientDetailSheet';
+import { HealthAlerts } from '@/components/HealthAlerts';
+import { BirthdaySection } from '@/components/dashboard/BirthdaySection';
 import { HealthControlTab } from '@/components/dashboard/HealthControlTab';
 import DaycareTab from '@/components/dashboard/DaycareTab';
 import TaxiTab from '@/components/dashboard/TaxiTab';
 import HotelTab from '@/components/dashboard/HotelTab';
-import DashboardOverview from '@/components/dashboard/DashboardOverview';
+import HotelMedicationAlerts from '@/components/dashboard/HotelMedicationAlerts';
+import HotelFeedingAlerts from '@/components/dashboard/HotelFeedingAlerts';
+import HotelCheckoutAlerts from '@/components/dashboard/HotelCheckoutAlerts';
 import QrReader from '@/components/qrcode/QrReader';
-import { Client } from '@/types/client';
-import { LayoutDashboard, HeartPulse, PawPrint, Hotel, Camera, Car } from 'lucide-react';
+import { Client, getHealthAlerts } from '@/types/client';
+import { Users, LayoutDashboard, HeartPulse, PawPrint, Hotel, Camera, Car } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -19,7 +23,6 @@ const Dashboard: React.FC = () => {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('overview');
 
   const selectedClient = selectedClientId ? clients.find(c => c.id === selectedClientId) || null : null;
 
@@ -32,6 +35,8 @@ const Dashboard: React.FC = () => {
     window.addEventListener('openClientDetail', handler);
     return () => window.removeEventListener('openClientDetail', handler);
   }, []);
+
+  const healthAlerts = useMemo(() => getHealthAlerts(clients), [clients]);
 
   const handleClientClick = (client: Client) => {
     setSelectedClientId(client.id);
@@ -46,7 +51,7 @@ const Dashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container px-3 sm:px-4 md:px-6 py-4 sm:py-6 max-w-6xl mx-auto space-y-4 sm:space-y-5">
-        {/* Header */}
+        {/* Header - empilhado no mobile */}
         <div className="space-y-3">
           <div className="text-center sm:text-left">
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Dashboard</h1>
@@ -55,6 +60,7 @@ const Dashboard: React.FC = () => {
             </p>
           </div>
 
+          {/* Botões centralizados */}
           <div className="flex items-center justify-center gap-2 w-full">
             <Dialog open={qrOpen} onOpenChange={setQrOpen}>
               <DialogTrigger asChild>
@@ -75,7 +81,7 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs defaultValue="overview" className="w-full">
           <TabsList className="w-full grid grid-cols-5 h-11 sm:h-12 rounded-xl p-1 bg-muted/60">
             <TabsTrigger value="overview" className="gap-1 text-[10px] sm:text-sm rounded-lg data-[state=active]:shadow-md transition-all duration-200 px-0.5 sm:px-3">
               <LayoutDashboard size={15} className="shrink-0" />
@@ -99,11 +105,26 @@ const Dashboard: React.FC = () => {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="mt-4">
-            <DashboardOverview
-              onTabChange={setActiveTab}
-              onClientClick={handleAlertClientClick}
-            />
+          <TabsContent value="overview" className="space-y-4 sm:space-y-5 mt-4">
+            {/* Stats card */}
+            <div className="bg-card border border-border rounded-xl p-3 sm:p-4 shadow-soft">
+              <div className="flex items-center gap-3">
+                <div className="p-2 sm:p-2.5 rounded-xl bg-primary/10">
+                  <Users size={20} className="text-primary sm:hidden" />
+                  <Users size={22} className="text-primary hidden sm:block" />
+                </div>
+                <div>
+                  <p className="text-[11px] sm:text-xs font-medium text-muted-foreground">Total de Clientes</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-foreground">{clients.length}</p>
+                </div>
+              </div>
+            </div>
+
+            <HotelMedicationAlerts />
+            <HotelFeedingAlerts />
+            <HotelCheckoutAlerts />
+            <HealthAlerts alerts={healthAlerts} onClientClick={handleAlertClientClick} />
+            <BirthdaySection clients={clients} onClientClick={handleClientClick} />
           </TabsContent>
 
           <TabsContent value="daycare" className="mt-4">
@@ -112,9 +133,11 @@ const Dashboard: React.FC = () => {
           <TabsContent value="taxi" className="mt-4">
             <TaxiTab />
           </TabsContent>
+
           <TabsContent value="hotel" className="mt-4">
             <HotelTab />
           </TabsContent>
+
           <TabsContent value="health" className="mt-4">
             <HealthControlTab />
           </TabsContent>
