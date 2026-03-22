@@ -4,11 +4,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { getHealthAlerts } from '@/types/client';
 import {
   Users, Hotel, PawPrint, HeartPulse, AlertTriangle, Pill, Utensils,
-  LogOut, Cake, Car, TrendingUp, Clock, ChevronRight, Dog, Timer, Check, Bug, Syringe
+  LogOut, Cake, Car, TrendingUp, Clock, ChevronRight, Dog, Timer, Check, Bug, Syringe,
+  ChevronLeft, Copy
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { format, differenceInDays, isPast, differenceInHours, differenceInYears, getMonth } from 'date-fns';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import { ptBR } from 'date-fns/locale';
 
 interface DashboardOverviewProps {
