@@ -145,7 +145,16 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onTabChange, onCl
     } catch { return 0; }
   }, []);
 
-  // Birthday today
+  // Birthday month
+  const [birthdayMonth, setBirthdayMonth] = useState(getMonth(new Date()));
+  const MONTH_NAMES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+  const birthdayClients = useMemo(() => {
+    return clients
+      .filter(c => c.birthDate && getMonth(new Date(c.birthDate)) === birthdayMonth)
+      .sort((a, b) => new Date(a.birthDate!).getDate() - new Date(b.birthDate!).getDate());
+  }, [clients, birthdayMonth]);
+
   const birthdaysToday = useMemo(() => {
     const today = new Date();
     return clients.filter(c => {
@@ -154,6 +163,26 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onTabChange, onCl
       return b.getDate() === today.getDate() && b.getMonth() === today.getMonth();
     });
   }, [clients]);
+
+  const navigateBirthdayMonth = (dir: number) => {
+    setBirthdayMonth(prev => {
+      let m = prev + dir;
+      if (m < 0) m = 11;
+      if (m > 11) m = 0;
+      return m;
+    });
+  };
+
+  const handleCopyBirthdays = () => {
+    if (birthdayClients.length === 0) return;
+    const names = birthdayClients.map(c => {
+      const b = new Date(c.birthDate!);
+      const age = differenceInYears(new Date(), b);
+      return `${c.name} - Dia ${b.getDate()} (${age > 0 ? `${age} ano${age > 1 ? 's' : ''}` : '<1 ano'})`;
+    }).join('\n');
+    navigator.clipboard.writeText(`🎂 Aniversariantes de ${MONTH_NAMES[birthdayMonth]}:\n${names}`);
+    toast({ title: "Copiado!", description: `${birthdayClients.length} aniversariante(s)` });
+  };
 
   // Incomplete profiles
   const incompleteProfiles = useMemo(() => {
