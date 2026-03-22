@@ -4,11 +4,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { getHealthAlerts } from '@/types/client';
 import {
   Users, Hotel, PawPrint, HeartPulse, AlertTriangle, Pill, Utensils,
-  LogOut, Cake, Car, TrendingUp, Clock, ChevronRight, Dog, Timer, Check, Bug, Syringe
+  LogOut, Cake, Car, TrendingUp, Clock, ChevronRight, Dog, Timer, Check, Bug, Syringe,
+  ChevronLeft, Copy
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { format, differenceInDays, isPast, differenceInHours, differenceInYears, getMonth } from 'date-fns';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 import { ptBR } from 'date-fns/locale';
 
 interface DashboardOverviewProps {
@@ -37,6 +41,7 @@ interface MedPending {
 
 const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onTabChange, onClientClick }) => {
   const { clients } = useClients();
+  const { toast } = useToast();
   const [hotelStays, setHotelStays] = useState<HotelStaySummary[]>([]);
   const [daycareCount, setDaycareCount] = useState(0);
   const [pendingMeds, setPendingMeds] = useState<MedPending[]>([]);
@@ -142,7 +147,16 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onTabChange, onCl
     } catch { return 0; }
   }, []);
 
-  // Birthday today
+  // Birthday month
+  const [birthdayMonth, setBirthdayMonth] = useState(getMonth(new Date()));
+  const MONTH_NAMES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+  const birthdayClients = useMemo(() => {
+    return clients
+      .filter(c => c.birthDate && getMonth(new Date(c.birthDate)) === birthdayMonth)
+      .sort((a, b) => new Date(a.birthDate!).getDate() - new Date(b.birthDate!).getDate());
+  }, [clients, birthdayMonth]);
+
   const birthdaysToday = useMemo(() => {
     const today = new Date();
     return clients.filter(c => {
@@ -151,6 +165,26 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onTabChange, onCl
       return b.getDate() === today.getDate() && b.getMonth() === today.getMonth();
     });
   }, [clients]);
+
+  const navigateBirthdayMonth = (dir: number) => {
+    setBirthdayMonth(prev => {
+      let m = prev + dir;
+      if (m < 0) m = 11;
+      if (m > 11) m = 0;
+      return m;
+    });
+  };
+
+  const handleCopyBirthdays = () => {
+    if (birthdayClients.length === 0) return;
+    const names = birthdayClients.map(c => {
+      const b = new Date(c.birthDate!);
+      const age = differenceInYears(new Date(), b);
+      return `${c.name} - Dia ${b.getDate()} (${age > 0 ? `${age} ano${age > 1 ? 's' : ''}` : '<1 ano'})`;
+    }).join('\n');
+    navigator.clipboard.writeText(`🎂 Aniversariantes de ${MONTH_NAMES[birthdayMonth]}:\n${names}`);
+    toast({ title: "Copiado!", description: `${birthdayClients.length} aniversariante(s)` });
+  };
 
   // Incomplete profiles
   const incompleteProfiles = useMemo(() => {
@@ -221,21 +255,95 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onTabChange, onCl
         />
       </div>
 
-      {/* Quick Info Row */}
-      <div className="grid grid-cols-2 gap-3">
-        <QuickCard
-          icon={<Car size={16} />}
-          label="Táxi Hoje"
-          value={`${taxiCount} dog(s)`}
-          onClick={() => onTabChange('taxi')}
-        />
-        <QuickCard
-          icon={<Cake size={16} />}
-          label="Aniversário Hoje"
-          value={birthdaysToday.length > 0 ? `${birthdaysToday.map(c => c.name).join(', ')} 🎉` : 'Nenhum'}
-          onClick={() => {}}
-          highlight={birthdaysToday.length > 0}
-        />
+      {/* Quick Info - Taxi */}
+      <QuickCard
+        icon={<Car size={16} />}
+        label="Táxi Hoje"
+        value={`${taxiCount} dog(s)`}
+        onClick={() => onTabChange('taxi')}
+      />
+
+      {/* Birthday Month Section */}
+      <div className="bg-card border border-border rounded-xl p-3 shadow-soft space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-accent/10">
+              <Cake size={16} className="text-accent" />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <h3 className="text-sm font-semibold text-foreground">Aniversariantes 🎂</h3>
+                {birthdayClients.length > 0 && (
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleCopyBirthdays} title="Copiar lista">
+                    <Copy size={13} className="text-muted-foreground" />
+                  </Button>
+                )}
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                {clients.filter(c => c.birthDate).length} com data · {clients.filter(c => !c.birthDate).length} sem data
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-0.5">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigateBirthdayMonth(-1)}>
+              <ChevronLeft size={14} />
+            </Button>
+            <span className="text-[11px] font-medium text-foreground min-w-[70px] text-center">
+              {MONTH_NAMES[birthdayMonth]}
+            </span>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigateBirthdayMonth(1)}>
+              <ChevronRight size={14} />
+            </Button>
+          </div>
+        </div>
+
+        {birthdayClients.length === 0 ? (
+          <div className="text-center py-4">
+            <p className="text-xs text-muted-foreground">
+              Nenhum pet faz aniversário em {MONTH_NAMES[birthdayMonth]}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-1.5 max-h-[240px] overflow-y-auto pr-1">
+            {birthdayClients.map(client => {
+              const birth = new Date(client.birthDate!);
+              const age = differenceInYears(new Date(), birth);
+              const today = new Date();
+              const isBirthdayToday = birthdayMonth === getMonth(today) && birth.getDate() === today.getDate();
+              return (
+                <div
+                  key={client.id}
+                  onClick={() => onClientClick(client.id)}
+                  className={cn(
+                    "flex items-center gap-2.5 p-2 rounded-lg cursor-pointer transition-all",
+                    isBirthdayToday
+                      ? "bg-accent/10 border border-accent/30"
+                      : "hover:bg-muted/50"
+                  )}
+                >
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={client.photo} />
+                    <AvatarFallback className="text-xs bg-primary/10 text-primary">{client.name.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-foreground truncate">{client.name}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      Dia {birth.getDate()} • {age > 0 ? `${age} ano${age > 1 ? 's' : ''}` : '<1 ano'}
+                    </p>
+                  </div>
+                  {isBirthdayToday && (
+                    <span className="text-[10px] bg-accent/10 text-accent px-2 py-0.5 rounded-full font-medium">Hoje! 🎉</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+        <div className="pt-1.5 border-t border-border">
+          <p className="text-[10px] text-muted-foreground text-center">
+            {birthdayClients.length} aniversariante{birthdayClients.length !== 1 ? 's' : ''} em {MONTH_NAMES[birthdayMonth]}
+          </p>
+        </div>
       </div>
 
       {/* Medication Countdown - Interactive */}
