@@ -41,6 +41,7 @@ interface MedPending {
 
 const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onTabChange, onClientClick }) => {
   const { clients } = useClients();
+  const { toast } = useToast();
   const [hotelStays, setHotelStays] = useState<HotelStaySummary[]>([]);
   const [daycareCount, setDaycareCount] = useState(0);
   const [pendingMeds, setPendingMeds] = useState<MedPending[]>([]);
