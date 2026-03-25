@@ -106,7 +106,50 @@ const saveClients = (clients: Client[]) => {
 };
 
 export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [clients, setClients] = useState<Client[]>(() => loadClients());
+  const [clients, setClients] = useState<Client[]>(() => {
+    const loaded = loadClients();
+    // Auto-import new clients on first load
+    if (!localStorage.getItem(IMPORT_KEY)) {
+      const existing = new Set(loaded.map(c => `${c.name.toLowerCase()}|${(c.tutorName || '').toLowerCase()}`));
+      const toAdd: Client[] = [];
+      for (const c of importedClients) {
+        const key = `${c.name.toLowerCase()}|${(c.tutorName || '').toLowerCase()}`;
+        if (!existing.has(key)) {
+          existing.add(key);
+          toAdd.push({
+            id: crypto.randomUUID(),
+            tutorName: c.tutorName || '',
+            tutorPhone: c.tutorPhone || '',
+            tutorEmail: c.tutorEmail || '',
+            tutorAddress: c.tutorAddress || '',
+            tutorNeighborhood: '',
+            tutorCpf: c.tutorCpf || '',
+            name: c.name,
+            breed: c.breed || '',
+            petSize: c.petSize,
+            weight: c.weight,
+            birthDate: c.birthDate,
+            photo: undefined,
+            gender: c.gender,
+            castrated: c.castrated ?? false,
+            entryDate: c.entryDate || new Date(),
+            vaccines: c.vaccines || { ...DEFAULT_VACCINES },
+            vaccineHistory: [],
+            fleaHistory: [],
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
+        }
+      }
+      localStorage.setItem(IMPORT_KEY, 'true');
+      if (toAdd.length > 0) {
+        const merged = [...loaded, ...toAdd];
+        saveClients(merged);
+        return merged;
+      }
+    }
+    return loaded;
+  });
 
   useEffect(() => {
     saveClients(clients);
