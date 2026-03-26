@@ -61,7 +61,7 @@ export const importedClients: Array<{
       v10: '2025-07-11T00:00:00.000Z',
       raiva: '2025-07-11T00:00:00.000Z',
       giardia: '2025-06-07T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -81,7 +81,7 @@ export const importedClients: Array<{
       v10: '2025-03-26T00:00:00.000Z',
       raiva: '2025-03-26T00:00:00.000Z',
       giardia: '2025-04-29T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -134,11 +134,11 @@ export const importedClients: Array<{
     birthDate: new Date('2015-02-06T00:00:00.000Z'),
     entryDate: new Date('2026-01-16T00:00:00.000Z'),
     vaccines: {
-      gripe: None,
-      v10: None,
+      gripe: null,
+      v10: null,
       raiva: '2025-06-28T00:00:00.000Z',
-      giardia: None,
-      antipulgas: None,
+      giardia: null,
+      antipulgas: null,
     },
   },
   {
@@ -220,7 +220,7 @@ export const importedClients: Array<{
     birthDate: new Date('2024-08-23T00:00:00.000Z'),
     entryDate: new Date('2023-12-31T00:00:00.000Z'),
     vaccines: {
-      gripe: None,
+      gripe: null,
       v10: '2025-12-10T00:00:00.000Z',
       raiva: '2025-12-13T00:00:00.000Z',
       giardia: '2025-01-12T00:00:00.000Z',
@@ -239,9 +239,9 @@ export const importedClients: Array<{
     vaccines: {
       gripe: '2026-01-30T00:00:00.000Z',
       v10: '2026-01-30T00:00:00.000Z',
-      raiva: None,
+      raiva: null,
       giardia: '2026-01-30T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -277,7 +277,7 @@ export const importedClients: Array<{
       v10: '2026-02-05T00:00:00.000Z',
       raiva: '2026-02-05T00:00:00.000Z',
       giardia: '2025-04-07T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -311,7 +311,7 @@ export const importedClients: Array<{
       v10: '2025-03-28T00:00:00.000Z',
       raiva: '2025-03-28T00:00:00.000Z',
       giardia: '2025-03-28T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -329,7 +329,7 @@ export const importedClients: Array<{
       v10: '2026-01-16T00:00:00.000Z',
       raiva: '2026-01-16T00:00:00.000Z',
       giardia: '2026-01-16T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -348,7 +348,7 @@ export const importedClients: Array<{
       v10: '2025-12-20T00:00:00.000Z',
       raiva: '2025-12-20T00:00:00.000Z',
       giardia: '2025-05-28T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -366,7 +366,7 @@ export const importedClients: Array<{
       v10: '2025-08-30T00:00:00.000Z',
       raiva: '2025-09-04T00:00:00.000Z',
       giardia: '2025-05-20T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -384,7 +384,7 @@ export const importedClients: Array<{
       v10: '2025-12-04T00:00:00.000Z',
       raiva: '2025-12-17T00:00:00.000Z',
       giardia: '2026-01-13T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -473,7 +473,7 @@ export const importedClients: Array<{
       v10: '2025-12-14T00:00:00.000Z',
       raiva: '2025-12-14T00:00:00.000Z',
       giardia: '2026-03-07T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -548,10 +548,10 @@ export const importedClients: Array<{
     birthDate: new Date('2019-05-03T00:00:00.000Z'),
     entryDate: new Date('2022-02-16T00:00:00.000Z'),
     vaccines: {
-      gripe: None,
-      v10: None,
-      raiva: None,
-      giardia: None,
+      gripe: null,
+      v10: null,
+      raiva: null,
+      giardia: null,
       antipulgas: '2025-06-11T00:00:00.000Z',
     },
   },
@@ -569,7 +569,7 @@ export const importedClients: Array<{
       v10: '2026-01-21T00:00:00.000Z',
       raiva: '2026-01-21T00:00:00.000Z',
       giardia: '2024-10-12T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -587,7 +587,7 @@ export const importedClients: Array<{
       v10: '2025-08-02T00:00:00.000Z',
       raiva: '2025-08-02T00:00:00.000Z',
       giardia: '2025-11-11T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -600,11 +600,11 @@ export const importedClients: Array<{
     birthDate: new Date('2025-02-25T00:00:00.000Z'),
     entryDate: new Date('2025-06-21T00:00:00.000Z'),
     vaccines: {
-      gripe: None,
+      gripe: null,
       v10: '2025-06-20T00:00:00.000Z',
       raiva: '2025-06-20T00:00:00.000Z',
-      giardia: None,
-      antipulgas: None,
+      giardia: null,
+      antipulgas: null,
     },
   },
   {
@@ -633,10 +633,10 @@ export const importedClients: Array<{
     birthDate: new Date('2020-02-01T00:00:00.000Z'),
     entryDate: new Date('2023-12-28T00:00:00.000Z'),
     vaccines: {
-      gripe: None,
-      v10: None,
-      raiva: None,
-      giardia: None,
+      gripe: null,
+      v10: null,
+      raiva: null,
+      giardia: null,
       antipulgas: '2025-04-10T00:00:00.000Z',
     },
   },
@@ -653,8 +653,8 @@ export const importedClients: Array<{
       gripe: '2025-11-14T00:00:00.000Z',
       v10: '2025-07-27T00:00:00.000Z',
       raiva: '2025-07-27T00:00:00.000Z',
-      giardia: None,
-      antipulgas: None,
+      giardia: null,
+      antipulgas: null,
     },
   },
   {
@@ -670,7 +670,7 @@ export const importedClients: Array<{
       v10: '2026-02-05T00:00:00.000Z',
       raiva: '2026-02-05T00:00:00.000Z',
       giardia: '2025-04-07T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -686,7 +686,7 @@ export const importedClients: Array<{
       v10: '2026-02-05T00:00:00.000Z',
       raiva: '2026-02-05T00:00:00.000Z',
       giardia: '2025-04-07T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -698,10 +698,10 @@ export const importedClients: Array<{
     birthDate: new Date('2019-01-18T00:00:00.000Z'),
     entryDate: new Date('2021-06-01T00:00:00.000Z'),
     vaccines: {
-      gripe: None,
-      v10: None,
-      raiva: None,
-      giardia: None,
+      gripe: null,
+      v10: null,
+      raiva: null,
+      giardia: null,
       antipulgas: '2025-02-03T00:00:00.000Z',
     },
   },
@@ -760,7 +760,7 @@ export const importedClients: Array<{
       v10: '2025-11-17T00:00:00.000Z',
       raiva: '2025-11-25T00:00:00.000Z',
       giardia: '2026-01-03T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -795,9 +795,9 @@ export const importedClients: Array<{
     vaccines: {
       gripe: '2026-03-13T00:00:00.000Z',
       v10: '2026-03-13T00:00:00.000Z',
-      raiva: None,
+      raiva: null,
       giardia: '2026-03-13T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -815,7 +815,7 @@ export const importedClients: Array<{
       v10: '2025-12-05T00:00:00.000Z',
       raiva: '2025-12-05T00:00:00.000Z',
       giardia: '2025-08-27T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -870,9 +870,9 @@ export const importedClients: Array<{
     vaccines: {
       gripe: '2026-03-13T00:00:00.000Z',
       v10: '2026-03-13T00:00:00.000Z',
-      raiva: None,
+      raiva: null,
       giardia: '2026-03-13T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -904,7 +904,7 @@ export const importedClients: Array<{
       v10: '2025-07-19T00:00:00.000Z',
       raiva: '2025-11-27T00:00:00.000Z',
       giardia: '2025-07-19T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -922,7 +922,7 @@ export const importedClients: Array<{
       v10: '2025-07-07T00:00:00.000Z',
       raiva: '2025-07-12T00:00:00.000Z',
       giardia: '2025-09-17T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -969,7 +969,7 @@ export const importedClients: Array<{
       v10: '2025-07-04T00:00:00.000Z',
       raiva: '2025-07-04T00:00:00.000Z',
       giardia: '2025-09-10T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -987,7 +987,7 @@ export const importedClients: Array<{
       v10: '2026-01-16T00:00:00.000Z',
       raiva: '2026-01-16T00:00:00.000Z',
       giardia: '2026-01-16T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -1005,7 +1005,7 @@ export const importedClients: Array<{
       v10: '2026-01-24T00:00:00.000Z',
       raiva: '2026-01-24T00:00:00.000Z',
       giardia: '2025-03-17T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -1023,7 +1023,7 @@ export const importedClients: Array<{
       v10: '2025-09-03T00:00:00.000Z',
       raiva: '2025-09-03T00:00:00.000Z',
       giardia: '2025-10-04T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -1041,7 +1041,7 @@ export const importedClients: Array<{
       v10: '2025-12-04T00:00:00.000Z',
       raiva: '2025-12-17T00:00:00.000Z',
       giardia: '2026-01-13T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -1059,7 +1059,7 @@ export const importedClients: Array<{
       v10: '2026-01-05T00:00:00.000Z',
       raiva: '2026-01-05T00:00:00.000Z',
       giardia: '2025-03-27T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -1096,8 +1096,8 @@ export const importedClients: Array<{
       gripe: '2025-05-03T00:00:00.000Z',
       v10: '2024-10-27T00:00:00.000Z',
       raiva: '2025-05-03T00:00:00.000Z',
-      giardia: None,
-      antipulgas: None,
+      giardia: null,
+      antipulgas: null,
     },
   },
   {
@@ -1149,7 +1149,7 @@ export const importedClients: Array<{
       v10: '2025-03-23T00:00:00.000Z',
       raiva: '2025-03-23T00:00:00.000Z',
       giardia: '2025-03-23T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -1166,7 +1166,7 @@ export const importedClients: Array<{
       v10: '2025-08-29T00:00:00.000Z',
       raiva: '2025-10-01T00:00:00.000Z',
       giardia: '2025-10-01T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -1226,10 +1226,10 @@ export const importedClients: Array<{
     birthDate: new Date('2021-06-30T00:00:00.000Z'),
     entryDate: new Date('2022-02-16T00:00:00.000Z'),
     vaccines: {
-      gripe: None,
-      v10: None,
-      raiva: None,
-      giardia: None,
+      gripe: null,
+      v10: null,
+      raiva: null,
+      giardia: null,
       antipulgas: '2025-03-04T00:00:00.000Z',
     },
   },
@@ -1249,7 +1249,7 @@ export const importedClients: Array<{
       v10: '2025-08-08T00:00:00.000Z',
       raiva: '2025-08-08T00:00:00.000Z',
       giardia: '2025-03-21T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -1264,10 +1264,10 @@ export const importedClients: Array<{
     birthDate: new Date('2020-03-31T00:00:00.000Z'),
     entryDate: new Date('2024-08-15T00:00:00.000Z'),
     vaccines: {
-      gripe: None,
-      v10: None,
-      raiva: None,
-      giardia: None,
+      gripe: null,
+      v10: null,
+      raiva: null,
+      giardia: null,
       antipulgas: '2025-06-15T00:00:00.000Z',
     },
   },
@@ -1287,7 +1287,7 @@ export const importedClients: Array<{
       v10: '2025-12-12T00:00:00.000Z',
       raiva: '2025-01-17T00:00:00.000Z',
       giardia: '2025-12-12T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -1304,8 +1304,8 @@ export const importedClients: Array<{
       gripe: '2026-01-10T00:00:00.000Z',
       v10: '2025-11-10T00:00:00.000Z',
       raiva: '2026-01-10T00:00:00.000Z',
-      giardia: None,
-      antipulgas: None,
+      giardia: null,
+      antipulgas: null,
     },
   },
   {
@@ -1322,8 +1322,8 @@ export const importedClients: Array<{
       gripe: '2025-08-08T00:00:00.000Z',
       v10: '2025-05-13T00:00:00.000Z',
       raiva: '2025-05-13T00:00:00.000Z',
-      giardia: None,
-      antipulgas: None,
+      giardia: null,
+      antipulgas: null,
     },
   },
   {
@@ -1416,8 +1416,8 @@ export const importedClients: Array<{
       gripe: '2025-11-28T00:00:00.000Z',
       v10: '2025-02-05T00:00:00.000Z',
       raiva: '2025-02-21T00:00:00.000Z',
-      giardia: None,
-      antipulgas: None,
+      giardia: null,
+      antipulgas: null,
     },
   },
   {
@@ -1434,7 +1434,7 @@ export const importedClients: Array<{
       v10: '2025-05-12T00:00:00.000Z',
       raiva: '2025-05-12T00:00:00.000Z',
       giardia: '2025-05-12T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -1470,10 +1470,10 @@ export const importedClients: Array<{
     birthDate: new Date('2022-08-04T00:00:00.000Z'),
     entryDate: new Date('2023-12-28T00:00:00.000Z'),
     vaccines: {
-      gripe: None,
-      v10: None,
-      raiva: None,
-      giardia: None,
+      gripe: null,
+      v10: null,
+      raiva: null,
+      giardia: null,
       antipulgas: '2025-03-05T00:00:00.000Z',
     },
   },
@@ -1492,7 +1492,7 @@ export const importedClients: Array<{
       v10: '2025-07-05T00:00:00.000Z',
       raiva: '2025-08-29T00:00:00.000Z',
       giardia: '2025-08-20T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -1518,8 +1518,8 @@ export const importedClients: Array<{
       gripe: '2025-11-14T00:00:00.000Z',
       v10: '2025-06-26T00:00:00.000Z',
       raiva: '2025-06-26T00:00:00.000Z',
-      giardia: None,
-      antipulgas: None,
+      giardia: null,
+      antipulgas: null,
     },
   },
   {
@@ -1556,7 +1556,7 @@ export const importedClients: Array<{
       v10: '2025-11-06T00:00:00.000Z',
       raiva: '2025-11-06T00:00:00.000Z',
       giardia: '2025-12-04T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -1570,11 +1570,11 @@ export const importedClients: Array<{
     birthDate: new Date('2021-05-20T00:00:00.000Z'),
     entryDate: new Date('2025-06-14T00:00:00.000Z'),
     vaccines: {
-      gripe: None,
+      gripe: null,
       v10: '2025-12-14T00:00:00.000Z',
       raiva: '2025-12-14T00:00:00.000Z',
-      giardia: None,
-      antipulgas: None,
+      giardia: null,
+      antipulgas: null,
     },
   },
   {
@@ -1589,11 +1589,11 @@ export const importedClients: Array<{
     birthDate: new Date('2020-02-03T00:00:00.000Z'),
     entryDate: new Date('2025-03-10T00:00:00.000Z'),
     vaccines: {
-      gripe: None,
+      gripe: null,
       v10: '2024-05-19T00:00:00.000Z',
       raiva: '2024-05-19T00:00:00.000Z',
-      giardia: None,
-      antipulgas: None,
+      giardia: null,
+      antipulgas: null,
     },
   },
   {
@@ -1609,8 +1609,8 @@ export const importedClients: Array<{
       gripe: '2025-09-10T00:00:00.000Z',
       v10: '2025-08-23T00:00:00.000Z',
       raiva: '2025-08-23T00:00:00.000Z',
-      giardia: None,
-      antipulgas: None,
+      giardia: null,
+      antipulgas: null,
     },
   },
   {
@@ -1643,9 +1643,9 @@ export const importedClients: Array<{
     vaccines: {
       gripe: '2025-09-04T00:00:00.000Z',
       v10: '2025-01-20T00:00:00.000Z',
-      raiva: None,
+      raiva: null,
       giardia: '2025-09-04T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -1663,7 +1663,7 @@ export const importedClients: Array<{
       v10: '2025-11-27T00:00:00.000Z',
       raiva: '2025-11-27T00:00:00.000Z',
       giardia: '2025-11-27T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -1680,7 +1680,7 @@ export const importedClients: Array<{
       v10: '2025-09-09T00:00:00.000Z',
       raiva: '2025-09-16T00:00:00.000Z',
       giardia: '2025-09-09T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -1697,7 +1697,7 @@ export const importedClients: Array<{
       v10: '2025-06-02T00:00:00.000Z',
       raiva: '2025-06-02T00:00:00.000Z',
       giardia: '2026-02-05T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -1713,7 +1713,7 @@ export const importedClients: Array<{
       v10: '2025-02-04T00:00:00.000Z',
       raiva: '2025-02-04T00:00:00.000Z',
       giardia: '2025-04-07T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -1727,11 +1727,11 @@ export const importedClients: Array<{
     birthDate: new Date('2025-08-26T00:00:00.000Z'),
     entryDate: new Date('2025-12-30T00:00:00.000Z'),
     vaccines: {
-      gripe: None,
+      gripe: null,
       v10: '2025-11-25T00:00:00.000Z',
       raiva: '2026-01-09T00:00:00.000Z',
       giardia: '2026-02-23T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -1751,7 +1751,7 @@ export const importedClients: Array<{
       v10: '2025-03-26T00:00:00.000Z',
       raiva: '2025-03-26T00:00:00.000Z',
       giardia: '2025-04-29T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -1811,11 +1811,11 @@ export const importedClients: Array<{
     birthDate: new Date('2024-07-05T00:00:00.000Z'),
     entryDate: new Date('2025-06-06T00:00:00.000Z'),
     vaccines: {
-      gripe: None,
+      gripe: null,
       v10: '2025-10-07T00:00:00.000Z',
       raiva: '2025-11-18T00:00:00.000Z',
       giardia: '2025-01-17T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -1852,7 +1852,7 @@ export const importedClients: Array<{
       v10: '2025-10-08T00:00:00.000Z',
       raiva: '2026-11-28T00:00:00.000Z',
       giardia: '2025-11-28T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -1870,7 +1870,7 @@ export const importedClients: Array<{
       gripe: '2025-04-12T00:00:00.000Z',
       v10: '2025-03-15T00:00:00.000Z',
       raiva: '2025-04-12T00:00:00.000Z',
-      giardia: None,
+      giardia: null,
       antipulgas: '2025-06-07T00:00:00.000Z',
     },
   },
@@ -1890,8 +1890,8 @@ export const importedClients: Array<{
       gripe: '2024-04-12T00:00:00.000Z',
       v10: '2024-11-10T00:00:00.000Z',
       raiva: '2024-11-10T00:00:00.000Z',
-      giardia: None,
-      antipulgas: None,
+      giardia: null,
+      antipulgas: null,
     },
   },
   {
@@ -1930,7 +1930,7 @@ export const importedClients: Array<{
       v10: '2025-05-20T00:00:00.000Z',
       raiva: '2025-11-01T00:00:00.000Z',
       giardia: '2025-05-20T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -1949,7 +1949,7 @@ export const importedClients: Array<{
       v10: '2025-10-18T00:00:00.000Z',
       raiva: '2025-10-18T00:00:00.000Z',
       giardia: '2025-10-18T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -1965,7 +1965,7 @@ export const importedClients: Array<{
       v10: '2025-02-04T00:00:00.000Z',
       raiva: '2025-02-04T00:00:00.000Z',
       giardia: '2025-04-07T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -2010,10 +2010,10 @@ export const importedClients: Array<{
     birthDate: new Date('2020-06-08T00:00:00.000Z'),
     entryDate: new Date('2021-06-03T00:00:00.000Z'),
     vaccines: {
-      gripe: None,
-      v10: None,
-      raiva: None,
-      giardia: None,
+      gripe: null,
+      v10: null,
+      raiva: null,
+      giardia: null,
       antipulgas: '2021-05-07T00:00:00.000Z',
     },
   },
@@ -2037,10 +2037,10 @@ export const importedClients: Array<{
     birthDate: new Date('2014-01-18T00:00:00.000Z'),
     entryDate: new Date('2021-06-01T00:00:00.000Z'),
     vaccines: {
-      gripe: None,
-      v10: None,
-      raiva: None,
-      giardia: None,
+      gripe: null,
+      v10: null,
+      raiva: null,
+      giardia: null,
       antipulgas: '2025-02-04T00:00:00.000Z',
     },
   },
@@ -2079,7 +2079,7 @@ export const importedClients: Array<{
       v10: '2025-11-22T00:00:00.000Z',
       raiva: '2025-12-12T00:00:00.000Z',
       giardia: '2025-12-12T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -2136,7 +2136,7 @@ export const importedClients: Array<{
       v10: '2025-07-04T00:00:00.000Z',
       raiva: '2025-07-04T00:00:00.000Z',
       giardia: '2025-09-10T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -2173,7 +2173,7 @@ export const importedClients: Array<{
       v10: '2024-12-20T00:00:00.000Z',
       raiva: '2024-12-20T00:00:00.000Z',
       giardia: '2025-09-04T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -2229,10 +2229,10 @@ export const importedClients: Array<{
     birthDate: new Date('2024-08-09T00:00:00.000Z'),
     entryDate: new Date('2025-02-21T00:00:00.000Z'),
     vaccines: {
-      gripe: None,
+      gripe: null,
       v10: '2024-11-30T00:00:00.000Z',
       raiva: '2024-12-21T00:00:00.000Z',
-      giardia: None,
+      giardia: null,
       antipulgas: '2025-06-15T00:00:00.000Z',
     },
   },
@@ -2251,7 +2251,7 @@ export const importedClients: Array<{
       v10: '2025-05-07T00:00:00.000Z',
       raiva: '2025-05-07T00:00:00.000Z',
       giardia: '2025-07-05T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -2266,10 +2266,10 @@ export const importedClients: Array<{
     birthDate: new Date('2024-07-29T00:00:00.000Z'),
     entryDate: new Date('2025-02-21T00:00:00.000Z'),
     vaccines: {
-      gripe: None,
+      gripe: null,
       v10: '2024-11-30T00:00:00.000Z',
       raiva: '2024-12-21T00:00:00.000Z',
-      giardia: None,
+      giardia: null,
       antipulgas: '2025-06-15T00:00:00.000Z',
     },
   },
@@ -2286,7 +2286,7 @@ export const importedClients: Array<{
       v10: '2025-05-10T00:00:00.000Z',
       raiva: '2025-05-22T00:00:00.000Z',
       giardia: '2025-05-10T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -2304,7 +2304,7 @@ export const importedClients: Array<{
       v10: '2025-09-13T00:00:00.000Z',
       raiva: '2025-09-13T00:00:00.000Z',
       giardia: '2026-02-23T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -2395,7 +2395,7 @@ export const importedClients: Array<{
       v10: '2025-11-04T00:00:00.000Z',
       raiva: '2025-11-28T00:00:00.000Z',
       giardia: '2025-11-04T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -2412,8 +2412,8 @@ export const importedClients: Array<{
       gripe: '2025-06-12T00:00:00.000Z',
       v10: '2025-05-02T00:00:00.000Z',
       raiva: '2025-06-10T00:00:00.000Z',
-      giardia: None,
-      antipulgas: None,
+      giardia: null,
+      antipulgas: null,
     },
   },
   {
@@ -2444,9 +2444,9 @@ export const importedClients: Array<{
     vaccines: {
       gripe: '2025-08-09T00:00:00.000Z',
       v10: '2025-08-09T00:00:00.000Z',
-      raiva: None,
+      raiva: null,
       giardia: '2025-01-17T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -2532,7 +2532,7 @@ export const importedClients: Array<{
       v10: '2024-12-13T00:00:00.000Z',
       raiva: '2024-12-13T00:00:00.000Z',
       giardia: '2025-09-04T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -2551,7 +2551,7 @@ export const importedClients: Array<{
       v10: '2024-12-20T00:00:00.000Z',
       raiva: '2025-01-06T00:00:00.000Z',
       giardia: '2025-02-21T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -2587,9 +2587,9 @@ export const importedClients: Array<{
     vaccines: {
       gripe: '2025-07-05T00:00:00.000Z',
       v10: '2025-10-19T00:00:00.000Z',
-      raiva: None,
+      raiva: null,
       giardia: '2025-07-05T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -2605,8 +2605,8 @@ export const importedClients: Array<{
       gripe: '2025-09-26T00:00:00.000Z',
       v10: '2025-09-26T00:00:00.000Z',
       raiva: '2025-09-26T00:00:00.000Z',
-      giardia: None,
-      antipulgas: None,
+      giardia: null,
+      antipulgas: null,
     },
   },
   {
@@ -2619,11 +2619,11 @@ export const importedClients: Array<{
     birthDate: new Date('2020-01-31T00:00:00.000Z'),
     entryDate: new Date('2026-01-31T00:00:00.000Z'),
     vaccines: {
-      gripe: None,
-      v10: None,
-      raiva: None,
+      gripe: null,
+      v10: null,
+      raiva: null,
       giardia: '2026-02-25T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -2637,11 +2637,11 @@ export const importedClients: Array<{
     birthDate: new Date('2025-05-09T00:00:00.000Z'),
     entryDate: new Date('2025-11-07T00:00:00.000Z'),
     vaccines: {
-      gripe: None,
+      gripe: null,
       v10: '2025-08-12T00:00:00.000Z',
       raiva: '2025-08-12T00:00:00.000Z',
-      giardia: None,
-      antipulgas: None,
+      giardia: null,
+      antipulgas: null,
     },
   },
   {
@@ -2658,7 +2658,7 @@ export const importedClients: Array<{
       v10: '2025-08-08T00:00:00.000Z',
       raiva: '2025-08-08T00:00:00.000Z',
       giardia: '2025-08-14T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -2675,8 +2675,8 @@ export const importedClients: Array<{
       gripe: '2025-08-21T00:00:00.000Z',
       v10: '2025-08-21T00:00:00.000Z',
       raiva: '2025-08-21T00:00:00.000Z',
-      giardia: None,
-      antipulgas: None,
+      giardia: null,
+      antipulgas: null,
     },
   },
   {
@@ -2693,10 +2693,10 @@ export const importedClients: Array<{
     birthDate: new Date('2022-07-18T00:00:00.000Z'),
     entryDate: new Date('2023-12-07T00:00:00.000Z'),
     vaccines: {
-      gripe: None,
-      v10: None,
-      raiva: None,
-      giardia: None,
+      gripe: null,
+      v10: null,
+      raiva: null,
+      giardia: null,
       antipulgas: '2025-06-12T00:00:00.000Z',
     },
   },
@@ -2714,8 +2714,8 @@ export const importedClients: Array<{
       gripe: '2025-07-28T00:00:00.000Z',
       v10: '2025-09-15T00:00:00.000Z',
       raiva: '2025-09-15T00:00:00.000Z',
-      giardia: None,
-      antipulgas: None,
+      giardia: null,
+      antipulgas: null,
     },
   },
   {
@@ -2730,10 +2730,10 @@ export const importedClients: Array<{
     birthDate: new Date('2020-11-15T00:00:00.000Z'),
     entryDate: new Date('2022-03-30T00:00:00.000Z'),
     vaccines: {
-      gripe: None,
+      gripe: null,
       v10: '2025-01-09T00:00:00.000Z',
       raiva: '2025-01-20T00:00:00.000Z',
-      giardia: None,
+      giardia: null,
       antipulgas: '2025-04-07T00:00:00.000Z',
     },
   },
@@ -2750,9 +2750,9 @@ export const importedClients: Array<{
     vaccines: {
       gripe: '2025-08-13T00:00:00.000Z',
       v10: '2025-08-13T00:00:00.000Z',
-      raiva: None,
+      raiva: null,
       giardia: '2025-08-13T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -2787,10 +2787,10 @@ export const importedClients: Array<{
     birthDate: new Date('2024-06-15T00:00:00.000Z'),
     entryDate: new Date('2025-03-06T00:00:00.000Z'),
     vaccines: {
-      gripe: None,
+      gripe: null,
       v10: '2025-10-06T00:00:00.000Z',
       raiva: '2025-12-09T00:00:00.000Z',
-      giardia: None,
+      giardia: null,
       antipulgas: '2025-05-04T00:00:00.000Z',
     },
   },
@@ -2875,7 +2875,7 @@ export const importedClients: Array<{
       v10: '2025-06-02T00:00:00.000Z',
       raiva: '2025-06-02T00:00:00.000Z',
       giardia: '2026-02-05T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -2893,7 +2893,7 @@ export const importedClients: Array<{
       v10: '2026-01-11T00:00:00.000Z',
       raiva: '2026-01-11T00:00:00.000Z',
       giardia: '2026-02-19T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -2910,7 +2910,7 @@ export const importedClients: Array<{
       v10: '2025-11-06T00:00:00.000Z',
       raiva: '2025-11-06T00:00:00.000Z',
       giardia: '2026-01-31T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -2926,8 +2926,8 @@ export const importedClients: Array<{
       gripe: '2024-06-14T00:00:00.000Z',
       v10: '2024-12-14T00:00:00.000Z',
       raiva: '2024-12-14T00:00:00.000Z',
-      giardia: None,
-      antipulgas: None,
+      giardia: null,
+      antipulgas: null,
     },
   },
   {
@@ -2945,7 +2945,7 @@ export const importedClients: Array<{
       v10: '2025-09-05T00:00:00.000Z',
       raiva: '2025-09-05T00:00:00.000Z',
       giardia: '2026-02-23T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -2962,8 +2962,8 @@ export const importedClients: Array<{
       gripe: '2025-11-10T00:00:00.000Z',
       v10: '2025-07-02T00:00:00.000Z',
       raiva: '2025-07-10T00:00:00.000Z',
-      giardia: None,
-      antipulgas: None,
+      giardia: null,
+      antipulgas: null,
     },
   },
   {
@@ -2977,7 +2977,7 @@ export const importedClients: Array<{
       v10: '2025-03-28T00:00:00.000Z',
       raiva: '2025-03-28T00:00:00.000Z',
       giardia: '2025-03-28T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -3013,7 +3013,7 @@ export const importedClients: Array<{
       v10: '2024-12-13T00:00:00.000Z',
       raiva: '2024-12-13T00:00:00.000Z',
       giardia: '2025-09-04T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -3090,8 +3090,8 @@ export const importedClients: Array<{
       gripe: '2025-06-14T00:00:00.000Z',
       v10: '2025-06-14T00:00:00.000Z',
       raiva: '2025-11-28T00:00:00.000Z',
-      giardia: None,
-      antipulgas: None,
+      giardia: null,
+      antipulgas: null,
     },
   },
   {
@@ -3161,7 +3161,7 @@ export const importedClients: Array<{
       v10: '2025-05-21T00:00:00.000Z',
       raiva: '2025-12-09T00:00:00.000Z',
       giardia: '2025-08-21T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
@@ -3179,7 +3179,7 @@ export const importedClients: Array<{
       v10: '2025-12-17T00:00:00.000Z',
       raiva: '2026-01-13T00:00:00.000Z',
       giardia: '2026-01-13T00:00:00.000Z',
-      antipulgas: None,
+      antipulgas: null,
     },
   },
   {
