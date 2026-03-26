@@ -5,8 +5,8 @@ import { importedClients } from '@/data/importedClients';
 
 const STORAGE_KEY = 'pet-grooming-clients';
 const DATA_VERSION_KEY = 'pet-grooming-data-version';
-const CURRENT_DATA_VERSION = '5';
-const IMPORT_KEY = 'pet-grooming-imported-v2';
+const CURRENT_DATA_VERSION = '4';
+const IMPORT_KEY = 'pet-grooming-imported-v1';
 
 interface ClientContextType {
   clients: Client[];
