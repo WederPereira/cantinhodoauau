@@ -358,7 +358,30 @@ export const HealthControlTab: React.FC = () => {
                   <Bug size={10} />
                   {info.flea.label}
                 </div>
-                <StatusBadge status={info.flea.status} expiryDate={info.flea.expiryDate} />
+                <Popover open={editingKey === `${info.client.id}-flea`} onOpenChange={(open) => setEditingKey(open ? `${info.client.id}-flea` : null)}>
+                  <PopoverTrigger asChild>
+                    <button className="text-left">
+                      <StatusBadge status={info.flea.status} expiryDate={info.flea.expiryDate} lastDate={info.flea.lastDate} />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={info.flea.lastDate ? new Date(info.flea.lastDate) : undefined}
+                      onSelect={(d) => {
+                        if (d) {
+                          const lastFlea = info.client.fleaHistory?.[0];
+                          addFleaRecord(info.client.id, d.toISOString(), lastFlea?.brand || 'Antipulgas', (lastFlea?.durationMonths || 1) as 1 | 2 | 3 | 6);
+                          toast.success(`Antipulgas atualizado: ${format(d, "dd/MM/yyyy", { locale: ptBR })}`);
+                          setEditingKey(null);
+                        }
+                      }}
+                      initialFocus
+                      className="pointer-events-auto"
+                      locale={ptBR}
+                    />
+                  </PopoverContent>
+                </Popover>
                 {info.flea.lastDate && (
                   <p className="text-[10px] text-muted-foreground">Última aplicação: {formatDate(new Date(info.flea.lastDate))}</p>
                 )}
