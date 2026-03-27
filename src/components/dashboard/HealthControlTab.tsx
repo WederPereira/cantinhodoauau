@@ -33,30 +33,32 @@ interface ClientHealthInfo {
 
 const getStatusPriority = (s: HealthStatus) => s === 'expired' ? 0 : s === 'expiring' ? 1 : s === 'none' ? 2 : 3;
 
-const StatusBadge: React.FC<{ status: HealthStatus; expiryDate?: Date }> = ({ status, expiryDate }) => {
+const StatusBadge: React.FC<{ status: HealthStatus; expiryDate?: Date; lastDate?: string }> = ({ status, expiryDate, lastDate }) => {
+  const dateText = lastDate ? format(new Date(lastDate), "dd/MM/yyyy", { locale: ptBR }) : (expiryDate ? formatDate(expiryDate) : '');
+  
   if (status === 'none') {
-    return <Badge variant="outline" className="text-xs text-muted-foreground border-muted">Sem registro</Badge>;
+    return <Badge variant="outline" className="text-xs text-muted-foreground border-muted cursor-pointer hover:opacity-80">Sem registro</Badge>;
   }
   if (status === 'expired') {
     return (
-      <Badge variant="outline" className="text-xs text-destructive border-destructive/30 bg-destructive/5">
+      <Badge variant="outline" className="text-xs text-destructive border-destructive/30 bg-destructive/5 cursor-pointer hover:opacity-80">
         <XCircle size={12} className="mr-1" />
-        Vencida {expiryDate && formatDate(expiryDate)}
+        Vencida {dateText}
       </Badge>
     );
   }
   if (status === 'expiring') {
     return (
-      <Badge variant="outline" className="text-xs text-[hsl(var(--status-warning))] border-[hsl(var(--status-warning)/0.3)] bg-[hsl(var(--status-warning-bg))]">
+      <Badge variant="outline" className="text-xs text-[hsl(var(--status-warning))] border-[hsl(var(--status-warning)/0.3)] bg-[hsl(var(--status-warning-bg))] cursor-pointer hover:opacity-80">
         <AlertTriangle size={12} className="mr-1" />
-        Vencendo {expiryDate && formatDate(expiryDate)}
+        Vencendo {dateText}
       </Badge>
     );
   }
   return (
-    <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-300 bg-emerald-50 dark:text-emerald-400 dark:border-emerald-800 dark:bg-emerald-950/30">
+    <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-300 bg-emerald-50 dark:text-emerald-400 dark:border-emerald-800 dark:bg-emerald-950/30 cursor-pointer hover:opacity-80">
       <CheckCircle2 size={12} className="mr-1" />
-      Em dia {expiryDate && formatDate(expiryDate)}
+      Em dia {dateText}
     </Badge>
   );
 };
