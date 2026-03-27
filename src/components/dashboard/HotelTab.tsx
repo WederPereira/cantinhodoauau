@@ -68,7 +68,6 @@ const RECURRENCE_OPTIONS = [
 ];
 
 const MEAL_TYPES = [
-  { key: 'cafe', label: '☀️ Café', icon: '☀️' },
   { key: 'almoco', label: '🌤️ Almoço', icon: '🌤️' },
   { key: 'janta', label: '🌙 Janta', icon: '🌙' },
 ];
