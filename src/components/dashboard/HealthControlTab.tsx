@@ -317,15 +317,40 @@ export const HealthControlTab: React.FC = () => {
             {/* Category-specific content */}
             {category === 'vaccines' ? (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
-                {info.vaccines.map(v => (
-                  <div key={v.type} className="space-y-0.5 sm:space-y-1">
-                    <div className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground">
-                      <Syringe size={10} />
-                      {v.label}
+                {info.vaccines.map(v => {
+                  const popKey = `${info.client.id}-${v.type}`;
+                  return (
+                    <div key={v.type} className="space-y-0.5 sm:space-y-1">
+                      <div className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground">
+                        <Syringe size={10} />
+                        {v.label}
+                      </div>
+                      <Popover open={editingKey === popKey} onOpenChange={(open) => setEditingKey(open ? popKey : null)}>
+                        <PopoverTrigger asChild>
+                          <button className="text-left">
+                            <StatusBadge status={v.status} expiryDate={v.expiryDate} lastDate={v.lastDate} />
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={v.lastDate ? new Date(v.lastDate) : undefined}
+                            onSelect={(d) => {
+                              if (d) {
+                                addVaccineRecord(info.client.id, v.type as VaccineType, d.toISOString());
+                                toast.success(`${v.label} atualizada: ${format(d, "dd/MM/yyyy", { locale: ptBR })}`);
+                                setEditingKey(null);
+                              }
+                            }}
+                            initialFocus
+                            className="pointer-events-auto"
+                            locale={ptBR}
+                          />
+                        </PopoverContent>
+                      </Popover>
                     </div>
-                    <StatusBadge status={v.status} expiryDate={v.expiryDate} />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="space-y-0.5 sm:space-y-1">
