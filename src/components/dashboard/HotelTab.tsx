@@ -259,7 +259,9 @@ const HotelTab: React.FC = () => {
       setSearchFilter('');
       setCheckInDate(new Date());
       setExpectedCheckoutDate(addDays(new Date(), 1));
-      fetchData();
+      await fetchData();
+      // Auto-expand the new stay
+      if (newStay) setExpandedStay(newStay.id);
     } catch (err) {
       console.error(err);
       toast.error('Erro ao registrar entrada');
