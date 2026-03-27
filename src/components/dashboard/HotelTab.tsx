@@ -511,7 +511,7 @@ const HotelTab: React.FC = () => {
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground text-center">
-                    {differenceInDays(expectedCheckoutDate, checkInDate) + 1} dia(s) · {(differenceInDays(expectedCheckoutDate, checkInDate) + 1) * 3} refeições
+                    {differenceInDays(expectedCheckoutDate, checkInDate) + 1} dia(s) · {(differenceInDays(expectedCheckoutDate, checkInDate) + 1) * 2} refeições
                   </p>
 
                   <div>
