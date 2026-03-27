@@ -20,7 +20,6 @@ interface HealthHistorySectionProps {
 }
 
 export const HealthHistorySection: React.FC<HealthHistorySectionProps> = ({ client }) => {
-  const { addVaccineRecord, deleteVaccineRecord, addFleaRecord, deleteFleaRecord } = useClients();
   const { addVaccineRecord, deleteVaccineRecord, addFleaRecord, deleteFleaRecord, updateClient } = useClients();
   const [vaccineDialogOpen, setVaccineDialogOpen] = useState(false);
   const [fleaDialogOpen, setFleaDialogOpen] = useState(false);
