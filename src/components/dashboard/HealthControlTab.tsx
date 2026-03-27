@@ -1,12 +1,17 @@
 import React, { useMemo, useState } from 'react';
 import { useClients } from '@/context/ClientContext';
-import { Client, VaccineType, VACCINE_TYPE_LABELS, getVaccineExpiryDate, getFleaExpiryDate, isExpiringSoon, isExpired, formatDate } from '@/types/client';
+import { Client, VaccineType, VACCINE_TYPE_LABELS, getVaccineExpiryDate, getFleaExpiryDate, isExpiringSoon, isExpired, formatDate, ANTIPULGAS_BRANDS } from '@/types/client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Syringe, Bug, MessageCircle, Search, CheckCircle2, AlertTriangle, XCircle, Filter } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { ptBR } from 'date-fns/locale';
+import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 type HealthCategory = 'vaccines' | 'flea';
 type HealthStatus = 'ok' | 'expiring' | 'expired' | 'none';
@@ -28,30 +33,32 @@ interface ClientHealthInfo {
 
 const getStatusPriority = (s: HealthStatus) => s === 'expired' ? 0 : s === 'expiring' ? 1 : s === 'none' ? 2 : 3;
 
-const StatusBadge: React.FC<{ status: HealthStatus; expiryDate?: Date }> = ({ status, expiryDate }) => {
+const StatusBadge: React.FC<{ status: HealthStatus; expiryDate?: Date; lastDate?: string }> = ({ status, expiryDate, lastDate }) => {
+  const dateText = lastDate ? format(new Date(lastDate), "dd/MM/yyyy", { locale: ptBR }) : (expiryDate ? formatDate(expiryDate) : '');
+  
   if (status === 'none') {
-    return <Badge variant="outline" className="text-xs text-muted-foreground border-muted">Sem registro</Badge>;
+    return <Badge variant="outline" className="text-xs text-muted-foreground border-muted cursor-pointer hover:opacity-80">Sem registro</Badge>;
   }
   if (status === 'expired') {
     return (
-      <Badge variant="outline" className="text-xs text-destructive border-destructive/30 bg-destructive/5">
+      <Badge variant="outline" className="text-xs text-destructive border-destructive/30 bg-destructive/5 cursor-pointer hover:opacity-80">
         <XCircle size={12} className="mr-1" />
-        Vencida {expiryDate && formatDate(expiryDate)}
+        Vencida {dateText}
       </Badge>
     );
   }
   if (status === 'expiring') {
     return (
-      <Badge variant="outline" className="text-xs text-[hsl(var(--status-warning))] border-[hsl(var(--status-warning)/0.3)] bg-[hsl(var(--status-warning-bg))]">
+      <Badge variant="outline" className="text-xs text-[hsl(var(--status-warning))] border-[hsl(var(--status-warning)/0.3)] bg-[hsl(var(--status-warning-bg))] cursor-pointer hover:opacity-80">
         <AlertTriangle size={12} className="mr-1" />
-        Vencendo {expiryDate && formatDate(expiryDate)}
+        Vencendo {dateText}
       </Badge>
     );
   }
   return (
-    <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-300 bg-emerald-50 dark:text-emerald-400 dark:border-emerald-800 dark:bg-emerald-950/30">
+    <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-300 bg-emerald-50 dark:text-emerald-400 dark:border-emerald-800 dark:bg-emerald-950/30 cursor-pointer hover:opacity-80">
       <CheckCircle2 size={12} className="mr-1" />
-      Em dia {expiryDate && formatDate(expiryDate)}
+      Em dia {dateText}
     </Badge>
   );
 };
@@ -103,10 +110,11 @@ const openWhatsApp = (phone: string, message: string) => {
 };
 
 export const HealthControlTab: React.FC = () => {
-  const { clients } = useClients();
+  const { clients, addVaccineRecord, addFleaRecord } = useClients();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'expired' | 'expiring' | 'ok'>('all');
   const [category, setCategory] = useState<HealthCategory>('vaccines');
+  const [editingKey, setEditingKey] = useState<string | null>(null);
 
   const clientHealthData = useMemo((): ClientHealthInfo[] => {
     return clients.map(client => {
@@ -309,15 +317,40 @@ export const HealthControlTab: React.FC = () => {
             {/* Category-specific content */}
             {category === 'vaccines' ? (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
-                {info.vaccines.map(v => (
-                  <div key={v.type} className="space-y-0.5 sm:space-y-1">
-                    <div className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground">
-                      <Syringe size={10} />
-                      {v.label}
+                {info.vaccines.map(v => {
+                  const popKey = `${info.client.id}-${v.type}`;
+                  return (
+                    <div key={v.type} className="space-y-0.5 sm:space-y-1">
+                      <div className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground">
+                        <Syringe size={10} />
+                        {v.label}
+                      </div>
+                      <Popover open={editingKey === popKey} onOpenChange={(open) => setEditingKey(open ? popKey : null)}>
+                        <PopoverTrigger asChild>
+                          <button className="text-left">
+                            <StatusBadge status={v.status} expiryDate={v.expiryDate} lastDate={v.lastDate} />
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={v.lastDate ? new Date(v.lastDate) : undefined}
+                            onSelect={(d) => {
+                              if (d) {
+                                addVaccineRecord(info.client.id, v.type as VaccineType, d.toISOString());
+                                toast.success(`${v.label} atualizada: ${format(d, "dd/MM/yyyy", { locale: ptBR })}`);
+                                setEditingKey(null);
+                              }
+                            }}
+                            initialFocus
+                            className="pointer-events-auto"
+                            locale={ptBR}
+                          />
+                        </PopoverContent>
+                      </Popover>
                     </div>
-                    <StatusBadge status={v.status} expiryDate={v.expiryDate} />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="space-y-0.5 sm:space-y-1">
@@ -325,7 +358,30 @@ export const HealthControlTab: React.FC = () => {
                   <Bug size={10} />
                   {info.flea.label}
                 </div>
-                <StatusBadge status={info.flea.status} expiryDate={info.flea.expiryDate} />
+                <Popover open={editingKey === `${info.client.id}-flea`} onOpenChange={(open) => setEditingKey(open ? `${info.client.id}-flea` : null)}>
+                  <PopoverTrigger asChild>
+                    <button className="text-left">
+                      <StatusBadge status={info.flea.status} expiryDate={info.flea.expiryDate} lastDate={info.flea.lastDate} />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={info.flea.lastDate ? new Date(info.flea.lastDate) : undefined}
+                      onSelect={(d) => {
+                        if (d) {
+                          const lastFlea = info.client.fleaHistory?.[0];
+                          addFleaRecord(info.client.id, d.toISOString(), lastFlea?.brand || 'Antipulgas', (lastFlea?.durationMonths || 1) as 1 | 2 | 3 | 6);
+                          toast.success(`Antipulgas atualizado: ${format(d, "dd/MM/yyyy", { locale: ptBR })}`);
+                          setEditingKey(null);
+                        }
+                      }}
+                      initialFocus
+                      className="pointer-events-auto"
+                      locale={ptBR}
+                    />
+                  </PopoverContent>
+                </Popover>
                 {info.flea.lastDate && (
                   <p className="text-[10px] text-muted-foreground">Última aplicação: {formatDate(new Date(info.flea.lastDate))}</p>
                 )}
