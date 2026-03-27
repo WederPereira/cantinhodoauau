@@ -20,9 +20,10 @@ interface HealthHistorySectionProps {
 }
 
 export const HealthHistorySection: React.FC<HealthHistorySectionProps> = ({ client }) => {
-  const { addVaccineRecord, deleteVaccineRecord, addFleaRecord, deleteFleaRecord } = useClients();
+  const { addVaccineRecord, deleteVaccineRecord, addFleaRecord, deleteFleaRecord, updateClient } = useClients();
   const [vaccineDialogOpen, setVaccineDialogOpen] = useState(false);
   const [fleaDialogOpen, setFleaDialogOpen] = useState(false);
+  const [editingVaccine, setEditingVaccine] = useState<VaccineType | null>(null);
 
   // Vaccine form state
   const [vaccineType, setVaccineType] = useState<VaccineType>('v10');
@@ -108,19 +109,47 @@ export const HealthHistorySection: React.FC<HealthHistorySectionProps> = ({ clie
         </h3>
         <div className="space-y-1">
           {(['gripe', 'v10', 'raiva', 'giardia'] as VaccineType[]).map(key => (
-            <button
+            <div
               key={key}
-              onClick={() => openVaccineFor(key)}
-              className="w-full flex items-center justify-between p-2.5 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer text-left group"
+              className="w-full flex items-center justify-between p-2.5 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors text-left group"
             >
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium">{VACCINE_TYPE_LABELS[key]}</span>
               </div>
               <div className="flex items-center gap-2">
-                {getStatusBadge(client.vaccines?.[key], 'vaccine')}
-                <Pencil size={12} className="text-muted-foreground/0 group-hover:text-muted-foreground/70 transition-colors" />
+                <Popover open={editingVaccine === key} onOpenChange={(open) => setEditingVaccine(open ? key : null)}>
+                  <PopoverTrigger asChild>
+                    <button className="cursor-pointer hover:opacity-80 transition-opacity">
+                      {getStatusBadge(client.vaccines?.[key], 'vaccine')}
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="end">
+                    <Calendar
+                      mode="single"
+                      selected={client.vaccines?.[key] ? new Date(client.vaccines[key]) : undefined}
+                      onSelect={(d) => {
+                        if (d) {
+                          const dateStr = d.toISOString();
+                          addVaccineRecord(client.id, key, dateStr);
+                          toast.success(`${VACCINE_TYPE_LABELS[key]} atualizada para ${format(d, "dd/MM/yyyy", { locale: ptBR })}`);
+                          setEditingVaccine(null);
+                        }
+                      }}
+                      initialFocus
+                      className="pointer-events-auto"
+                      locale={ptBR}
+                    />
+                  </PopoverContent>
+                </Popover>
+                <button
+                  onClick={() => openVaccineFor(key)}
+                  className="p-1 rounded hover:bg-primary/10 transition-colors"
+                  title="Adicionar novo registro"
+                >
+                  <Plus size={14} className="text-muted-foreground group-hover:text-primary transition-colors" />
+                </button>
               </div>
-            </button>
+            </div>
           ))}
         </div>
 
