@@ -567,7 +567,7 @@ const HotelTab: React.FC = () => {
                 const totalDays = stayDays.length;
                 const daysElapsed = Math.max(1, differenceInDays(new Date(), new Date(stay.check_in)) + 1);
                 const mealsEaten = stayMeals.filter(m => m.ate).length;
-                const totalMealsExpected = totalDays * 3;
+                const totalMealsExpected = totalDays * 2;
                 const mealPercent = totalMealsExpected > 0 ? Math.round((mealsEaten / totalMealsExpected) * 100) : 0;
 
                 return (
