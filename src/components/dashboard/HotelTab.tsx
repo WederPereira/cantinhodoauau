@@ -68,7 +68,6 @@ const RECURRENCE_OPTIONS = [
 ];
 
 const MEAL_TYPES = [
-  { key: 'cafe', label: '☀️ Café', icon: '☀️' },
   { key: 'almoco', label: '🌤️ Almoço', icon: '🌤️' },
   { key: 'janta', label: '🌙 Janta', icon: '🌙' },
 ];
@@ -260,7 +259,9 @@ const HotelTab: React.FC = () => {
       setSearchFilter('');
       setCheckInDate(new Date());
       setExpectedCheckoutDate(addDays(new Date(), 1));
-      fetchData();
+      await fetchData();
+      // Auto-expand the new stay
+      if (newStay) setExpandedStay(newStay.id);
     } catch (err) {
       console.error(err);
       toast.error('Erro ao registrar entrada');
@@ -512,7 +513,7 @@ const HotelTab: React.FC = () => {
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground text-center">
-                    {differenceInDays(expectedCheckoutDate, checkInDate) + 1} dia(s) · {(differenceInDays(expectedCheckoutDate, checkInDate) + 1) * 3} refeições
+                    {differenceInDays(expectedCheckoutDate, checkInDate) + 1} dia(s) · {(differenceInDays(expectedCheckoutDate, checkInDate) + 1) * 2} refeições
                   </p>
 
                   <div>
@@ -568,7 +569,7 @@ const HotelTab: React.FC = () => {
                 const totalDays = stayDays.length;
                 const daysElapsed = Math.max(1, differenceInDays(new Date(), new Date(stay.check_in)) + 1);
                 const mealsEaten = stayMeals.filter(m => m.ate).length;
-                const totalMealsExpected = totalDays * 3;
+                const totalMealsExpected = totalDays * 2;
                 const mealPercent = totalMealsExpected > 0 ? Math.round((mealsEaten / totalMealsExpected) * 100) : 0;
 
                 return (
@@ -583,13 +584,11 @@ const HotelTab: React.FC = () => {
                         )}
                         <div className="min-w-0">
                           <p className="font-bold text-sm text-foreground truncate">{stay.dog_name}</p>
-                          <p className="text-[10px] text-muted-foreground truncate">
-                            👤 {stay.tutor_name} · 📅 {format(new Date(stay.check_in), 'dd/MM')} → {stay.expected_checkout ? format(new Date(stay.expected_checkout), 'dd/MM') : '?'}
-                          </p>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            {client?.breed && <Badge variant="secondary" className="text-[8px] px-1 py-0">{client.breed}</Badge>}
+                          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                            {client?.breed && <Badge variant="secondary" className="text-[8px] px-1.5 py-0">{client.breed}</Badge>}
                             {client?.petSize && <Badge variant="outline" className="text-[8px] px-1 py-0">{client.petSize}</Badge>}
-                            <span className="text-[9px] text-muted-foreground">{daysElapsed}/{totalDays}d</span>
+                            <span className="text-[9px] text-muted-foreground">📅 {format(new Date(stay.check_in), 'dd/MM')} → {stay.expected_checkout ? format(new Date(stay.expected_checkout), 'dd/MM') : '?'}</span>
+                            <span className="text-[9px] font-medium text-primary">{daysElapsed}/{totalDays}d</span>
                           </div>
                         </div>
                       </div>
@@ -854,10 +853,44 @@ const HotelTab: React.FC = () => {
                         </div>
 
                         {/* Actions */}
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-wrap">
                           <Button variant="destructive" size="sm" className="flex-1 gap-1" onClick={() => handleCheckout(stay)}>
                             <Check size={14} /> Checkout
                           </Button>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" size="sm" className="gap-1 text-xs">
+                                <CalendarIcon size={14} /> Prolongar
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={stay.expected_checkout ? new Date(stay.expected_checkout) : undefined}
+                                onSelect={async (d) => {
+                                  if (!d) return;
+                                  try {
+                                    // Extend expected checkout
+                                    await supabase.from('hotel_stays').update({ expected_checkout: d.toISOString() }).eq('id', stay.id);
+                                    // Add meal rows for new days
+                                    const oldEnd = stay.expected_checkout ? startOfDay(new Date(stay.expected_checkout)) : startOfDay(new Date());
+                                    const newEnd = startOfDay(d);
+                                    if (newEnd > oldEnd) {
+                                      const newDays = eachDayOfInterval({ start: addDays(oldEnd, 1), end: newEnd });
+                                      const newMealRows = newDays.flatMap(day =>
+                                        MEAL_TYPES.map(mt => ({ hotel_stay_id: stay.id, date: format(day, 'yyyy-MM-dd'), meal_type: mt.key, ate: false }))
+                                      );
+                                      if (newMealRows.length > 0) await supabase.from('hotel_meals').insert(newMealRows);
+                                    }
+                                    toast.success(`Estadia de ${stay.dog_name} prolongada até ${format(d, 'dd/MM')}!`);
+                                    fetchData();
+                                  } catch { toast.error('Erro ao prolongar'); }
+                                }}
+                                locale={ptBR}
+                                className="pointer-events-auto"
+                              />
+                            </PopoverContent>
+                          </Popover>
                           {deleteConfirmId === stay.id ? (
                             <div className="flex gap-1">
                               <Button variant="destructive" size="sm" className="gap-1 text-[10px]" onClick={() => handleDeleteStay(stay.id)}>
