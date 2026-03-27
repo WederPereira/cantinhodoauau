@@ -582,13 +582,11 @@ const HotelTab: React.FC = () => {
                         )}
                         <div className="min-w-0">
                           <p className="font-bold text-sm text-foreground truncate">{stay.dog_name}</p>
-                          <p className="text-[10px] text-muted-foreground truncate">
-                            👤 {stay.tutor_name} · 📅 {format(new Date(stay.check_in), 'dd/MM')} → {stay.expected_checkout ? format(new Date(stay.expected_checkout), 'dd/MM') : '?'}
-                          </p>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            {client?.breed && <Badge variant="secondary" className="text-[8px] px-1 py-0">{client.breed}</Badge>}
+                          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                            {client?.breed && <Badge variant="secondary" className="text-[8px] px-1.5 py-0">{client.breed}</Badge>}
                             {client?.petSize && <Badge variant="outline" className="text-[8px] px-1 py-0">{client.petSize}</Badge>}
-                            <span className="text-[9px] text-muted-foreground">{daysElapsed}/{totalDays}d</span>
+                            <span className="text-[9px] text-muted-foreground">📅 {format(new Date(stay.check_in), 'dd/MM')} → {stay.expected_checkout ? format(new Date(stay.expected_checkout), 'dd/MM') : '?'}</span>
+                            <span className="text-[9px] font-medium text-primary">{daysElapsed}/{totalDays}d</span>
                           </div>
                         </div>
                       </div>
