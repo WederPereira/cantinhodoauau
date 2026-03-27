@@ -1,12 +1,17 @@
 import React, { useMemo, useState } from 'react';
 import { useClients } from '@/context/ClientContext';
-import { Client, VaccineType, VACCINE_TYPE_LABELS, getVaccineExpiryDate, getFleaExpiryDate, isExpiringSoon, isExpired, formatDate } from '@/types/client';
+import { Client, VaccineType, VACCINE_TYPE_LABELS, getVaccineExpiryDate, getFleaExpiryDate, isExpiringSoon, isExpired, formatDate, ANTIPULGAS_BRANDS } from '@/types/client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Syringe, Bug, MessageCircle, Search, CheckCircle2, AlertTriangle, XCircle, Filter } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { ptBR } from 'date-fns/locale';
+import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 type HealthCategory = 'vaccines' | 'flea';
 type HealthStatus = 'ok' | 'expiring' | 'expired' | 'none';
