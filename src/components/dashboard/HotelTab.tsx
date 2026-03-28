@@ -348,6 +348,7 @@ const HotelTab: React.FC = () => {
         administered: !med.administered,
         administered_at: !med.administered ? new Date().toISOString() : null,
       }).eq('id', med.id);
+      if (!med.administered) logAction('administer_med', 'medication', med.id, { medication_name: med.medication_name, medication_id: med.id });
       fetchData();
     } catch { toast.error('Erro ao atualizar'); }
   };
