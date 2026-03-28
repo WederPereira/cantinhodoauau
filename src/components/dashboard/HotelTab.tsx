@@ -277,6 +277,7 @@ const HotelTab: React.FC = () => {
         .update({ active: false, check_out: new Date().toISOString() })
         .eq('id', stay.id);
       if (error) throw error;
+      logAction('checkout', 'hotel', stay.id, { dog_name: stay.dog_name, tutor_name: stay.tutor_name });
       toast.success(`${stay.dog_name} fez checkout!`, {
         duration: 8000,
         action: { label: 'Desfazer', onClick: () => handleUndoCheckout(stay.id) },
