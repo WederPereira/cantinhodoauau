@@ -151,6 +151,7 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       updatedAt: new Date(),
     };
     setClients(prev => [...prev, newClient]);
+    logAction('add_client', 'client', newClient.id, { dog_name: data.name, tutor_name: data.tutorName });
   }, []);
 
   const importClients = useCallback((newClients: Array<{
