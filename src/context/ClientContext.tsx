@@ -208,8 +208,10 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   }, []);
 
   const deleteClient = useCallback((id: string) => {
-    setClients(prev => prev.filter(client => client.id !== id));
-  }, []);
+    const client = clients.find(c => c.id === id);
+    if (client) logAction('delete_client', 'client', id, { dog_name: client.name, tutor_name: client.tutorName });
+    setClients(prev => prev.filter(c => c.id !== id));
+  }, [clients]);
 
   const addVaccineRecord = useCallback((clientId: string, type: VaccineType, date: string, notes?: string) => {
     setClients(prev =>
