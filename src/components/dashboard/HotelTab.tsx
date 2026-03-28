@@ -314,8 +314,10 @@ const HotelTab: React.FC = () => {
     try {
       if (existing) {
         await supabase.from('hotel_meals').update({ ate: !existing.ate }).eq('id', existing.id);
+        logAction('mark_meal', 'meal', existing.id, { meal_type: mealType, date, ate: !existing.ate, meal_id: existing.id });
       } else {
-        await supabase.from('hotel_meals').insert({ hotel_stay_id: stayId, date, meal_type: mealType, ate: true });
+        const { data: newMeal } = await supabase.from('hotel_meals').insert({ hotel_stay_id: stayId, date, meal_type: mealType, ate: true }).select('id').single();
+        logAction('mark_meal', 'meal', newMeal?.id, { meal_type: mealType, date, ate: true, meal_id: newMeal?.id });
       }
       fetchData();
     } catch { toast.error('Erro ao atualizar refeição'); }
