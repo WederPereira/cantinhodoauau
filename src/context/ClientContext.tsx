@@ -199,11 +199,11 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   const updateClient = useCallback((id: string, updates: Partial<Client>) => {
     setClients(prev =>
-      prev.map(client =>
-        client.id === id
-          ? { ...client, ...updates, updatedAt: new Date() }
-          : client
-      )
+      prev.map(client => {
+        if (client.id !== id) return client;
+        logAction('edit_client', 'client', id, { dog_name: client.name, tutor_name: client.tutorName });
+        return { ...client, ...updates, updatedAt: new Date() };
+      })
     );
   }, []);
 
