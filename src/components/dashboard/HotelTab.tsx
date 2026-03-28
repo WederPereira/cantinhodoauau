@@ -302,6 +302,7 @@ const HotelTab: React.FC = () => {
       await supabase.from('hotel_medications').delete().eq('hotel_stay_id', stayId);
       const { error } = await supabase.from('hotel_stays').delete().eq('id', stayId);
       if (error) throw error;
+      logAction('delete_stay', 'hotel', stayId);
       toast.success('Check-in apagado!');
       setDeleteConfirmId(null);
       fetchData();
