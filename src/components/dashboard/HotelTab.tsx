@@ -24,6 +24,7 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { logAction } from '@/hooks/useActionLog';
 
 interface HotelStay {
   id: string;
@@ -252,6 +253,7 @@ const HotelTab: React.FC = () => {
         }
       }
 
+      logAction('checkin', 'hotel', newStay?.id, { dog_name: client.name, tutor_name: client.tutorName });
       toast.success(`${client.name} entrou no hotel! 🏨`);
       setAddDialogOpen(false);
       setSelectedClientId('');
@@ -275,6 +277,7 @@ const HotelTab: React.FC = () => {
         .update({ active: false, check_out: new Date().toISOString() })
         .eq('id', stay.id);
       if (error) throw error;
+      logAction('checkout', 'hotel', stay.id, { dog_name: stay.dog_name, tutor_name: stay.tutor_name });
       toast.success(`${stay.dog_name} fez checkout!`, {
         duration: 8000,
         action: { label: 'Desfazer', onClick: () => handleUndoCheckout(stay.id) },
@@ -299,6 +302,7 @@ const HotelTab: React.FC = () => {
       await supabase.from('hotel_medications').delete().eq('hotel_stay_id', stayId);
       const { error } = await supabase.from('hotel_stays').delete().eq('id', stayId);
       if (error) throw error;
+      logAction('delete_stay', 'hotel', stayId);
       toast.success('Check-in apagado!');
       setDeleteConfirmId(null);
       fetchData();
@@ -310,8 +314,10 @@ const HotelTab: React.FC = () => {
     try {
       if (existing) {
         await supabase.from('hotel_meals').update({ ate: !existing.ate }).eq('id', existing.id);
+        logAction('mark_meal', 'meal', existing.id, { meal_type: mealType, date, ate: !existing.ate, meal_id: existing.id });
       } else {
-        await supabase.from('hotel_meals').insert({ hotel_stay_id: stayId, date, meal_type: mealType, ate: true });
+        const { data: newMeal } = await supabase.from('hotel_meals').insert({ hotel_stay_id: stayId, date, meal_type: mealType, ate: true }).select('id').single();
+        logAction('mark_meal', 'meal', newMeal?.id, { meal_type: mealType, date, ate: true, meal_id: newMeal?.id });
       }
       fetchData();
     } catch { toast.error('Erro ao atualizar refeição'); }
@@ -342,6 +348,7 @@ const HotelTab: React.FC = () => {
         administered: !med.administered,
         administered_at: !med.administered ? new Date().toISOString() : null,
       }).eq('id', med.id);
+      if (!med.administered) logAction('administer_med', 'medication', med.id, { medication_name: med.medication_name, medication_id: med.id });
       fetchData();
     } catch { toast.error('Erro ao atualizar'); }
   };

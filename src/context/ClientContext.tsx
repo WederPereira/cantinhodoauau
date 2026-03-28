@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import { Client, VaccineType, DEFAULT_VACCINES, Vaccines, FleaRecord, VaccineRecord, PetGender } from '@/types/client';
+import { logAction } from '@/hooks/useActionLog';
 import { mockClients } from '@/data/mockClients';
 
 const STORAGE_KEY = 'pet-grooming-clients';
@@ -150,6 +151,7 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       updatedAt: new Date(),
     };
     setClients(prev => [...prev, newClient]);
+    logAction('add_client', 'client', newClient.id, { dog_name: data.name, tutor_name: data.tutorName });
   }, []);
 
   const importClients = useCallback((newClients: Array<{
@@ -197,17 +199,19 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   const updateClient = useCallback((id: string, updates: Partial<Client>) => {
     setClients(prev =>
-      prev.map(client =>
-        client.id === id
-          ? { ...client, ...updates, updatedAt: new Date() }
-          : client
-      )
+      prev.map(client => {
+        if (client.id !== id) return client;
+        logAction('edit_client', 'client', id, { dog_name: client.name, tutor_name: client.tutorName });
+        return { ...client, ...updates, updatedAt: new Date() };
+      })
     );
   }, []);
 
   const deleteClient = useCallback((id: string) => {
-    setClients(prev => prev.filter(client => client.id !== id));
-  }, []);
+    const client = clients.find(c => c.id === id);
+    if (client) logAction('delete_client', 'client', id, { dog_name: client.name, tutor_name: client.tutorName });
+    setClients(prev => prev.filter(c => c.id !== id));
+  }, [clients]);
 
   const addVaccineRecord = useCallback((clientId: string, type: VaccineType, date: string, notes?: string) => {
     setClients(prev =>
