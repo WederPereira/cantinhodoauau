@@ -1,72 +1,52 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { LogOut, User, Mail, Shield, Loader2, Save, KeyRound } from "lucide-react";
+import { LogOut, User, Mail, Shield, Loader2, Save, KeyRound, Users, History } from "lucide-react";
+import EmployeeManager from "@/components/account/EmployeeManager";
+import ActionHistory from "@/components/account/ActionHistory";
 
 const AccountPage = () => {
   const { session, signOut } = useAuth();
+  const { isAdmin, role, loading: roleLoading } = useUserRole();
   const [fullName, setFullName] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [savingName, setSavingName] = useState(false);
-  const [role, setRole] = useState<string>("—");
+
+  const ROLE_LABELS: Record<string, string> = {
+    admin: "Administrador",
+    monitor: "Monitor",
+    noturnista: "Noturnista",
+  };
 
   useEffect(() => {
     if (session?.user) {
       setFullName(session.user.user_metadata?.full_name || "");
-      fetchRole();
     }
   }, [session]);
 
-  const fetchRole = async () => {
-    if (!session?.user) return;
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", session.user.id)
-      .maybeSingle();
-    if (data) {
-      const labels: Record<string, string> = {
-        admin: "Administrador",
-        monitor: "Monitor",
-        noturnista: "Noturnista",
-      };
-      setRole(labels[data.role] || data.role);
-    }
-  };
-
   const handleUpdateName = async () => {
     setSavingName(true);
-    const { error } = await supabase.auth.updateUser({
-      data: { full_name: fullName },
-    });
-    if (error) {
-      toast.error("Erro ao atualizar nome");
-    } else {
-      toast.success("Nome atualizado!");
-    }
+    const { error } = await supabase.auth.updateUser({ data: { full_name: fullName } });
+    if (error) toast.error("Erro ao atualizar nome");
+    else toast.success("Nome atualizado!");
     setSavingName(false);
   };
 
   const handleChangePassword = async () => {
-    if (newPassword.length < 6) {
-      toast.error("A senha deve ter no mínimo 6 caracteres");
-      return;
-    }
+    if (newPassword.length < 6) { toast.error("A senha deve ter no mínimo 6 caracteres"); return; }
     setLoading(true);
     const { error } = await supabase.auth.updateUser({ password: newPassword });
-    if (error) {
-      toast.error("Erro ao alterar senha");
-    } else {
-      toast.success("Senha alterada com sucesso!");
-      setNewPassword("");
-    }
+    if (error) toast.error("Erro ao alterar senha");
+    else { toast.success("Senha alterada com sucesso!"); setNewPassword(""); }
     setLoading(false);
   };
 
@@ -99,20 +79,14 @@ const AccountPage = () => {
                 <Mail className="w-3 h-3" /> {session?.user?.email}
               </p>
               <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <Shield className="w-3 h-3" /> {role}
+                <Shield className="w-3 h-3" /> {role ? (ROLE_LABELS[role] || role) : "—"}
               </p>
             </div>
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="name">Nome Completo</Label>
             <div className="flex gap-2">
-              <Input
-                id="name"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Seu nome"
-              />
+              <Input id="name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Seu nome" />
               <Button size="icon" onClick={handleUpdateName} disabled={savingName}>
                 {savingName ? <Loader2 className="animate-spin w-4 h-4" /> : <Save className="w-4 h-4" />}
               </Button>
@@ -130,22 +104,37 @@ const AccountPage = () => {
           <CardDescription className="text-xs">Mínimo de 6 caracteres</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Input
-            type="password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            placeholder="Nova senha"
-            minLength={6}
-          />
+          <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Nova senha" minLength={6} />
           <Button onClick={handleChangePassword} disabled={loading} className="w-full">
             {loading ? <Loader2 className="animate-spin" /> : "Salvar Nova Senha"}
           </Button>
         </CardContent>
       </Card>
 
-      <Separator />
+      {/* Admin Section */}
+      {isAdmin && (
+        <>
+          <Separator />
+          <Tabs defaultValue="employees" className="w-full">
+            <TabsList className="w-full grid grid-cols-2">
+              <TabsTrigger value="employees" className="gap-1 text-xs">
+                <Users className="w-3.5 h-3.5" /> Equipe
+              </TabsTrigger>
+              <TabsTrigger value="history" className="gap-1 text-xs">
+                <History className="w-3.5 h-3.5" /> Histórico
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="employees" className="mt-3">
+              <EmployeeManager />
+            </TabsContent>
+            <TabsContent value="history" className="mt-3">
+              <ActionHistory />
+            </TabsContent>
+          </Tabs>
+        </>
+      )}
 
-      {/* Logout */}
+      <Separator />
       <Button variant="destructive" onClick={handleLogout} className="w-full">
         <LogOut className="mr-2 w-4 h-4" /> Sair da Conta
       </Button>
