@@ -253,6 +253,7 @@ const HotelTab: React.FC = () => {
         }
       }
 
+      logAction('checkin', 'hotel', newStay?.id, { dog_name: client.name, tutor_name: client.tutorName });
       toast.success(`${client.name} entrou no hotel! 🏨`);
       setAddDialogOpen(false);
       setSelectedClientId('');
