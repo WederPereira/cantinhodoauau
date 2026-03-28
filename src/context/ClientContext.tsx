@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import { Client, VaccineType, DEFAULT_VACCINES, Vaccines, FleaRecord, VaccineRecord, PetGender } from '@/types/client';
+import { logAction } from '@/hooks/useActionLog';
 import { mockClients } from '@/data/mockClients';
 
 const STORAGE_KEY = 'pet-grooming-clients';
