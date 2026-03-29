@@ -276,12 +276,6 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     if (error) { console.error('Error adding flea record:', error); return; }
 
     // Update client vaccines.antipulgas
-    await supabase.from('clients').update({
-      vaccines: supabase.rpc as any, // we'll update via full object
-      updated_at: new Date().toISOString(),
-    }).eq('id', clientId);
-
-    // Actually update vaccines properly
     const client = clients.find(c => c.id === clientId);
     if (client) {
       const updatedVaccines = { ...client.vaccines, antipulgas: date };
