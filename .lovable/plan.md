@@ -1,53 +1,69 @@
 
 
-## Plano: Sistema de Controle de Acesso Admin/Funcionário com Histórico de Ações
+## Análise: O que falta para uso profissional e venda B2B
 
-### Contexto Atual
-- Já existe tabela `user_roles` com enum `app_role` (admin, moderator, user) e função `has_role()`.
-- Já existe tabela `action_logs` com RLS que só admin pode ver todos os logs.
-- Já existe tabela `profiles` com campo `cargo`.
-- O signup está aberto para qualquer pessoa criar conta — precisa restringir.
-- Nenhum log de ações está sendo gravado no app atualmente.
+### Problema Principal: Dados no localStorage
+O maior bloqueio é que **todos os dados de clientes/pets estão no localStorage do navegador**, não no banco de dados. Isso significa:
+- Dados se perdem ao limpar o cache ou trocar de dispositivo
+- Não há sincronização entre funcionários — cada um vê dados diferentes
+- Não há backup dos dados
 
-### O que será feito
+### O que precisa ser feito (por prioridade)
 
-**1. Restringir criação de contas (somente Admin cria funcionários)**
-- Remover o botão "Criar Conta" da tela de login pública.
-- Na página de Conta (admin), adicionar seção "Gerenciar Funcionários" com: criar conta de funcionário (email + senha + nome + cargo), listar contas existentes, e desativar contas.
-- Usar uma Edge Function para criar usuários via `supabase.auth.admin.createUser()` (necessário service role key, já disponível como secret).
-- Ao criar, inserir automaticamente na `user_roles` o papel correspondente (monitor/noturnista).
+**1. Migrar dados de clientes para o banco de dados (CRÍTICO)**
+- Criar tabela `clients` no banco com todos os campos atuais
+- Criar tabelas `vaccine_records` e `flea_records` relacionadas
+- Refatorar o `ClientContext` para ler/gravar no banco em vez do localStorage
+- Adicionar RLS para que apenas usuários autenticados acessem os dados
+- Todos os funcionários passam a ver os mesmos dados em tempo real
 
-**2. Registrar ações no `action_logs`**
-- Criar um hook/utilitário `logAction(action, entityType, entityId, details)` que insere na tabela `action_logs` com o `user_id` e `user_name` do usuário logado.
-- Instrumentar as operações principais: check-in/checkout hotel, prolongar estadia, marcar refeição, administrar remédio, adicionar/editar/excluir cliente, registrar entrada creche, atualizar vacina/antipulgas.
+**2. Multi-tenancy (para vender para múltiplas empresas)**
+- Adicionar campo `tenant_id` (ou `business_id`) em todas as tabelas
+- Cada petshop/creche tem seu espaço isolado de dados
+- RLS garante que empresa A nunca vê dados da empresa B
+- Criar fluxo de onboarding para novas empresas
 
-**3. Painel de Histórico de Ações (somente Admin)**
-- Na página de Conta do admin, adicionar aba/seção "Histórico de Ações" que lista os logs com filtros por funcionário, tipo de ação e data.
-- Cada log mostra: quem fez, o quê fez, quando, e detalhes.
-- Botão "Desfazer" em ações reversíveis (ex: desfazer check-in, desfazer marcação de refeição) que executa a operação inversa e registra um novo log de reversão.
+**3. Segurança e conformidade**
+- Remover as RLS abertas (`Allow all access`) das tabelas `hotel_stays`, `hotel_meals`, `hotel_medications`, `qr_entries`, `daily_records` — hoje qualquer pessoa pode ler/escrever nesses dados
+- Implementar foreign keys adequadas entre tabelas
+- Adicionar validação de entrada (zod) nos formulários
+- LGPD: adicionar termos de uso e política de privacidade
 
-**4. Proteger dados sensíveis**
-- Adicionar RLS nas tabelas `clients` (via context local, sem tabela DB — não se aplica).
-- Como os dados de clientes estão no localStorage/context e não no Supabase, a proteção principal é via controle de acesso ao app (login) e logs de auditoria.
-- Restringir funcionalidades destrutivas (excluir cliente, apagar estadia) apenas para admin via verificação de role no frontend e RLS no backend.
+**4. Funcionalidades comerciais ausentes**
+- **Financeiro**: Controle de pagamentos, recebimentos, mensalidades (creche), diárias (hotel)
+- **Agendamento**: Calendário para agendar serviços
+- **Notificações**: WhatsApp/email automático para vacinas vencendo, checkout, etc.
+- **Relatórios avançados**: Faturamento, ocupação do hotel, frequência de creche
+- **Backup/exportação**: Exportar dados em planilha, backup automático
 
-### Detalhes Técnicos
+**5. Experiência e polimento**
+- Tratamento de erros em todas as operações do banco
+- Loading states consistentes
+- Modo offline com sincronização quando voltar online
+- Testes automatizados
+- Documentação de uso
 
-**Migração DB**: Nenhuma nova tabela necessária — `action_logs` já existe. Pode ser necessário ajustar a enum `app_role` para incluir 'monitor' e 'noturnista' se ainda não existir.
+### Resumo visual
 
-**Edge Function `create-employee`**:
-- Recebe: email, password, full_name, role
-- Valida que o chamador é admin (via JWT)
-- Cria usuário via admin API
-- Insere em `user_roles` e `profiles`
+```text
+Prioridade    Item                         Status
+─────────────────────────────────────────────────
+P0 (bloqueia) Dados no banco (não localStorage)  ❌
+P0 (bloqueia) RLS seguras nas tabelas             ❌
+P1 (venda)    Multi-tenancy                       ❌
+P1 (venda)    Módulo financeiro                   ❌
+P2 (valor)    Notificações automáticas            ❌
+P2 (valor)    Agendamento/calendário              ❌
+P3 (qualidade)Validação de formulários            ❌
+P3 (qualidade)Tratamento de erros                 parcial
+P3 (qualidade)Testes automatizados                ❌
+✅ já feito   Auth + roles + auditoria            ✅
+✅ já feito   PWA standalone                      ✅
+✅ já feito   Hotel/Creche/Taxi/Saúde             ✅
+```
 
-**Arquivos modificados**:
-- `src/hooks/useActionLog.ts` — novo hook para registrar ações
-- `src/hooks/useUserRole.ts` — novo hook para verificar role do usuário logado
-- `src/pages/AccountPage.tsx` — seção admin para gerenciar funcionários + histórico
-- `src/components/account/EmployeeManager.tsx` — novo componente
-- `src/components/account/ActionHistory.tsx` — novo componente
-- `supabase/functions/create-employee/index.ts` — nova edge function
-- Componentes existentes (HotelTab, HealthControlTab, DaycareTab, ClientContext, etc.) — adicionar chamadas ao `logAction`
-- `src/pages/LoginPage.tsx` — remover opção de signup
+### Recomendação de próximo passo
+Começar pelo **P0: migrar os dados de clientes para o banco de dados**. Sem isso, o sistema não é confiável para uso profissional — basta limpar o navegador e todos os clientes somem. Posso fazer essa migração mantendo a mesma interface que você já tem.
+
+Quer que eu comece pela migração dos dados para o banco?
 
