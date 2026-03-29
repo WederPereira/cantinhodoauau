@@ -47,6 +47,72 @@ export type Database = {
         }
         Relationships: []
       }
+      clients: {
+        Row: {
+          birth_date: string | null
+          breed: string
+          castrated: boolean
+          created_at: string
+          entry_date: string
+          gender: string | null
+          id: string
+          name: string
+          pet_size: string | null
+          photo: string | null
+          tutor_address: string
+          tutor_cpf: string
+          tutor_email: string
+          tutor_name: string
+          tutor_neighborhood: string
+          tutor_phone: string
+          updated_at: string
+          vaccines: Json
+          weight: number | null
+        }
+        Insert: {
+          birth_date?: string | null
+          breed?: string
+          castrated?: boolean
+          created_at?: string
+          entry_date?: string
+          gender?: string | null
+          id?: string
+          name: string
+          pet_size?: string | null
+          photo?: string | null
+          tutor_address?: string
+          tutor_cpf?: string
+          tutor_email?: string
+          tutor_name?: string
+          tutor_neighborhood?: string
+          tutor_phone?: string
+          updated_at?: string
+          vaccines?: Json
+          weight?: number | null
+        }
+        Update: {
+          birth_date?: string | null
+          breed?: string
+          castrated?: boolean
+          created_at?: string
+          entry_date?: string
+          gender?: string | null
+          id?: string
+          name?: string
+          pet_size?: string | null
+          photo?: string | null
+          tutor_address?: string
+          tutor_cpf?: string
+          tutor_email?: string
+          tutor_name?: string
+          tutor_neighborhood?: string
+          tutor_phone?: string
+          updated_at?: string
+          vaccines?: Json
+          weight?: number | null
+        }
+        Relationships: []
+      }
       daily_records: {
         Row: {
           ate: boolean
@@ -87,6 +153,44 @@ export type Database = {
             columns: ["qr_entry_id"]
             isOneToOne: false
             referencedRelation: "qr_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flea_records: {
+        Row: {
+          brand: string
+          client_id: string
+          created_at: string
+          date: string
+          duration_months: number
+          id: string
+          notes: string | null
+        }
+        Insert: {
+          brand: string
+          client_id: string
+          created_at?: string
+          date: string
+          duration_months?: number
+          id?: string
+          notes?: string | null
+        }
+        Update: {
+          brand?: string
+          client_id?: string
+          created_at?: string
+          date?: string
+          duration_months?: number
+          id?: string
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flea_records_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
         ]
@@ -295,6 +399,41 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      vaccine_records: {
+        Row: {
+          client_id: string
+          created_at: string
+          date: string
+          id: string
+          notes: string | null
+          type: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          date: string
+          id?: string
+          notes?: string | null
+          type: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vaccine_records_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
