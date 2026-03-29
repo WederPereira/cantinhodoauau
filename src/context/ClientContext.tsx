@@ -1,14 +1,12 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import { Client, VaccineType, DEFAULT_VACCINES, Vaccines, FleaRecord, VaccineRecord, PetGender } from '@/types/client';
 import { logAction } from '@/hooks/useActionLog';
-import { mockClients } from '@/data/mockClients';
-
-const STORAGE_KEY = 'pet-grooming-clients';
-const DATA_VERSION_KEY = 'pet-grooming-data-version';
-const CURRENT_DATA_VERSION = '3';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface ClientContextType {
   clients: Client[];
+  loading: boolean;
   addClient: (data: {
     tutorName: string;
     tutorPhone?: string;
@@ -25,93 +23,99 @@ interface ClientContextType {
     birthDate?: Date;
     gender?: PetGender;
     castrated?: boolean;
-  }) => void;
+  }) => Promise<void>;
   importClients: (newClients: Array<{
     tutorName?: string;
     name: string;
     breed?: string;
     petSize?: Client['petSize'];
     photo?: string;
-  }>) => void;
-  updateClient: (id: string, updates: Partial<Client>) => void;
-  deleteClient: (id: string) => void;
+  }>) => Promise<void>;
+  updateClient: (id: string, updates: Partial<Client>) => Promise<void>;
+  deleteClient: (id: string) => Promise<void>;
   getClientById: (id: string) => Client | undefined;
-  addVaccineRecord: (clientId: string, type: VaccineType, date: string, notes?: string) => void;
-  deleteVaccineRecord: (clientId: string, recordId: string) => void;
-  addFleaRecord: (clientId: string, date: string, brand: string, durationMonths: 1 | 2 | 3 | 6, notes?: string) => void;
-  deleteFleaRecord: (clientId: string, recordId: string) => void;
+  addVaccineRecord: (clientId: string, type: VaccineType, date: string, notes?: string) => Promise<void>;
+  deleteVaccineRecord: (clientId: string, recordId: string) => Promise<void>;
+  addFleaRecord: (clientId: string, date: string, brand: string, durationMonths: 1 | 2 | 3 | 6, notes?: string) => Promise<void>;
+  deleteFleaRecord: (clientId: string, recordId: string) => Promise<void>;
+  refreshClients: () => Promise<void>;
 }
 
 const ClientContext = createContext<ClientContextType | undefined>(undefined);
 
-const migrateVaccines = (vaccines: any): Vaccines => {
-  if (!vaccines) return { ...DEFAULT_VACCINES };
-  const result: any = {};
-  for (const key of ['gripe', 'v10', 'raiva', 'giardia', 'antipulgas']) {
-    const val = vaccines[key];
-    if (val === true) result[key] = new Date().toISOString();
-    else if (val === false || val === undefined || val === null) result[key] = null;
-    else result[key] = val;
-  }
-  return result as Vaccines;
-};
-
-const parseClientDates = (client: any): Client => ({
-  ...client,
-  entryDate: client.entryDate ? new Date(client.entryDate) : new Date(),
-  birthDate: client.birthDate ? new Date(client.birthDate) : undefined,
-  weight: client.weight,
-  gender: client.gender,
-  castrated: client.castrated ?? false,
-  createdAt: new Date(client.createdAt),
-  updatedAt: new Date(client.updatedAt),
-  tutorName: client.tutorName || '',
-  tutorPhone: client.tutorPhone || '',
-  tutorEmail: client.tutorEmail || '',
-  tutorAddress: client.tutorAddress || '',
-  tutorNeighborhood: client.tutorNeighborhood || '',
-  tutorCpf: client.tutorCpf || '',
-  breed: client.breed || '',
-  vaccines: migrateVaccines(client.vaccines),
-  vaccineHistory: (client.vaccineHistory || []),
-  fleaHistory: (client.fleaHistory || []),
+// Convert DB row to Client type
+const dbRowToClient = (row: any, vaccineRecords: any[] = [], fleaRecords: any[] = []): Client => ({
+  id: row.id,
+  tutorName: row.tutor_name || '',
+  tutorPhone: row.tutor_phone || '',
+  tutorEmail: row.tutor_email || '',
+  tutorAddress: row.tutor_address || '',
+  tutorNeighborhood: row.tutor_neighborhood || '',
+  tutorCpf: row.tutor_cpf || '',
+  name: row.name,
+  breed: row.breed || '',
+  petSize: row.pet_size as Client['petSize'],
+  weight: row.weight ? Number(row.weight) : undefined,
+  birthDate: row.birth_date ? new Date(row.birth_date) : undefined,
+  photo: row.photo || undefined,
+  gender: row.gender as PetGender | undefined,
+  castrated: row.castrated ?? false,
+  entryDate: new Date(row.entry_date),
+  vaccines: (row.vaccines as Vaccines) || { ...DEFAULT_VACCINES },
+  vaccineHistory: vaccineRecords
+    .filter(r => r.client_id === row.id)
+    .map(r => ({ id: r.id, type: r.type as VaccineType, date: r.date, notes: r.notes || undefined })),
+  fleaHistory: fleaRecords
+    .filter(r => r.client_id === row.id)
+    .map(r => ({ id: r.id, date: r.date, brand: r.brand, durationMonths: r.duration_months as 1 | 2 | 3 | 6, notes: r.notes || undefined })),
+  createdAt: new Date(row.created_at),
+  updatedAt: new Date(row.updated_at),
 });
 
-const loadClients = (): Client[] => {
-  try {
-    const version = localStorage.getItem(DATA_VERSION_KEY);
-    if (version !== CURRENT_DATA_VERSION) {
-      localStorage.removeItem(STORAGE_KEY);
-      localStorage.setItem(DATA_VERSION_KEY, CURRENT_DATA_VERSION);
-      return mockClients;
-    }
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      return parsed.map(parseClientDates);
-    }
-  } catch (error) {
-    console.error('Error loading clients from localStorage:', error);
-  }
-  return mockClients;
-};
-
-const saveClients = (clients: Client[]) => {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(clients));
-  } catch (error) {
-    console.error('Error saving clients to localStorage:', error);
-  }
-};
-
 export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [clients, setClients] = useState<Client[]>(() => loadClients());
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
 
+  const fetchClients = useCallback(async () => {
+    try {
+      const [clientsRes, vaccinesRes, fleasRes] = await Promise.all([
+        supabase.from('clients').select('*').order('name'),
+        supabase.from('vaccine_records').select('*').order('created_at', { ascending: false }),
+        supabase.from('flea_records').select('*').order('created_at', { ascending: false }),
+      ]);
+
+      if (clientsRes.error) throw clientsRes.error;
+
+      const vaccineRecords = vaccinesRes.data || [];
+      const fleaRecords = fleasRes.data || [];
+
+      const mapped = (clientsRes.data || []).map(row => dbRowToClient(row, vaccineRecords, fleaRecords));
+      setClients(mapped);
+    } catch (error) {
+      console.error('Error fetching clients:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Initial load
   useEffect(() => {
-    saveClients(clients);
-  }, [clients]);
+    fetchClients();
+  }, [fetchClients]);
 
-  const addClient = useCallback((data: {
+  // Realtime subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel('clients-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'clients' }, () => {
+        fetchClients();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchClients]);
+
+  const addClient = useCallback(async (data: {
     tutorName: string;
     tutorPhone?: string;
     tutorEmail?: string;
@@ -128,33 +132,30 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     gender?: PetGender;
     castrated?: boolean;
   }) => {
-    const newClient: Client = {
-      id: crypto.randomUUID(),
-      tutorName: data.tutorName,
-      tutorPhone: data.tutorPhone || '',
-      tutorEmail: data.tutorEmail || '',
-      tutorAddress: data.tutorAddress || '',
-      tutorNeighborhood: data.tutorNeighborhood || '',
-      tutorCpf: data.tutorCpf || '',
+    const { data: inserted, error } = await supabase.from('clients').insert({
+      tutor_name: data.tutorName,
+      tutor_phone: data.tutorPhone || '',
+      tutor_email: data.tutorEmail || '',
+      tutor_address: data.tutorAddress || '',
+      tutor_neighborhood: data.tutorNeighborhood || '',
+      tutor_cpf: data.tutorCpf || '',
       name: data.name,
       breed: data.breed,
-      petSize: data.petSize,
-      birthDate: data.birthDate,
-      photo: data.photo,
-      gender: data.gender,
+      pet_size: data.petSize || null,
+      photo: data.photo || null,
+      vaccines: (data.vaccines || DEFAULT_VACCINES) as any,
+      entry_date: (data.entryDate || new Date()).toISOString(),
+      birth_date: data.birthDate?.toISOString() || null,
+      gender: data.gender || null,
       castrated: data.castrated ?? false,
-      entryDate: data.entryDate || new Date(),
-      vaccines: data.vaccines || { ...DEFAULT_VACCINES },
-      vaccineHistory: [],
-      fleaHistory: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    setClients(prev => [...prev, newClient]);
-    logAction('add_client', 'client', newClient.id, { dog_name: data.name, tutor_name: data.tutorName });
-  }, []);
+    }).select().single();
 
-  const importClients = useCallback((newClients: Array<{
+    if (error) { console.error('Error adding client:', error); return; }
+    logAction('add_client', 'client', inserted.id, { dog_name: data.name, tutor_name: data.tutorName });
+    await fetchClients();
+  }, [fetchClients]);
+
+  const importClients = useCallback(async (newClients: Array<{
     tutorName?: string;
     tutorPhone?: string;
     tutorEmail?: string;
@@ -171,118 +172,152 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     weight?: number;
     vaccines?: Vaccines;
   }>) => {
-    const clientsToAdd: Client[] = newClients.map(c => ({
-      id: crypto.randomUUID(),
-      tutorName: c.tutorName || '',
-      tutorPhone: c.tutorPhone || '',
-      tutorEmail: c.tutorEmail || '',
-      tutorAddress: c.tutorAddress || '',
-      tutorNeighborhood: c.tutorNeighborhood || '',
-      tutorCpf: c.tutorCpf || '',
+    const rows = newClients.map(c => ({
+      tutor_name: c.tutorName || '',
+      tutor_phone: c.tutorPhone || '',
+      tutor_email: c.tutorEmail || '',
+      tutor_address: c.tutorAddress || '',
+      tutor_neighborhood: c.tutorNeighborhood || '',
+      tutor_cpf: c.tutorCpf || '',
       name: c.name,
       breed: c.breed || '',
-      petSize: c.petSize,
-      photo: c.photo,
-      gender: c.gender,
+      pet_size: c.petSize || null,
+      photo: c.photo || null,
+      gender: c.gender || null,
       castrated: c.castrated ?? false,
-      birthDate: c.birthDate,
-      weight: c.weight,
-      entryDate: new Date(),
-      vaccines: c.vaccines || { ...DEFAULT_VACCINES },
-      vaccineHistory: [],
-      fleaHistory: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      birth_date: c.birthDate?.toISOString() || null,
+      weight: c.weight || null,
+      vaccines: (c.vaccines || DEFAULT_VACCINES) as any,
     }));
-    setClients(prev => [...prev, ...clientsToAdd]);
-  }, []);
 
-  const updateClient = useCallback((id: string, updates: Partial<Client>) => {
-    setClients(prev =>
-      prev.map(client => {
-        if (client.id !== id) return client;
-        logAction('edit_client', 'client', id, { dog_name: client.name, tutor_name: client.tutorName });
-        return { ...client, ...updates, updatedAt: new Date() };
-      })
-    );
-  }, []);
+    const { error } = await supabase.from('clients').insert(rows);
+    if (error) { console.error('Error importing clients:', error); return; }
+    await fetchClients();
+  }, [fetchClients]);
 
-  const deleteClient = useCallback((id: string) => {
+  const updateClient = useCallback(async (id: string, updates: Partial<Client>) => {
+    const dbUpdates: any = { updated_at: new Date().toISOString() };
+    if (updates.tutorName !== undefined) dbUpdates.tutor_name = updates.tutorName;
+    if (updates.tutorPhone !== undefined) dbUpdates.tutor_phone = updates.tutorPhone;
+    if (updates.tutorEmail !== undefined) dbUpdates.tutor_email = updates.tutorEmail;
+    if (updates.tutorAddress !== undefined) dbUpdates.tutor_address = updates.tutorAddress;
+    if (updates.tutorNeighborhood !== undefined) dbUpdates.tutor_neighborhood = updates.tutorNeighborhood;
+    if (updates.tutorCpf !== undefined) dbUpdates.tutor_cpf = updates.tutorCpf;
+    if (updates.name !== undefined) dbUpdates.name = updates.name;
+    if (updates.breed !== undefined) dbUpdates.breed = updates.breed;
+    if (updates.petSize !== undefined) dbUpdates.pet_size = updates.petSize;
+    if (updates.weight !== undefined) dbUpdates.weight = updates.weight;
+    if (updates.birthDate !== undefined) dbUpdates.birth_date = updates.birthDate ? new Date(updates.birthDate).toISOString() : null;
+    if (updates.photo !== undefined) dbUpdates.photo = updates.photo;
+    if (updates.gender !== undefined) dbUpdates.gender = updates.gender;
+    if (updates.castrated !== undefined) dbUpdates.castrated = updates.castrated;
+    if (updates.entryDate !== undefined) dbUpdates.entry_date = new Date(updates.entryDate).toISOString();
+    if (updates.vaccines !== undefined) dbUpdates.vaccines = updates.vaccines as any;
+
+    const client = clients.find(c => c.id === id);
+    const { error } = await supabase.from('clients').update(dbUpdates).eq('id', id);
+    if (error) { console.error('Error updating client:', error); return; }
+    if (client) logAction('edit_client', 'client', id, { dog_name: client.name, tutor_name: client.tutorName });
+    await fetchClients();
+  }, [clients, fetchClients]);
+
+  const deleteClient = useCallback(async (id: string) => {
     const client = clients.find(c => c.id === id);
     if (client) logAction('delete_client', 'client', id, { dog_name: client.name, tutor_name: client.tutorName });
-    setClients(prev => prev.filter(c => c.id !== id));
-  }, [clients]);
+    const { error } = await supabase.from('clients').delete().eq('id', id);
+    if (error) { console.error('Error deleting client:', error); return; }
+    await fetchClients();
+  }, [clients, fetchClients]);
 
-  const addVaccineRecord = useCallback((clientId: string, type: VaccineType, date: string, notes?: string) => {
-    setClients(prev =>
-      prev.map(client => {
-        if (client.id !== clientId) return client;
-        const record: VaccineRecord = { id: crypto.randomUUID(), type, date, notes };
-        return {
-          ...client,
-          vaccines: { ...client.vaccines, [type]: date },
-          vaccineHistory: [record, ...(client.vaccineHistory || [])],
-          updatedAt: new Date(),
-        };
-      })
-    );
-  }, []);
+  const addVaccineRecord = useCallback(async (clientId: string, type: VaccineType, date: string, notes?: string) => {
+    // Insert record
+    const { error: recError } = await supabase.from('vaccine_records').insert({
+      client_id: clientId,
+      type,
+      date,
+      notes: notes || null,
+    });
+    if (recError) { console.error('Error adding vaccine record:', recError); return; }
 
-  const addFleaRecord = useCallback((clientId: string, date: string, brand: string, durationMonths: 1 | 2 | 3 | 6, notes?: string) => {
-    setClients(prev =>
-      prev.map(client => {
-        if (client.id !== clientId) return client;
-        const record: FleaRecord = { id: crypto.randomUUID(), date, brand, durationMonths, notes };
-        return {
-          ...client,
-          vaccines: { ...client.vaccines, antipulgas: date },
-          fleaHistory: [record, ...(client.fleaHistory || [])],
-          updatedAt: new Date(),
-        };
-      })
-    );
-  }, []);
+    // Update client vaccines JSON
+    const client = clients.find(c => c.id === clientId);
+    if (client) {
+      const updatedVaccines = { ...client.vaccines, [type]: date };
+      await supabase.from('clients').update({ vaccines: updatedVaccines as any, updated_at: new Date().toISOString() }).eq('id', clientId);
+    }
+    await fetchClients();
+  }, [clients, fetchClients]);
 
-  const deleteVaccineRecord = useCallback((clientId: string, recordId: string) => {
-    setClients(prev =>
-      prev.map(client => {
-        if (client.id !== clientId) return client;
-        const newHistory = (client.vaccineHistory || []).filter(r => r.id !== recordId);
-        const deleted = (client.vaccineHistory || []).find(r => r.id === recordId);
-        let newVaccines = { ...client.vaccines };
-        if (deleted) {
-          const latestOfType = newHistory.filter(r => r.type === deleted.type).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
-          newVaccines = { ...newVaccines, [deleted.type]: latestOfType ? latestOfType.date : null };
-        }
-        return { ...client, vaccines: newVaccines, vaccineHistory: newHistory, updatedAt: new Date() };
-      })
-    );
-  }, []);
+  const deleteVaccineRecord = useCallback(async (clientId: string, recordId: string) => {
+    const client = clients.find(c => c.id === clientId);
+    const deleted = client?.vaccineHistory?.find(r => r.id === recordId);
 
-  const deleteFleaRecord = useCallback((clientId: string, recordId: string) => {
-    setClients(prev =>
-      prev.map(client => {
-        if (client.id !== clientId) return client;
-        const newHistory = (client.fleaHistory || []).filter(r => r.id !== recordId);
-        const latestFlea = newHistory.length > 0 ? newHistory[0] : null;
-        return {
-          ...client,
-          vaccines: { ...client.vaccines, antipulgas: latestFlea ? latestFlea.date : null },
-          fleaHistory: newHistory,
-          updatedAt: new Date(),
-        };
-      })
-    );
-  }, []);
+    const { error } = await supabase.from('vaccine_records').delete().eq('id', recordId);
+    if (error) { console.error('Error deleting vaccine record:', error); return; }
+
+    // Update client vaccines to latest remaining
+    if (client && deleted) {
+      const remaining = (client.vaccineHistory || []).filter(r => r.id !== recordId);
+      const latestOfType = remaining.filter(r => r.type === deleted.type).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+      const updatedVaccines = { ...client.vaccines, [deleted.type]: latestOfType ? latestOfType.date : null };
+      await supabase.from('clients').update({ vaccines: updatedVaccines as any, updated_at: new Date().toISOString() }).eq('id', clientId);
+    }
+    await fetchClients();
+  }, [clients, fetchClients]);
+
+  const addFleaRecord = useCallback(async (clientId: string, date: string, brand: string, durationMonths: 1 | 2 | 3 | 6, notes?: string) => {
+    const { error } = await supabase.from('flea_records').insert({
+      client_id: clientId,
+      date,
+      brand,
+      duration_months: durationMonths,
+      notes: notes || null,
+    });
+    if (error) { console.error('Error adding flea record:', error); return; }
+
+    // Update client vaccines.antipulgas
+    await supabase.from('clients').update({
+      vaccines: supabase.rpc as any, // we'll update via full object
+      updated_at: new Date().toISOString(),
+    }).eq('id', clientId);
+
+    // Actually update vaccines properly
+    const client = clients.find(c => c.id === clientId);
+    if (client) {
+      const updatedVaccines = { ...client.vaccines, antipulgas: date };
+      await supabase.from('clients').update({ vaccines: updatedVaccines as any, updated_at: new Date().toISOString() }).eq('id', clientId);
+    }
+    await fetchClients();
+  }, [clients, fetchClients]);
+
+  const deleteFleaRecord = useCallback(async (clientId: string, recordId: string) => {
+    const { error } = await supabase.from('flea_records').delete().eq('id', recordId);
+    if (error) { console.error('Error deleting flea record:', error); return; }
+
+    // Update client vaccines.antipulgas to latest remaining
+    const client = clients.find(c => c.id === clientId);
+    if (client) {
+      const remaining = (client.fleaHistory || []).filter(r => r.id !== recordId);
+      const latestFlea = remaining.length > 0 ? remaining[0] : null;
+      const updatedVaccines = { ...client.vaccines, antipulgas: latestFlea ? latestFlea.date : null };
+      await supabase.from('clients').update({ vaccines: updatedVaccines as any, updated_at: new Date().toISOString() }).eq('id', clientId);
+    }
+    await fetchClients();
+  }, [clients, fetchClients]);
 
   const getClientById = useCallback((id: string) => {
     return clients.find(client => client.id === id);
   }, [clients]);
 
+  const refreshClients = useCallback(async () => {
+    await fetchClients();
+  }, [fetchClients]);
+
   return (
     <ClientContext.Provider
       value={{
         clients,
+        loading,
         addClient,
         importClients,
         updateClient,
@@ -292,6 +327,7 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         deleteVaccineRecord,
         addFleaRecord,
         deleteFleaRecord,
+        refreshClients,
       }}
     >
       {children}
