@@ -45,39 +45,41 @@ const ClientsPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container px-4 sm:px-6 py-5 sm:py-7 max-w-7xl mx-auto">
+      <div className="container px-3 sm:px-4 py-4 sm:py-6 max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex flex-col gap-4 mb-5 sm:mb-6">
+        <div className="flex flex-col gap-3 mb-4 sm:mb-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-primary/10 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
                 <Users className="text-primary" size={22} />
               </div>
               <div>
-                <h1 className="text-xl sm:text-2xl font-extrabold text-foreground tracking-tight" style={{ fontFamily: 'Nunito, sans-serif' }}>Clientes</h1>
-                <p className="text-xs sm:text-sm text-muted-foreground font-medium">
+                <h1 className="text-xl sm:text-2xl font-bold text-foreground">Clientes</h1>
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   {clients.length} cadastrado{clients.length !== 1 ? 's' : ''}
                 </p>
               </div>
             </div>
+          </div>
+          <div className="flex justify-center">
             <AddClientDialog />
           </div>
         </div>
 
         {/* Search */}
-        <div className="bg-card border border-border rounded-2xl p-3 mb-5 shadow-soft">
+        <div className="bg-card border border-border rounded-xl p-2.5 sm:p-3 mb-4 sm:mb-5 shadow-soft">
           <div className="flex gap-2">
             <div className="relative flex-1">
-              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Buscar por pet, tutor ou raça..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-11 text-sm rounded-xl bg-muted/40 border-0 focus:bg-card"
+                className="pl-9 h-10 text-sm"
               />
             </div>
             {searchQuery && (
-              <Button variant="ghost" size="icon" onClick={() => setSearchQuery('')} className="h-11 w-11 shrink-0 rounded-xl">
+              <Button variant="ghost" size="icon" onClick={() => setSearchQuery('')} className="h-10 w-10 shrink-0">
                 <X size={16} />
               </Button>
             )}
@@ -86,7 +88,7 @@ const ClientsPage: React.FC = () => {
 
         {/* Results */}
         {filteredClients.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {filteredClients.map((client, index) => (
               <div key={client.id} className="animate-slide-up" style={{ animationDelay: `${Math.min(index, 12) * 30}ms` }}>
                 <ClientCard client={client} onClick={() => handleClientClick(client)} />
@@ -94,16 +96,16 @@ const ClientsPage: React.FC = () => {
             ))}
           </div>
         ) : (
-          <div className="text-center py-20">
-            <div className="w-16 h-16 bg-muted rounded-3xl flex items-center justify-center mx-auto mb-4">
-              <Search size={24} className="text-muted-foreground" />
+          <div className="text-center py-16">
+            <div className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mx-auto mb-3">
+              <Search size={22} className="text-muted-foreground" />
             </div>
-            <h3 className="text-base font-bold text-foreground mb-1" style={{ fontFamily: 'Nunito, sans-serif' }}>Nenhum cliente encontrado</h3>
+            <h3 className="text-base font-semibold text-foreground mb-1">Nenhum cliente encontrado</h3>
             <p className="text-sm text-muted-foreground mb-4">
               {searchQuery ? 'Tente ajustar a busca' : 'Comece adicionando seu primeiro cliente'}
             </p>
             {searchQuery && (
-              <Button variant="outline" size="sm" onClick={() => setSearchQuery('')} className="rounded-xl">Limpar busca</Button>
+              <Button variant="outline" size="sm" onClick={() => setSearchQuery('')}>Limpar busca</Button>
             )}
           </div>
         )}

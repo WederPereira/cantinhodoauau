@@ -15,8 +15,8 @@ export const BottomNavbar: React.FC = () => {
   const location = useLocation();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-xl border-t border-border/40 safe-area-bottom lg:hidden">
-      <div className="flex items-center justify-around h-[62px] max-w-md mx-auto px-1">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-xl border-t border-border/60 safe-area-bottom lg:hidden shadow-[0_-2px_10px_-3px_hsl(var(--foreground)/0.08)]">
+      <div className="flex items-center justify-around h-[58px] max-w-md mx-auto px-2">
         {navItems.map((item) => {
           const isActive = location.pathname === item.to;
           const Icon = item.icon;
@@ -26,24 +26,27 @@ export const BottomNavbar: React.FC = () => {
               key={item.to}
               to={item.to}
               className={cn(
-                'flex flex-col items-center justify-center gap-0.5 flex-1 h-full relative py-1',
-                'transition-all duration-200',
-                isActive ? 'text-primary' : 'text-muted-foreground'
+                'flex flex-col items-center justify-center gap-0.5 flex-1 h-full relative py-1.5',
+                'text-muted-foreground transition-all duration-200',
+                isActive && 'text-primary'
               )}
             >
+              {isActive && (
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-[3px] bg-primary rounded-b-full" />
+              )}
               <div className={cn(
-                "flex items-center justify-center w-10 h-10 rounded-2xl transition-all duration-300",
-                isActive && "bg-primary/12 scale-105"
+                "flex items-center justify-center w-9 h-9 rounded-xl transition-all duration-200",
+                isActive && "bg-primary/10"
               )}>
                 <Icon
                   size={20}
+                  className={cn("transition-all duration-200")}
                   strokeWidth={isActive ? 2.5 : 1.8}
-                  className="transition-all duration-200"
                 />
               </div>
               <span className={cn(
-                "text-[9px] leading-tight tracking-wide",
-                isActive ? "font-bold" : "font-medium opacity-70"
+                "text-[10px] leading-tight",
+                isActive ? "font-bold" : "font-medium"
               )}>
                 {item.label}
               </span>
