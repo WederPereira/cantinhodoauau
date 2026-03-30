@@ -13,7 +13,7 @@ import HotelFeedingAlerts from '@/components/dashboard/HotelFeedingAlerts';
 import HotelCheckoutAlerts from '@/components/dashboard/HotelCheckoutAlerts';
 import QrReader from '@/components/qrcode/QrReader';
 import { Client, getHealthAlerts } from '@/types/client';
-import { Users, LayoutDashboard, HeartPulse, PawPrint, Hotel, Camera, Car } from 'lucide-react';
+import { Users, PawPrint, Hotel, Camera, Car, HeartPulse, Scan } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -50,76 +50,74 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container px-3 sm:px-4 md:px-6 py-4 sm:py-6 max-w-6xl mx-auto space-y-4 sm:space-y-5">
-        {/* Header - empilhado no mobile */}
-        <div className="space-y-3">
-          <div className="text-center sm:text-left">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Dashboard</h1>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-              {clients.length} pets cadastrados
-            </p>
-          </div>
+      <div className="container px-4 sm:px-6 py-5 sm:py-7 max-w-7xl mx-auto space-y-5 sm:space-y-6">
+        {/* Hero section */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/90 to-primary p-5 sm:p-7 text-primary-foreground">
+          <div className="absolute top-0 right-0 w-32 h-32 sm:w-48 sm:h-48 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-20 h-20 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
+          
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight" style={{ fontFamily: 'Nunito, sans-serif' }}>
+                  Dashboard
+                </h1>
+                <p className="text-sm sm:text-base opacity-90 font-medium mt-0.5">
+                  {clients.length} pets cadastrados 🐾
+                </p>
+              </div>
+              <div className="hidden sm:flex items-center gap-2 bg-white/15 backdrop-blur-sm rounded-2xl px-4 py-3">
+                <Users size={20} />
+                <span className="text-2xl font-extrabold">{clients.length}</span>
+              </div>
+            </div>
 
-          {/* Botões centralizados */}
-          <div className="flex items-center justify-center gap-2 w-full">
-            <Dialog open={qrOpen} onOpenChange={setQrOpen}>
-              <DialogTrigger asChild>
-                <Button className="gap-2 h-10 px-4 text-[13px] font-semibold shadow-md bg-primary hover:bg-primary/90 rounded-xl transition-all duration-200 active:scale-[0.98] flex-1 max-w-[160px] sm:flex-none sm:max-w-none sm:px-5">
-                  <Camera size={16} />
-                  Ler Entrada
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-lg max-h-[85vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Leitor QR Code</DialogTitle>
-                </DialogHeader>
-                <QrReader />
-              </DialogContent>
-            </Dialog>
-            <AddClientDialog />
+            <div className="flex items-center gap-2">
+              <Dialog open={qrOpen} onOpenChange={setQrOpen}>
+                <DialogTrigger asChild>
+                  <Button className="gap-2 h-10 px-5 text-[13px] font-bold bg-white/20 hover:bg-white/30 text-primary-foreground rounded-2xl backdrop-blur-sm border border-white/20 transition-all duration-200 active:scale-[0.97]">
+                    <Scan size={16} />
+                    Ler Entrada
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-lg max-h-[85vh] overflow-y-auto rounded-3xl">
+                  <DialogHeader>
+                    <DialogTitle>Leitor QR Code</DialogTitle>
+                  </DialogHeader>
+                  <QrReader />
+                </DialogContent>
+              </Dialog>
+              <AddClientDialog />
+            </div>
           </div>
         </div>
 
         {/* Tabs */}
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="w-full grid grid-cols-5 h-11 sm:h-12 rounded-xl p-1 bg-muted/60">
-            <TabsTrigger value="overview" className="gap-1 text-[10px] sm:text-sm rounded-lg data-[state=active]:shadow-md transition-all duration-200 px-0.5 sm:px-3">
-              <LayoutDashboard size={15} className="shrink-0" />
+          <TabsList className="w-full grid grid-cols-5 h-12 sm:h-13 rounded-2xl p-1 bg-card border border-border shadow-soft">
+            <TabsTrigger value="overview" className="gap-1.5 text-[10px] sm:text-[13px] rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all duration-200 font-semibold px-1 sm:px-3">
+              <PawPrint size={15} className="shrink-0" />
               <span className="hidden sm:inline">Geral</span>
             </TabsTrigger>
-            <TabsTrigger value="daycare" className="gap-1 text-[10px] sm:text-sm rounded-lg data-[state=active]:shadow-md transition-all duration-200 px-0.5 sm:px-3">
+            <TabsTrigger value="daycare" className="gap-1.5 text-[10px] sm:text-[13px] rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all duration-200 font-semibold px-1 sm:px-3">
               <PawPrint size={15} className="shrink-0" />
               <span className="hidden sm:inline">Creche</span>
             </TabsTrigger>
-            <TabsTrigger value="taxi" className="gap-1 text-[10px] sm:text-sm rounded-lg data-[state=active]:shadow-md transition-all duration-200 px-0.5 sm:px-3">
+            <TabsTrigger value="taxi" className="gap-1.5 text-[10px] sm:text-[13px] rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all duration-200 font-semibold px-1 sm:px-3">
               <Car size={15} className="shrink-0" />
               <span className="hidden sm:inline">Táxi</span>
             </TabsTrigger>
-            <TabsTrigger value="hotel" className="gap-1 text-[10px] sm:text-sm rounded-lg data-[state=active]:shadow-md transition-all duration-200 px-0.5 sm:px-3">
+            <TabsTrigger value="hotel" className="gap-1.5 text-[10px] sm:text-[13px] rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all duration-200 font-semibold px-1 sm:px-3">
               <Hotel size={15} className="shrink-0" />
               <span className="hidden sm:inline">Hotel</span>
             </TabsTrigger>
-            <TabsTrigger value="health" className="gap-1 text-[10px] sm:text-sm rounded-lg data-[state=active]:shadow-md transition-all duration-200 px-0.5 sm:px-3">
+            <TabsTrigger value="health" className="gap-1.5 text-[10px] sm:text-[13px] rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all duration-200 font-semibold px-1 sm:px-3">
               <HeartPulse size={15} className="shrink-0" />
               <span className="hidden sm:inline">Saúde</span>
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-4 sm:space-y-5 mt-4">
-            {/* Stats card */}
-            <div className="bg-card border border-border rounded-xl p-3 sm:p-4 shadow-soft">
-              <div className="flex items-center gap-3">
-                <div className="p-2 sm:p-2.5 rounded-xl bg-primary/10">
-                  <Users size={20} className="text-primary sm:hidden" />
-                  <Users size={22} className="text-primary hidden sm:block" />
-                </div>
-                <div>
-                  <p className="text-[11px] sm:text-xs font-medium text-muted-foreground">Total de Clientes</p>
-                  <p className="text-2xl sm:text-3xl font-bold text-foreground">{clients.length}</p>
-                </div>
-              </div>
-            </div>
-
+          <TabsContent value="overview" className="space-y-4 sm:space-y-5 mt-5">
             <HotelMedicationAlerts />
             <HotelFeedingAlerts />
             <HotelCheckoutAlerts />
@@ -127,18 +125,16 @@ const Dashboard: React.FC = () => {
             <BirthdaySection clients={clients} onClientClick={handleClientClick} />
           </TabsContent>
 
-          <TabsContent value="daycare" className="mt-4">
+          <TabsContent value="daycare" className="mt-5">
             <DaycareTab />
           </TabsContent>
-          <TabsContent value="taxi" className="mt-4">
+          <TabsContent value="taxi" className="mt-5">
             <TaxiTab />
           </TabsContent>
-
-          <TabsContent value="hotel" className="mt-4">
+          <TabsContent value="hotel" className="mt-5">
             <HotelTab />
           </TabsContent>
-
-          <TabsContent value="health" className="mt-4">
+          <TabsContent value="health" className="mt-5">
             <HealthControlTab />
           </TabsContent>
         </Tabs>
