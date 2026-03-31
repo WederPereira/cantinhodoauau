@@ -112,28 +112,38 @@ const AccountPage = () => {
         </CardContent>
       </Card>
 
-      {/* Admin Section */}
-      {isAdmin && (
-        <>
-          <Separator />
-          <Tabs defaultValue="employees" className="w-full">
-            <TabsList className="w-full grid grid-cols-2">
-              <TabsTrigger value="employees" className="gap-1 text-xs">
-                <Users className="w-3.5 h-3.5" /> Equipe
-              </TabsTrigger>
-              <TabsTrigger value="history" className="gap-1 text-xs">
-                <History className="w-3.5 h-3.5" /> Histórico
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="employees" className="mt-3">
-              <EmployeeManager />
-            </TabsContent>
-            <TabsContent value="history" className="mt-3">
-              <ActionHistory />
-            </TabsContent>
-          </Tabs>
-        </>
-      )}
+      {/* Tasks Section - visible to all */}
+      <Separator />
+      <Tabs defaultValue={isAdmin ? "employees" : "tasks"} className="w-full">
+        <TabsList className={`w-full grid ${isAdmin ? "grid-cols-3" : "grid-cols-1"}`}>
+          {isAdmin && (
+            <TabsTrigger value="employees" className="gap-1 text-xs">
+              <Users className="w-3.5 h-3.5" /> Equipe
+            </TabsTrigger>
+          )}
+          <TabsTrigger value="tasks" className="gap-1 text-xs">
+            <ClipboardList className="w-3.5 h-3.5" /> Tarefas
+          </TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger value="history" className="gap-1 text-xs">
+              <History className="w-3.5 h-3.5" /> Histórico
+            </TabsTrigger>
+          )}
+        </TabsList>
+        {isAdmin && (
+          <TabsContent value="employees" className="mt-3">
+            <EmployeeManager />
+          </TabsContent>
+        )}
+        <TabsContent value="tasks" className="mt-3">
+          <WorkTaskManager />
+        </TabsContent>
+        {isAdmin && (
+          <TabsContent value="history" className="mt-3">
+            <ActionHistory />
+          </TabsContent>
+        )}
+      </Tabs>
 
       <Separator />
       <Button variant="destructive" onClick={handleLogout} className="w-full">
