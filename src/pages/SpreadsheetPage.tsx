@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { useClients } from '@/context/ClientContext';
 import { Client, formatDate, Vaccines, VACCINE_LABELS, formatVaccineDate, DEFAULT_VACCINES, PetSize, PetGender } from '@/types/client';
+import { useSensitiveData } from '@/hooks/useSensitiveData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -20,6 +21,7 @@ const VACCINE_KEYS = Object.keys(VACCINE_LABELS) as Array<keyof Vaccines>;
 
 const SpreadsheetPage: React.FC = () => {
   const { clients, updateClient, deleteClient, importClients } = useClients();
+  const { maskCpf, maskPhone, maskEmail, maskAddress, canSeeSensitive } = useSensitiveData();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [generatedQrIds, setGeneratedQrIds] = useState<Set<string>>(new Set());
@@ -459,19 +461,19 @@ const SpreadsheetPage: React.FC = () => {
                       </div>
                     </td>
                     <td className="p-1">
-                      {isEditing ? <Input value={editForm.tutorName} onChange={(e) => setEditForm({ ...editForm, tutorName: e.target.value })} className="h-6 text-[11px] w-24" /> : <span className="text-muted-foreground truncate block max-w-[120px]">{client.tutorName || '—'}</span>}
+                      {isEditing && canSeeSensitive ? <Input value={editForm.tutorName} onChange={(e) => setEditForm({ ...editForm, tutorName: e.target.value })} className="h-6 text-[11px] w-24" /> : <span className="text-muted-foreground truncate block max-w-[120px]">{client.tutorName || '—'}</span>}
                     </td>
                     <td className="p-1">
-                      {isEditing ? <Input value={editForm.tutorPhone} onChange={(e) => setEditForm({ ...editForm, tutorPhone: e.target.value })} className="h-6 text-[11px] w-24" /> : <span className="text-muted-foreground">{client.tutorPhone || '—'}</span>}
+                      {isEditing && canSeeSensitive ? <Input value={editForm.tutorPhone} onChange={(e) => setEditForm({ ...editForm, tutorPhone: e.target.value })} className="h-6 text-[11px] w-24" /> : <span className="text-muted-foreground">{canSeeSensitive ? (client.tutorPhone || '—') : maskPhone(client.tutorPhone)}</span>}
                     </td>
                     <td className="p-1">
-                      {isEditing ? <Input value={editForm.tutorEmail} onChange={(e) => setEditForm({ ...editForm, tutorEmail: e.target.value })} className="h-6 text-[11px] w-28" /> : <span className="text-muted-foreground truncate block max-w-[140px]">{client.tutorEmail || '—'}</span>}
+                      {isEditing && canSeeSensitive ? <Input value={editForm.tutorEmail} onChange={(e) => setEditForm({ ...editForm, tutorEmail: e.target.value })} className="h-6 text-[11px] w-28" /> : <span className="text-muted-foreground truncate block max-w-[140px]">{canSeeSensitive ? (client.tutorEmail || '—') : maskEmail(client.tutorEmail)}</span>}
                     </td>
                     <td className="p-1">
-                      {isEditing ? <Input value={editForm.tutorCpf} onChange={(e) => setEditForm({ ...editForm, tutorCpf: e.target.value })} className="h-6 text-[11px] w-24" /> : <span className="text-muted-foreground">{client.tutorCpf || '—'}</span>}
+                      {isEditing && canSeeSensitive ? <Input value={editForm.tutorCpf} onChange={(e) => setEditForm({ ...editForm, tutorCpf: e.target.value })} className="h-6 text-[11px] w-24" /> : <span className="text-muted-foreground">{canSeeSensitive ? (client.tutorCpf || '—') : maskCpf(client.tutorCpf)}</span>}
                     </td>
                     <td className="p-1">
-                      {isEditing ? <Input value={editForm.tutorAddress} onChange={(e) => setEditForm({ ...editForm, tutorAddress: e.target.value })} className="h-6 text-[11px] w-32" /> : <span className="text-muted-foreground truncate block max-w-[160px]" title={client.tutorAddress}>{client.tutorAddress || '—'}</span>}
+                      {isEditing && canSeeSensitive ? <Input value={editForm.tutorAddress} onChange={(e) => setEditForm({ ...editForm, tutorAddress: e.target.value })} className="h-6 text-[11px] w-32" /> : <span className="text-muted-foreground truncate block max-w-[160px]" title={canSeeSensitive ? client.tutorAddress : undefined}>{canSeeSensitive ? (client.tutorAddress || '—') : maskAddress(client.tutorAddress)}</span>}
                     </td>
                     <td className="p-1">
                       {isEditing ? <Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className="h-6 text-[11px] w-20" /> : <span className="font-semibold text-foreground">{client.name}</span>}
