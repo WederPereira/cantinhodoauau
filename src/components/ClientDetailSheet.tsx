@@ -379,27 +379,55 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
                   <User size={13} /> Tutor
                 </h3>
                 <div className="bg-card border border-border rounded-xl overflow-hidden divide-y divide-border/50">
-                  <InlineEditField icon={<User size={14} />} label="Nome" value={client.tutorName} onSave={(v) => inlineUpdate('tutorName', v)} placeholder="Nome do tutor" />
-                  <InlineEditField icon={<FileText size={14} />} label="CPF" value={client.tutorCpf || ''} onSave={(v) => inlineUpdate('tutorCpf', v)} placeholder="000.000.000-00" />
-                  <InlineEditField
-                    icon={<Phone size={14} />} label="Telefone" value={client.tutorPhone || ''} onSave={(v) => inlineUpdate('tutorPhone', v)} placeholder="(11) 99999-9999"
-                    action={client.tutorPhone ? (
-                      <button onClick={(e) => { e.stopPropagation(); openWhatsApp(client.tutorPhone); }}
-                        className="text-[10px] font-medium text-[hsl(142,70%,40%)] bg-[hsl(142,70%,45%)]/10 px-2 py-1 rounded-md hover:bg-[hsl(142,70%,45%)]/20 transition-colors">
-                        WhatsApp
-                      </button>
-                    ) : undefined}
-                  />
-                  <InlineEditField
-                    icon={<Mail size={14} />} label="Email" value={client.tutorEmail || ''} onSave={(v) => inlineUpdate('tutorEmail', v)} placeholder="email@email.com" type="email"
-                    action={client.tutorEmail ? (
-                      <a href={`mailto:${client.tutorEmail}`} onClick={(e) => e.stopPropagation()}
-                        className="text-[10px] font-medium text-primary bg-primary/10 px-2 py-1 rounded-md hover:bg-primary/20 transition-colors">
-                        Enviar
-                      </a>
-                    ) : undefined}
-                  />
-                  <InlineEditField icon={<MapPin size={14} />} label="Endereço" value={client.tutorAddress || ''} onSave={(v) => inlineUpdate('tutorAddress', v)} placeholder="Rua, número, complemento" />
+                  <InlineEditField icon={<User size={14} />} label="Nome" value={client.tutorName} onSave={canSeeSensitive ? (v) => inlineUpdate('tutorName', v) : undefined} placeholder="Nome do tutor" />
+                  {canSeeSensitive ? (
+                    <InlineEditField icon={<FileText size={14} />} label="CPF" value={client.tutorCpf || ''} onSave={(v) => inlineUpdate('tutorCpf', v)} placeholder="000.000.000-00" />
+                  ) : (
+                    <div className="flex items-center gap-3 p-2.5">
+                      <FileText size={14} className="text-muted-foreground" />
+                      <div className="flex-1"><p className="text-[9px] text-muted-foreground uppercase tracking-wider">CPF</p><p className="text-sm font-medium text-muted-foreground">{maskCpf(client.tutorCpf)}</p></div>
+                    </div>
+                  )}
+                  {canSeeSensitive ? (
+                    <InlineEditField
+                      icon={<Phone size={14} />} label="Telefone" value={client.tutorPhone || ''} onSave={(v) => inlineUpdate('tutorPhone', v)} placeholder="(11) 99999-9999"
+                      action={client.tutorPhone ? (
+                        <button onClick={(e) => { e.stopPropagation(); openWhatsApp(client.tutorPhone); }}
+                          className="text-[10px] font-medium text-[hsl(142,70%,40%)] bg-[hsl(142,70%,45%)]/10 px-2 py-1 rounded-md hover:bg-[hsl(142,70%,45%)]/20 transition-colors">
+                          WhatsApp
+                        </button>
+                      ) : undefined}
+                    />
+                  ) : (
+                    <div className="flex items-center gap-3 p-2.5">
+                      <Phone size={14} className="text-muted-foreground" />
+                      <div className="flex-1"><p className="text-[9px] text-muted-foreground uppercase tracking-wider">Telefone</p><p className="text-sm font-medium text-muted-foreground">{maskPhone(client.tutorPhone)}</p></div>
+                    </div>
+                  )}
+                  {canSeeSensitive ? (
+                    <InlineEditField
+                      icon={<Mail size={14} />} label="Email" value={client.tutorEmail || ''} onSave={(v) => inlineUpdate('tutorEmail', v)} placeholder="email@email.com" type="email"
+                      action={client.tutorEmail ? (
+                        <a href={`mailto:${client.tutorEmail}`} onClick={(e) => e.stopPropagation()}
+                          className="text-[10px] font-medium text-primary bg-primary/10 px-2 py-1 rounded-md hover:bg-primary/20 transition-colors">
+                          Enviar
+                        </a>
+                      ) : undefined}
+                    />
+                  ) : (
+                    <div className="flex items-center gap-3 p-2.5">
+                      <Mail size={14} className="text-muted-foreground" />
+                      <div className="flex-1"><p className="text-[9px] text-muted-foreground uppercase tracking-wider">Email</p><p className="text-sm font-medium text-muted-foreground">{maskEmail(client.tutorEmail)}</p></div>
+                    </div>
+                  )}
+                  {canSeeSensitive ? (
+                    <InlineEditField icon={<MapPin size={14} />} label="Endereço" value={client.tutorAddress || ''} onSave={(v) => inlineUpdate('tutorAddress', v)} placeholder="Rua, número, complemento" />
+                  ) : (
+                    <div className="flex items-center gap-3 p-2.5">
+                      <MapPin size={14} className="text-muted-foreground" />
+                      <div className="flex-1"><p className="text-[9px] text-muted-foreground uppercase tracking-wider">Endereço</p><p className="text-sm font-medium text-muted-foreground">{maskAddress(client.tutorAddress)}</p></div>
+                    </div>
+                  )}
                 </div>
               </div>
 
