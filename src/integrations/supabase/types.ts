@@ -435,6 +435,54 @@ export type Database = {
           },
         ]
       }
+      work_tasks: {
+        Row: {
+          assigned_by: string | null
+          assigned_to: string
+          completed_at: string | null
+          completion_note: string | null
+          created_at: string
+          description: string | null
+          due_date: string
+          id: string
+          recurrence: string
+          scheduled_time: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          assigned_to: string
+          completed_at?: string | null
+          completion_note?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string
+          id?: string
+          recurrence?: string
+          scheduled_time: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_by?: string | null
+          assigned_to?: string
+          completed_at?: string | null
+          completion_note?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string
+          id?: string
+          recurrence?: string
+          scheduled_time?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
