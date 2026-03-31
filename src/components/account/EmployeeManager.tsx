@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { UserPlus, Loader2, Users, Shield, Eye, EyeOff } from "lucide-react";
+import { UserPlus, Loader2, Users, Shield, Eye, EyeOff, Trash2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 interface Employee {
   id: string;
@@ -29,10 +30,25 @@ const EmployeeManager = () => {
   const [role, setRole] = useState("monitor");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   const fetchEmployees = async () => {
     const { data } = await supabase.from("profiles").select("id, full_name, cargo");
     if (data) setEmployees(data);
+  };
+
+  const handleDelete = async (empId: string, empName: string) => {
+    setDeleting(empId);
+    const { data, error } = await supabase.functions.invoke("delete-employee", {
+      body: { user_id: empId },
+    });
+    if (error || data?.error) {
+      toast.error(data?.error || error?.message || "Erro ao excluir funcionário");
+    } else {
+      toast.success(`${empName || "Funcionário"} removido com sucesso`);
+      fetchEmployees();
+    }
+    setDeleting(null);
   };
 
   useEffect(() => { fetchEmployees(); }, []);
@@ -126,9 +142,32 @@ const EmployeeManager = () => {
                   <Shield className="w-4 h-4 text-muted-foreground" />
                   <span className="text-sm font-medium">{emp.full_name || "Sem nome"}</span>
                 </div>
-                <Badge variant="outline" className="text-xs">
-                  {ROLE_LABELS[emp.cargo] || emp.cargo}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs">
+                    {ROLE_LABELS[emp.cargo] || emp.cargo}
+                  </Badge>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive">
+                        {deleting === emp.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Excluir funcionário?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Isso removerá permanentemente <strong>{emp.full_name || "este funcionário"}</strong> do sistema. Esta ação não pode ser desfeita.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleDelete(emp.id, emp.full_name)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                          Excluir
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </div>
             ))}
             {employees.length === 0 && (
