@@ -35,6 +35,7 @@ interface MissingField {
 
 export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, open, onOpenChange }) => {
   const { clients, deleteClient, updateClient } = useClients();
+  const { maskCpf, maskPhone, maskEmail, maskAddress, canSeeSensitive } = useSensitiveData();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('info');
   const [editingBreed, setEditingBreed] = useState(false);
