@@ -21,6 +21,7 @@ const VACCINE_KEYS = Object.keys(VACCINE_LABELS) as Array<keyof Vaccines>;
 
 const SpreadsheetPage: React.FC = () => {
   const { clients, updateClient, deleteClient, importClients } = useClients();
+  const { maskCpf, maskPhone, maskEmail, maskAddress, canSeeSensitive } = useSensitiveData();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [generatedQrIds, setGeneratedQrIds] = useState<Set<string>>(new Set());
