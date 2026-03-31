@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { UserPlus, Loader2, Users, Shield, Eye, EyeOff, Trash2 } from "lucide-react";
+import { UserPlus, Loader2, Users, Shield, Eye, EyeOff, Trash2, Pencil } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 interface Employee {
@@ -31,6 +31,8 @@ const EmployeeManager = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [editingRole, setEditingRole] = useState<string | null>(null);
+  const [updatingRole, setUpdatingRole] = useState<string | null>(null);
 
   const fetchEmployees = async () => {
     const { data } = await supabase.from("profiles").select("id, full_name, cargo");
@@ -51,6 +53,21 @@ const EmployeeManager = () => {
     setDeleting(null);
   };
 
+  const handleUpdateRole = async (empId: string, newRole: string) => {
+    setUpdatingRole(empId);
+    const { data, error } = await supabase.functions.invoke("update-employee-role", {
+      body: { user_id: empId, new_role: newRole },
+    });
+    if (error || data?.error) {
+      toast.error(data?.error || error?.message || "Erro ao atualizar cargo");
+    } else {
+      toast.success("Cargo atualizado!");
+      setEditingRole(null);
+      fetchEmployees();
+    }
+    setUpdatingRole(null);
+  };
+
   useEffect(() => { fetchEmployees(); }, []);
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -61,7 +78,6 @@ const EmployeeManager = () => {
     }
     setLoading(true);
 
-    const { data: { session } } = await supabase.auth.getSession();
     const { data, error } = await supabase.functions.invoke("create-employee", {
       body: { email, password, full_name: fullName, role },
     });
@@ -137,15 +153,37 @@ const EmployeeManager = () => {
         <CardContent>
           <div className="space-y-2">
             {employees.map(emp => (
-              <div key={emp.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
-                <div className="flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">{emp.full_name || "Sem nome"}</span>
+              <div key={emp.id} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/50">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <Shield className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <span className="text-sm font-medium truncate">{emp.full_name || "Sem nome"}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-xs">
-                    {ROLE_LABELS[emp.cargo] || emp.cargo}
-                  </Badge>
+                <div className="flex items-center gap-1.5">
+                  {editingRole === emp.id ? (
+                    <Select
+                      defaultValue={emp.cargo}
+                      onValueChange={(v) => handleUpdateRole(emp.id, v)}
+                      disabled={updatingRole === emp.id}
+                    >
+                      <SelectTrigger className="h-7 w-28 text-xs">
+                        {updatingRole === emp.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <SelectValue />}
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="monitor" className="text-xs">Monitor</SelectItem>
+                        <SelectItem value="noturnista" className="text-xs">Noturnista</SelectItem>
+                        <SelectItem value="admin" className="text-xs">Administrador</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Badge
+                      variant="outline"
+                      className="text-xs cursor-pointer hover:bg-primary/10 transition-colors gap-1"
+                      onClick={() => setEditingRole(emp.id)}
+                    >
+                      {ROLE_LABELS[emp.cargo] || emp.cargo}
+                      <Pencil className="w-2.5 h-2.5" />
+                    </Badge>
+                  )}
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive">
