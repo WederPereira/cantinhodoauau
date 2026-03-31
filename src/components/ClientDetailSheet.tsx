@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { useSensitiveData } from '@/hooks/useSensitiveData';
 import { Button } from '@/components/ui/button';
 import { Client, PetSize, PetGender, formatDate, VACCINE_LABELS, Vaccines, formatVaccineDate, getVaccineExpiryDate, isExpired, isExpiringSoon, VaccineType, DEFAULT_VACCINES, getProfileCompleteness } from '@/types/client';
 import { useClients } from '@/context/ClientContext';
