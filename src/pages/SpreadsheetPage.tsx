@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { useClients } from '@/context/ClientContext';
 import { Client, formatDate, Vaccines, VACCINE_LABELS, formatVaccineDate, DEFAULT_VACCINES, PetSize, PetGender } from '@/types/client';
+import { useSensitiveData } from '@/hooks/useSensitiveData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
