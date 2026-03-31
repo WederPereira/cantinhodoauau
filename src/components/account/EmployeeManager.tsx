@@ -30,10 +30,25 @@ const EmployeeManager = () => {
   const [role, setRole] = useState("monitor");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   const fetchEmployees = async () => {
     const { data } = await supabase.from("profiles").select("id, full_name, cargo");
     if (data) setEmployees(data);
+  };
+
+  const handleDelete = async (empId: string, empName: string) => {
+    setDeleting(empId);
+    const { data, error } = await supabase.functions.invoke("delete-employee", {
+      body: { user_id: empId },
+    });
+    if (error || data?.error) {
+      toast.error(data?.error || error?.message || "Erro ao excluir funcionário");
+    } else {
+      toast.success(`${empName || "Funcionário"} removido com sucesso`);
+      fetchEmployees();
+    }
+    setDeleting(null);
   };
 
   useEffect(() => { fetchEmployees(); }, []);
