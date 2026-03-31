@@ -142,9 +142,32 @@ const EmployeeManager = () => {
                   <Shield className="w-4 h-4 text-muted-foreground" />
                   <span className="text-sm font-medium">{emp.full_name || "Sem nome"}</span>
                 </div>
-                <Badge variant="outline" className="text-xs">
-                  {ROLE_LABELS[emp.cargo] || emp.cargo}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs">
+                    {ROLE_LABELS[emp.cargo] || emp.cargo}
+                  </Badge>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive">
+                        {deleting === emp.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Excluir funcionário?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Isso removerá permanentemente <strong>{emp.full_name || "este funcionário"}</strong> do sistema. Esta ação não pode ser desfeita.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleDelete(emp.id, emp.full_name)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                          Excluir
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </div>
             ))}
             {employees.length === 0 && (
