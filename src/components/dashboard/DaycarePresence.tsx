@@ -93,8 +93,9 @@ const DaycarePresence: React.FC = () => {
           .update({ ate: newAte, updated_at: new Date().toISOString() })
           .eq('id', entry.recordId);
         if (error) throw error;
+        logAction('daycare_meal', 'daycare', entry.recordId, { dog_name: entry.dog, tutor_name: entry.tutor, ate: newAte });
       } else {
-        const { error } = await supabase
+        const { data: newRecord, error } = await supabase
           .from('daily_records')
           .insert({
             qr_entry_id: entry.qrEntryId,
@@ -102,8 +103,11 @@ const DaycarePresence: React.FC = () => {
             tutor: entry.tutor,
             date: today,
             ate: newAte,
-          });
+          })
+          .select('id')
+          .single();
         if (error) throw error;
+        logAction('daycare_meal', 'daycare', newRecord?.id, { dog_name: entry.dog, tutor_name: entry.tutor, ate: newAte });
       }
 
       setEntries(prev =>
