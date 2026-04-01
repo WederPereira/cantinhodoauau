@@ -27,7 +27,7 @@ const ACTION_LABELS: Record<string, string> = {
   checkin: "Check-in Hotel",
   checkout: "Check-out Hotel",
   extend_stay: "Prolongou Estadia",
-  mark_meal: "Marcou Refeição",
+  mark_meal: "Marcou Refeição Hotel",
   administer_med: "Administrou Remédio",
   add_client: "Adicionou Cliente",
   edit_client: "Editou Cliente",
@@ -35,6 +35,8 @@ const ACTION_LABELS: Record<string, string> = {
   update_vaccine: "Atualizou Vacina",
   update_flea: "Atualizou Antipulgas",
   daycare_entry: "Entrada Creche",
+  daycare_meal: "Refeição Creche",
+  qr_read: "Leitura QR Code",
   undo: "Desfez Ação",
   delete_stay: "Excluiu Estadia",
 };
@@ -49,7 +51,7 @@ const ENTITY_LABELS: Record<string, string> = {
   medication: "Medicamento",
 };
 
-const REVERSIBLE_ACTIONS = ["checkin", "mark_meal", "administer_med"];
+const REVERSIBLE_ACTIONS = ["checkin", "mark_meal", "administer_med", "qr_read", "daycare_meal", "checkout"];
 
 const ActionHistory = () => {
   const [logs, setLogs] = useState<ActionLog[]>([]);
