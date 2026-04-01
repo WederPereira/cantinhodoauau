@@ -39,12 +39,16 @@ const FrequencyAnalytics: React.FC = () => {
   }, []);
 
   const topDogs = useMemo(() => {
-    const freq: Record<string, number> = {};
-    entries.forEach(e => { freq[e.dog] = (freq[e.dog] || 0) + 1; });
-    return Object.entries(freq)
-      .sort((a, b) => b[1] - a[1])
+    const freq: Record<string, { dog: string; raca: string; count: number }> = {};
+    entries.forEach(e => {
+      const key = `${e.dog}||${e.raca || ''}`;
+      if (!freq[key]) freq[key] = { dog: e.dog, raca: e.raca || '', count: 0 };
+      freq[key].count++;
+    });
+    return Object.values(freq)
+      .sort((a, b) => b.count - a.count)
       .slice(0, 10)
-      .map(([dog, count]) => ({ dog, count }));
+      .map(d => ({ dog: d.raca ? `${d.dog} (${d.raca})` : d.dog, count: d.count }));
   }, [entries]);
 
   const dayOfWeekData = useMemo(() => {
