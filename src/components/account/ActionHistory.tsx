@@ -81,6 +81,10 @@ const ActionHistory = () => {
         await supabase.from("hotel_meals").delete().eq("hotel_stay_id", log.entity_id);
         await logAction("undo", "hotel", log.entity_id, { undone_action: "checkin", original_log_id: log.id });
         toast.success("Check-in desfeito!");
+      } else if (log.action === "checkout" && log.entity_id) {
+        await supabase.from("hotel_stays").update({ active: true, check_out: null }).eq("id", log.entity_id);
+        await logAction("undo", "hotel", log.entity_id, { undone_action: "checkout", original_log_id: log.id });
+        toast.success("Checkout desfeito!");
       } else if (log.action === "mark_meal" && log.details?.meal_id) {
         await supabase.from("hotel_meals").update({ ate: false }).eq("id", log.details.meal_id);
         await logAction("undo", "meal", log.details.meal_id, { undone_action: "mark_meal", original_log_id: log.id });
@@ -89,6 +93,16 @@ const ActionHistory = () => {
         await supabase.from("hotel_medications").update({ administered: false, administered_at: null }).eq("id", log.details.medication_id);
         await logAction("undo", "medication", log.details.medication_id, { undone_action: "administer_med", original_log_id: log.id });
         toast.success("Medicamento desmarcado!");
+      } else if (log.action === "qr_read" && log.entity_id) {
+        await supabase.from("daily_records").delete().eq("qr_entry_id", log.entity_id);
+        await supabase.from("qr_entries").delete().eq("id", log.entity_id);
+        await logAction("undo", "daycare", log.entity_id, { undone_action: "qr_read", original_log_id: log.id });
+        toast.success("Leitura QR desfeita!");
+      } else if (log.action === "daycare_meal" && log.entity_id) {
+        const newAte = !(log.details?.ate);
+        await supabase.from("daily_records").update({ ate: newAte }).eq("id", log.entity_id);
+        await logAction("undo", "daycare", log.entity_id, { undone_action: "daycare_meal", original_log_id: log.id });
+        toast.success("Refeição creche revertida!");
       }
       fetchLogs();
     } catch {
