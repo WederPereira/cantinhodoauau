@@ -64,9 +64,15 @@ const FrequencyAnalytics: React.FC = () => {
   }, [entries, selectedDate]);
 
   const selectedDateSummary = useMemo(() => {
-    const freq: Record<string, number> = {};
-    entriesForSelectedDate.forEach(e => { freq[e.dog] = (freq[e.dog] || 0) + 1; });
-    return Object.entries(freq).sort((a, b) => b[1] - a[1]).map(([dog, count]) => ({ dog, count }));
+    const freq: Record<string, { dog: string; raca: string; count: number }> = {};
+    entriesForSelectedDate.forEach(e => {
+      const key = `${e.dog}||${e.raca || ''}`;
+      if (!freq[key]) freq[key] = { dog: e.dog, raca: e.raca || '', count: 0 };
+      freq[key].count++;
+    });
+    return Object.values(freq)
+      .sort((a, b) => b.count - a.count)
+      .map(d => ({ dog: d.raca ? `${d.dog} (${d.raca})` : d.dog, count: d.count }));
   }, [entriesForSelectedDate]);
 
   const datesWithEntries = useMemo(() => {
