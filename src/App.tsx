@@ -14,8 +14,10 @@ import ClientsPage from "./pages/ClientsPage";
 import SpreadsheetPage from "./pages/SpreadsheetPage";
 import ReportsPage from "./pages/ReportsPage";
 import AccountPage from "./pages/AccountPage";
+import ReelsPage from "./pages/ReelsPage";
 import LoginPage from "./pages/LoginPage";
 import NotFound from "./pages/NotFound";
+import TaskNotifications from "./components/TaskNotifications";
 import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
@@ -46,9 +48,11 @@ const AppContent = () => {
             <Route path="/clients" element={<ClientsPage />} />
             <Route path="/spreadsheet" element={<SpreadsheetPage />} />
             <Route path="/reports" element={<ReportsPage />} />
+            <Route path="/reels" element={<ReelsPage />} />
             <Route path="/account" element={<AccountPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <TaskNotifications />
         </main>
         <BottomNavbar />
         <PWAInstallPrompt />

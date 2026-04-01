@@ -12,6 +12,7 @@ import HotelMedicationAlerts from '@/components/dashboard/HotelMedicationAlerts'
 import HotelFeedingAlerts from '@/components/dashboard/HotelFeedingAlerts';
 import HotelCheckoutAlerts from '@/components/dashboard/HotelCheckoutAlerts';
 import QrReader from '@/components/qrcode/QrReader';
+import EmployeeTasksBanner from '@/components/dashboard/EmployeeTasksBanner';
 import { Client, getHealthAlerts } from '@/types/client';
 import { Users, LayoutDashboard, HeartPulse, PawPrint, Hotel, Camera, Car } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -106,6 +107,7 @@ const Dashboard: React.FC = () => {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4 sm:space-y-5 mt-4">
+            <EmployeeTasksBanner />
             {/* Stats card */}
             <div className="bg-card border border-border rounded-xl p-3 sm:p-4 shadow-soft">
               <div className="flex items-center gap-3">

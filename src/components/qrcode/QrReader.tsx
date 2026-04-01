@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Camera, CheckCircle2, XCircle, Volume2 } from 'lucide-react';
 import { format, startOfDay } from 'date-fns';
+import { logAction } from '@/hooks/useActionLog';
 
 const QrReader: React.FC = () => {
   const [scanning, setScanning] = useState(false);
@@ -94,17 +95,18 @@ const QrReader: React.FC = () => {
       return;
     }
 
-    const { error } = await supabase.from('qr_entries').insert({
+    const { error, data: newEntry } = await supabase.from('qr_entries').insert({
       tutor: data.tutor,
       dog: data.dog,
       raca: data.raca,
       data_hora: new Date().toISOString(),
-    });
+    }).select('id').single();
     setSaving(false);
     if (error) {
       toast.error('Erro ao salvar entrada');
       console.error(error);
     } else {
+      logAction('qr_read', 'daycare', newEntry?.id, { dog_name: data.dog, tutor_name: data.tutor, raca: data.raca });
       toast.success(`✅ Entrada registrada: ${data.dog}`);
     }
   };
