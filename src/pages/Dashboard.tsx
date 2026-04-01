@@ -107,6 +107,7 @@ const Dashboard: React.FC = () => {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4 sm:space-y-5 mt-4">
+            <EmployeeTasksBanner />
             {/* Stats card */}
             <div className="bg-card border border-border rounded-xl p-3 sm:p-4 shadow-soft">
               <div className="flex items-center gap-3">
