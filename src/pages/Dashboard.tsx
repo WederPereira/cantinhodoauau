@@ -12,6 +12,7 @@ import HotelMedicationAlerts from '@/components/dashboard/HotelMedicationAlerts'
 import HotelFeedingAlerts from '@/components/dashboard/HotelFeedingAlerts';
 import HotelCheckoutAlerts from '@/components/dashboard/HotelCheckoutAlerts';
 import QrReader from '@/components/qrcode/QrReader';
+import EmployeeTasksBanner from '@/components/dashboard/EmployeeTasksBanner';
 import { Client, getHealthAlerts } from '@/types/client';
 import { Users, LayoutDashboard, HeartPulse, PawPrint, Hotel, Camera, Car } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
