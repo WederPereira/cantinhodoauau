@@ -5,9 +5,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { Plus, Loader2, Trash2, Send, MessageCircle, Image, Video, Camera as CameraIcon, User } from 'lucide-react';
 import { format } from 'date-fns';
@@ -84,8 +82,7 @@ const ReelsPage: React.FC = () => {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const maxSize = 50 * 1024 * 1024; // 50MB
-    if (file.size > maxSize) { toast.error('Arquivo muito grande (máx 50MB)'); return; }
+    if (file.size > 50 * 1024 * 1024) { toast.error('Arquivo muito grande (máx 50MB)'); return; }
     setSelectedFile(file);
     setPreviewUrl(URL.createObjectURL(file));
   };
@@ -109,7 +106,7 @@ const ReelsPage: React.FC = () => {
         caption,
       });
       if (error) throw error;
-      toast.success('Post publicado! 🎉');
+      toast.success('Publicado!');
       setCaption('');
       setSelectedFile(null);
       setPreviewUrl(null);
@@ -124,7 +121,7 @@ const ReelsPage: React.FC = () => {
 
   const handleDeletePost = async (postId: string) => {
     const { error } = await supabase.from('reels_posts').delete().eq('id', postId);
-    if (error) toast.error('Erro ao excluir post');
+    if (error) toast.error('Erro ao excluir');
     else toast.success('Post excluído');
   };
 
@@ -139,9 +136,7 @@ const ReelsPage: React.FC = () => {
       content: text,
     });
     if (error) toast.error('Erro ao comentar');
-    else {
-      setCommentText(prev => ({ ...prev, [postId]: '' }));
-    }
+    else setCommentText(prev => ({ ...prev, [postId]: '' }));
     setSendingComment(null);
   };
 
@@ -153,13 +148,13 @@ const ReelsPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container px-3 sm:px-4 md:px-6 py-4 sm:py-6 max-w-2xl mx-auto space-y-4">
+      <div className="container px-4 py-5 max-w-lg mx-auto space-y-5">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-foreground">Mural da Equipe</h1>
+          <h1 className="text-xl font-bold text-foreground tracking-tight">Mural</h1>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button size="sm" className="gap-1.5">
-                <Plus size={16} /> Publicar
+              <Button size="sm" className="gap-1.5 h-9 rounded-xl text-xs">
+                <Plus size={14} /> Publicar
               </Button>
             </DialogTrigger>
             <DialogContent>
@@ -167,37 +162,18 @@ const ReelsPage: React.FC = () => {
                 <DialogTitle>Nova Publicação</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="image/*,video/*"
-                  className="hidden"
-                  onChange={handleFileSelect}
-                />
-                <input
-                  ref={cameraFileRef}
-                  type="file"
-                  accept="image/*,video/*"
-                  capture="environment"
-                  className="hidden"
-                  onChange={handleFileSelect}
-                />
+                <input ref={fileRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleFileSelect} />
+                <input ref={cameraFileRef} type="file" accept="image/*,video/*" capture="environment" className="hidden" onChange={handleFileSelect} />
                 {!previewUrl ? (
                   <div className="flex gap-3">
-                    <div
-                      onClick={() => cameraFileRef.current?.click()}
-                      className="flex-1 border-2 border-dashed border-border rounded-xl p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
-                    >
-                      <CameraIcon size={24} className="mx-auto mb-1.5 text-muted-foreground" />
+                    <div onClick={() => cameraFileRef.current?.click()} className="flex-1 border border-dashed border-border rounded-xl p-8 text-center cursor-pointer hover:border-primary/40 transition-colors">
+                      <CameraIcon size={22} className="mx-auto mb-1.5 text-muted-foreground" />
                       <p className="text-xs text-muted-foreground">Câmera</p>
                     </div>
-                    <div
-                      onClick={() => fileRef.current?.click()}
-                      className="flex-1 border-2 border-dashed border-border rounded-xl p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
-                    >
+                    <div onClick={() => fileRef.current?.click()} className="flex-1 border border-dashed border-border rounded-xl p-8 text-center cursor-pointer hover:border-primary/40 transition-colors">
                       <div className="flex justify-center gap-2 mb-1.5">
-                        <Image size={20} className="text-muted-foreground" />
-                        <Video size={20} className="text-muted-foreground" />
+                        <Image size={18} className="text-muted-foreground" />
+                        <Video size={18} className="text-muted-foreground" />
                       </div>
                       <p className="text-xs text-muted-foreground">Galeria</p>
                     </div>
@@ -205,26 +181,16 @@ const ReelsPage: React.FC = () => {
                 ) : (
                   <div className="relative rounded-xl overflow-hidden">
                     {selectedFile?.type.startsWith('video') ? (
-                      <video src={previewUrl} controls className="w-full max-h-[300px] object-contain bg-black rounded-xl" />
+                      <video src={previewUrl} controls className="w-full max-h-[300px] object-contain bg-muted rounded-xl" />
                     ) : (
-                      <img src={previewUrl} alt="Preview" className="w-full max-h-[300px] object-contain bg-muted rounded-xl" />
+                      <img src={previewUrl} alt="" className="w-full max-h-[300px] object-contain bg-muted rounded-xl" />
                     )}
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-2 right-2 h-7 w-7"
-                      onClick={() => { setSelectedFile(null); setPreviewUrl(null); }}
-                    >
+                    <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-7 w-7" onClick={() => { setSelectedFile(null); setPreviewUrl(null); }}>
                       <Trash2 size={14} />
                     </Button>
                   </div>
                 )}
-                <Textarea
-                  placeholder="Escreva uma legenda..."
-                  value={caption}
-                  onChange={e => setCaption(e.target.value)}
-                  className="min-h-[60px]"
-                />
+                <Textarea placeholder="Legenda..." value={caption} onChange={e => setCaption(e.target.value)} className="min-h-[60px] resize-none" />
               </div>
               <DialogFooter>
                 <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
@@ -237,54 +203,54 @@ const ReelsPage: React.FC = () => {
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-12"><Loader2 className="animate-spin text-muted-foreground" /></div>
+          <div className="flex justify-center py-16"><Loader2 className="animate-spin text-muted-foreground" /></div>
         ) : posts.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            <CameraIcon size={48} className="mx-auto mb-3 opacity-30" />
-            <p className="text-sm font-medium">Nenhuma publicação ainda</p>
-            <p className="text-xs mt-1">Seja o primeiro a postar!</p>
+          <div className="text-center py-20 text-muted-foreground">
+            <CameraIcon size={40} className="mx-auto mb-3 opacity-20" />
+            <p className="text-sm">Nenhuma publicação</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-5">
             {posts.map(post => {
               const postComments = getCommentsForPost(post.id);
               const isExpanded = expandedComments.has(post.id);
               const canDelete = post.user_id === session?.user?.id || isAdmin;
 
               return (
-                <Card key={post.id} className="overflow-hidden">
+                <article key={post.id} className="bg-card border border-border rounded-2xl overflow-hidden">
                   {/* Header */}
-                  <div className="flex items-center justify-between px-3 py-2 border-b border-border">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                        <User size={16} className="text-primary" />
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                        <User size={14} className="text-muted-foreground" />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-foreground">{post.user_name}</p>
+                        <p className="text-sm font-medium text-foreground">{post.user_name}</p>
                         <p className="text-[10px] text-muted-foreground">
-                          {format(new Date(post.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                          {format(new Date(post.created_at), "dd MMM 'às' HH:mm", { locale: ptBR })}
                         </p>
                       </div>
                     </div>
                     {canDelete && (
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDeletePost(post.id)}>
+                      <button onClick={() => handleDeletePost(post.id)} className="text-muted-foreground hover:text-destructive transition-colors p-1">
                         <Trash2 size={14} />
-                      </Button>
+                      </button>
                     )}
                   </div>
 
                   {/* Media */}
                   {post.media_type === 'video' ? (
-                    <video src={post.media_url} controls className="w-full max-h-[400px] object-contain bg-black" />
+                    <video src={post.media_url} controls className="w-full max-h-[420px] object-contain bg-muted" />
                   ) : (
-                    <img src={post.media_url} alt="" className="w-full max-h-[400px] object-contain bg-muted" />
+                    <img src={post.media_url} alt="" className="w-full max-h-[420px] object-contain bg-muted" />
                   )}
 
-                  <CardContent className="p-3 space-y-2">
+                  {/* Content */}
+                  <div className="px-4 py-3 space-y-2.5">
                     {post.caption && (
                       <p className="text-sm text-foreground">
-                        <span className="font-semibold">{post.user_name}</span>{' '}
-                        {post.caption}
+                        <span className="font-medium">{post.user_name}</span>{' '}
+                        <span className="text-foreground/80">{post.caption}</span>
                       </p>
                     )}
 
@@ -295,52 +261,59 @@ const ReelsPage: React.FC = () => {
                         next.has(post.id) ? next.delete(post.id) : next.add(post.id);
                         return next;
                       })}
-                      className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+                      className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors"
                     >
-                      <MessageCircle size={14} />
-                      {postComments.length > 0 ? `${postComments.length} comentário(s)` : 'Comentar'}
+                      <MessageCircle size={13} />
+                      {postComments.length > 0 ? `${postComments.length} comentário${postComments.length > 1 ? 's' : ''}` : 'Comentar'}
                     </button>
 
-                    {/* Comments */}
+                    {/* Chat-style comments */}
                     {isExpanded && (
-                      <div className="space-y-2 pt-1">
-                        {postComments.map(comment => (
-                          <div key={comment.id} className="flex items-start gap-2 text-xs">
-                            <div className="flex-1 min-w-0">
-                              <span className="font-semibold text-foreground">{comment.user_name}</span>{' '}
-                              <span className="text-muted-foreground">{comment.content}</span>
-                              <span className="text-[9px] text-muted-foreground/60 ml-1">
-                                {format(new Date(comment.created_at), 'HH:mm')}
-                              </span>
-                            </div>
-                            {(comment.user_id === session?.user?.id || isAdmin) && (
-                              <button onClick={() => handleDeleteComment(comment.id)} className="text-destructive/60 hover:text-destructive shrink-0">
-                                <Trash2 size={10} />
-                              </button>
-                            )}
-                          </div>
-                        ))}
+                      <div className="space-y-2 pt-1 border-t border-border/50">
+                        <div className="max-h-[200px] overflow-y-auto space-y-2 py-2">
+                          {postComments.map(comment => {
+                            const isOwn = comment.user_id === session?.user?.id;
+                            return (
+                              <div key={comment.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
+                                <div className={`max-w-[80%] rounded-2xl px-3 py-1.5 ${isOwn ? 'bg-primary text-primary-foreground rounded-br-md' : 'bg-muted text-foreground rounded-bl-md'}`}>
+                                  {!isOwn && <p className="text-[10px] font-medium opacity-70 mb-0.5">{comment.user_name}</p>}
+                                  <p className="text-xs">{comment.content}</p>
+                                  <div className="flex items-center justify-end gap-1 mt-0.5">
+                                    <span className="text-[9px] opacity-50">
+                                      {format(new Date(comment.created_at), 'HH:mm')}
+                                    </span>
+                                    {(comment.user_id === session?.user?.id || isAdmin) && (
+                                      <button onClick={() => handleDeleteComment(comment.id)} className="opacity-40 hover:opacity-100 transition-opacity">
+                                        <Trash2 size={9} />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                         <div className="flex gap-2">
                           <Input
-                            placeholder="Comentar..."
+                            placeholder="Mensagem..."
                             value={commentText[post.id] || ''}
                             onChange={e => setCommentText(prev => ({ ...prev, [post.id]: e.target.value }))}
                             onKeyDown={e => e.key === 'Enter' && handleComment(post.id)}
-                            className="h-8 text-xs"
+                            className="h-9 text-xs rounded-full bg-muted border-0"
                           />
                           <Button
                             size="icon"
-                            className="h-8 w-8 shrink-0"
+                            className="h-9 w-9 rounded-full shrink-0"
                             onClick={() => handleComment(post.id)}
                             disabled={sendingComment === post.id}
                           >
-                            {sendingComment === post.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send size={14} />}
+                            {sendingComment === post.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send size={13} />}
                           </Button>
                         </div>
                       </div>
                     )}
-                  </CardContent>
-                </Card>
+                  </div>
+                </article>
               );
             })}
           </div>
