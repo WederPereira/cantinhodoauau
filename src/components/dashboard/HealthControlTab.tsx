@@ -261,6 +261,10 @@ export const HealthControlTab: React.FC = () => {
         </button>
       </div>
 
+      {category === 'feces' ? (
+        <FecesCollectionTab />
+      ) : (
+      <>
       {/* Stats */}
       <div className="grid grid-cols-3 gap-2 sm:gap-3">
         <div className="bg-destructive/5 border border-destructive/20 rounded-xl p-2.5 sm:p-3 text-center cursor-pointer hover:bg-destructive/10 transition-colors"
