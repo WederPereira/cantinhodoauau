@@ -145,7 +145,52 @@ const AccountPage = () => {
         )}
       </Tabs>
 
+      {/* App Actions */}
       <Separator />
+      <div className="grid grid-cols-2 gap-3">
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={() => {
+            const deferredPrompt = (window as any).__pwaInstallPrompt;
+            if (deferredPrompt) {
+              deferredPrompt.prompt();
+            } else if (window.matchMedia("(display-mode: standalone)").matches) {
+              toast.info("O app já está instalado!");
+            } else {
+              toast.info("Abra no navegador e use 'Adicionar à tela inicial'");
+            }
+          }}
+        >
+          <Download className="mr-2 w-4 h-4" /> Baixar App
+        </Button>
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={async () => {
+            toast.loading("Atualizando...", { id: "update" });
+            if ("serviceWorker" in navigator) {
+              const registrations = await navigator.serviceWorker.getRegistrations();
+              for (const reg of registrations) {
+                await reg.update();
+                if (reg.waiting) {
+                  reg.waiting.postMessage({ type: "SKIP_WAITING" });
+                }
+              }
+            }
+            // Clear caches
+            if ("caches" in window) {
+              const names = await caches.keys();
+              await Promise.all(names.map((n) => caches.delete(n)));
+            }
+            toast.success("App atualizado! Recarregando...", { id: "update" });
+            setTimeout(() => window.location.reload(), 1000);
+          }}
+        >
+          <RefreshCw className="mr-2 w-4 h-4" /> Atualizar App
+        </Button>
+      </div>
+
       <Button variant="destructive" onClick={handleLogout} className="w-full">
         <LogOut className="mr-2 w-4 h-4" /> Sair da Conta
       </Button>
