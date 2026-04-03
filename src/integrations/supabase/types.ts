@@ -157,6 +157,45 @@ export type Database = {
           },
         ]
       }
+      feces_collections: {
+        Row: {
+          client_id: string
+          collected: boolean
+          collected_at: string | null
+          collected_by: string | null
+          collected_by_name: string | null
+          created_at: string
+          id: string
+          month_year: string
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          collected?: boolean
+          collected_at?: string | null
+          collected_by?: string | null
+          collected_by_name?: string | null
+          created_at?: string
+          id?: string
+          month_year: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          collected?: boolean
+          collected_at?: string | null
+          collected_by?: string | null
+          collected_by_name?: string | null
+          created_at?: string
+          id?: string
+          month_year?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       flea_records: {
         Row: {
           brand: string
