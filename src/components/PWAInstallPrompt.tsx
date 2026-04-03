@@ -15,6 +15,7 @@ export function PWAInstallPrompt() {
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
+      (window as any).__pwaInstallPrompt = e;
       const dismissed = localStorage.getItem("pwa-install-dismissed");
       if (!dismissed) {
         setShowBanner(true);
