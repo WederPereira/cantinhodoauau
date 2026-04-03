@@ -4,7 +4,7 @@ import { Client, VaccineType, VACCINE_TYPE_LABELS, getVaccineExpiryDate, getFlea
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Syringe, Bug, MessageCircle, Search, CheckCircle2, AlertTriangle, XCircle, Filter } from 'lucide-react';
+import { Syringe, Bug, MessageCircle, Search, CheckCircle2, AlertTriangle, XCircle, Filter, FlaskConical } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -12,8 +12,9 @@ import { Calendar } from '@/components/ui/calendar';
 import { ptBR } from 'date-fns/locale';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import FecesCollectionTab from './FecesCollectionTab';
 
-type HealthCategory = 'vaccines' | 'flea';
+type HealthCategory = 'vaccines' | 'flea' | 'feces';
 type HealthStatus = 'ok' | 'expiring' | 'expired' | 'none';
 
 interface VaccineStatus {
@@ -225,7 +226,7 @@ export const HealthControlTab: React.FC = () => {
         <button
           onClick={() => { setCategory('vaccines'); setFilter('all'); }}
           className={cn(
-            'flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-sm font-medium transition-all',
+            'flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs sm:text-sm font-medium transition-all',
             category === 'vaccines'
               ? 'bg-background shadow-sm text-foreground'
               : 'text-muted-foreground hover:text-foreground'
@@ -237,7 +238,7 @@ export const HealthControlTab: React.FC = () => {
         <button
           onClick={() => { setCategory('flea'); setFilter('all'); }}
           className={cn(
-            'flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-sm font-medium transition-all',
+            'flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs sm:text-sm font-medium transition-all',
             category === 'flea'
               ? 'bg-background shadow-sm text-foreground'
               : 'text-muted-foreground hover:text-foreground'
@@ -246,8 +247,24 @@ export const HealthControlTab: React.FC = () => {
           <Bug size={15} />
           Antipulgas
         </button>
+        <button
+          onClick={() => { setCategory('feces'); setFilter('all'); }}
+          className={cn(
+            'flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs sm:text-sm font-medium transition-all',
+            category === 'feces'
+              ? 'bg-background shadow-sm text-foreground'
+              : 'text-muted-foreground hover:text-foreground'
+          )}
+        >
+          <FlaskConical size={15} />
+          Coleta
+        </button>
       </div>
 
+      {category === 'feces' ? (
+        <FecesCollectionTab />
+      ) : (
+      <>
       {/* Stats */}
       <div className="grid grid-cols-3 gap-2 sm:gap-3">
         <div className="bg-destructive/5 border border-destructive/20 rounded-xl p-2.5 sm:p-3 text-center cursor-pointer hover:bg-destructive/10 transition-colors"
@@ -394,6 +411,8 @@ export const HealthControlTab: React.FC = () => {
           </div>
         ))}
       </div>
+      </>
+      )}
     </div>
   );
 };
