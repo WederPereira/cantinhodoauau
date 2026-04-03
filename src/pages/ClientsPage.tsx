@@ -6,7 +6,7 @@ import { ClientDetailSheet } from '@/components/ClientDetailSheet';
 import { Client } from '@/types/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, X, Users } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 
 const ClientsPage: React.FC = () => {
   const { clients } = useClients();
@@ -45,67 +45,52 @@ const ClientsPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container px-3 sm:px-4 py-4 sm:py-6 max-w-6xl mx-auto">
+      <div className="container px-4 py-5 max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex flex-col gap-3 mb-4 sm:mb-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Users className="text-primary" size={22} />
-              </div>
-              <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-foreground">Clientes</h1>
-                <p className="text-xs sm:text-sm text-muted-foreground">
-                  {clients.length} cadastrado{clients.length !== 1 ? 's' : ''}
-                </p>
-              </div>
-            </div>
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h1 className="text-xl font-bold text-foreground tracking-tight">Clientes</h1>
+            <p className="text-xs text-muted-foreground">
+              {clients.length} cadastrado{clients.length !== 1 ? 's' : ''}
+            </p>
           </div>
-          <div className="flex justify-center">
-            <AddClientDialog />
-          </div>
+          <AddClientDialog />
         </div>
 
         {/* Search */}
-        <div className="bg-card border border-border rounded-xl p-2.5 sm:p-3 mb-4 sm:mb-5 shadow-soft">
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por pet, tutor ou raça..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 h-10 text-sm"
-              />
-            </div>
-            {searchQuery && (
-              <Button variant="ghost" size="icon" onClick={() => setSearchQuery('')} className="h-10 w-10 shrink-0">
-                <X size={16} />
-              </Button>
-            )}
-          </div>
+        <div className="relative mb-5">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Buscar pet, tutor ou raça..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 h-10 text-sm bg-card border-border rounded-xl"
+          />
+          {searchQuery && (
+            <Button variant="ghost" size="icon" onClick={() => setSearchQuery('')} className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8">
+              <X size={14} />
+            </Button>
+          )}
         </div>
 
-        {/* Results */}
+        {/* Grid */}
         {filteredClients.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {filteredClients.map((client, index) => (
-              <div key={client.id} className="animate-slide-up" style={{ animationDelay: `${Math.min(index, 12) * 30}ms` }}>
+              <div key={client.id} className="animate-fade-in" style={{ animationDelay: `${Math.min(index, 12) * 25}ms` }}>
                 <ClientCard client={client} onClick={() => handleClientClick(client)} />
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-center py-16">
-            <div className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mx-auto mb-3">
-              <Search size={22} className="text-muted-foreground" />
-            </div>
-            <h3 className="text-base font-semibold text-foreground mb-1">Nenhum cliente encontrado</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              {searchQuery ? 'Tente ajustar a busca' : 'Comece adicionando seu primeiro cliente'}
+          <div className="text-center py-20">
+            <p className="text-sm text-muted-foreground">
+              {searchQuery ? 'Nenhum resultado encontrado' : 'Nenhum cliente cadastrado'}
             </p>
             {searchQuery && (
-              <Button variant="outline" size="sm" onClick={() => setSearchQuery('')}>Limpar busca</Button>
+              <Button variant="ghost" size="sm" onClick={() => setSearchQuery('')} className="mt-2 text-xs">
+                Limpar busca
+              </Button>
             )}
           </div>
         )}
