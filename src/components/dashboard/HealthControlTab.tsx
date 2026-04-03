@@ -411,6 +411,8 @@ export const HealthControlTab: React.FC = () => {
           </div>
         ))}
       </div>
+      </>
+      )}
     </div>
   );
 };
