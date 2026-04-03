@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { LogOut, User, Mail, Shield, Loader2, Save, KeyRound, Users, History, ClipboardList } from "lucide-react";
+import { LogOut, User, Mail, Shield, Loader2, Save, KeyRound, Users, History, ClipboardList, Download, RefreshCw } from "lucide-react";
 import EmployeeManager from "@/components/account/EmployeeManager";
 import ActionHistory from "@/components/account/ActionHistory";
 import WorkTaskManager from "@/components/account/WorkTaskManager";
