@@ -173,16 +173,33 @@ const ReelsPage: React.FC = () => {
                   className="hidden"
                   onChange={handleFileSelect}
                 />
+                <input
+                  ref={cameraFileRef}
+                  type="file"
+                  accept="image/*,video/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={handleFileSelect}
+                />
                 {!previewUrl ? (
-                  <div
-                    onClick={() => fileRef.current?.click()}
-                    className="border-2 border-dashed border-border rounded-xl p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
-                  >
-                    <div className="flex justify-center gap-3 mb-2">
-                      <Image size={24} className="text-muted-foreground" />
-                      <Video size={24} className="text-muted-foreground" />
+                  <div className="flex gap-3">
+                    <div
+                      onClick={() => cameraFileRef.current?.click()}
+                      className="flex-1 border-2 border-dashed border-border rounded-xl p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                    >
+                      <CameraIcon size={24} className="mx-auto mb-1.5 text-muted-foreground" />
+                      <p className="text-xs text-muted-foreground">Câmera</p>
                     </div>
-                    <p className="text-sm text-muted-foreground">Toque para selecionar foto ou vídeo</p>
+                    <div
+                      onClick={() => fileRef.current?.click()}
+                      className="flex-1 border-2 border-dashed border-border rounded-xl p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                    >
+                      <div className="flex justify-center gap-2 mb-1.5">
+                        <Image size={20} className="text-muted-foreground" />
+                        <Video size={20} className="text-muted-foreground" />
+                      </div>
+                      <p className="text-xs text-muted-foreground">Galeria</p>
+                    </div>
                   </div>
                 ) : (
                   <div className="relative rounded-xl overflow-hidden">
