@@ -226,7 +226,7 @@ export const HealthControlTab: React.FC = () => {
         <button
           onClick={() => { setCategory('vaccines'); setFilter('all'); }}
           className={cn(
-            'flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-sm font-medium transition-all',
+            'flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs sm:text-sm font-medium transition-all',
             category === 'vaccines'
               ? 'bg-background shadow-sm text-foreground'
               : 'text-muted-foreground hover:text-foreground'
@@ -238,7 +238,7 @@ export const HealthControlTab: React.FC = () => {
         <button
           onClick={() => { setCategory('flea'); setFilter('all'); }}
           className={cn(
-            'flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-sm font-medium transition-all',
+            'flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs sm:text-sm font-medium transition-all',
             category === 'flea'
               ? 'bg-background shadow-sm text-foreground'
               : 'text-muted-foreground hover:text-foreground'
@@ -246,6 +246,18 @@ export const HealthControlTab: React.FC = () => {
         >
           <Bug size={15} />
           Antipulgas
+        </button>
+        <button
+          onClick={() => { setCategory('feces'); setFilter('all'); }}
+          className={cn(
+            'flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs sm:text-sm font-medium transition-all',
+            category === 'feces'
+              ? 'bg-background shadow-sm text-foreground'
+              : 'text-muted-foreground hover:text-foreground'
+          )}
+        >
+          <FlaskConical size={15} />
+          Coleta
         </button>
       </div>
 
