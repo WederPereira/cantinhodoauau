@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink as RouterNavLink, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Users, FileSpreadsheet, UserCircle, Camera } from 'lucide-react';
+import { LayoutDashboard, Dog, FileSpreadsheet, UserCircle, Camera } from 'lucide-react';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Home' },
