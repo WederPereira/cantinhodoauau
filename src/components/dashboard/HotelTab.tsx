@@ -6,7 +6,7 @@ import { format, startOfDay, differenceInDays, addDays, eachDayOfInterval, isSam
 import { ptBR } from 'date-fns/locale';
 import {
   Hotel, Plus, Camera, Pill, Clock, Trash2, X, ChevronDown, ChevronUp,
-  AlertTriangle, Check, FileText, Dog, Bell, Search, Copy, Calendar as CalendarIcon,
+  Check, FileText, Dog, Bell, Search, Copy, Calendar as CalendarIcon,
   Utensils, Undo2, Eye, Tag, Package, Timer
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -69,8 +69,8 @@ const RECURRENCE_OPTIONS = [
 ];
 
 const MEAL_TYPES = [
-  { key: 'almoco', label: '🌤️ Almoço', icon: '🌤️' },
-  { key: 'janta', label: '🌙 Janta', icon: '🌙' },
+  { key: 'almoco', label: 'Almoço', icon: '🌤️' },
+  { key: 'janta', label: 'Janta', icon: '🌙' },
 ];
 
 const HotelTab: React.FC = () => {
@@ -86,6 +86,18 @@ const HotelTab: React.FC = () => {
   const [observations, setObservations] = useState('');
   const [checkInDate, setCheckInDate] = useState<Date>(new Date());
   const [expectedCheckoutDate, setExpectedCheckoutDate] = useState<Date>(addDays(new Date(), 1));
+  // Check-in step state
+  const [checkinStep, setCheckinStep] = useState<1 | 2 | 3>(1);
+  // Inline meds for check-in
+  const [checkinMeds, setCheckinMeds] = useState<Array<{ name: string; time: string; recurrence: string }>>([]);
+  const [newMedName, setNewMedName] = useState('');
+  const [newMedTime, setNewMedTime] = useState('');
+  const [newMedRecurrence, setNewMedRecurrence] = useState('once');
+  // Inline photos for check-in
+  const [checkinPhotos, setCheckinPhotos] = useState<Array<{ file: File; label: string }>>([]);
+  const checkinFileRef = useRef<HTMLInputElement>(null);
+  const checkinCameraRef = useRef<HTMLInputElement>(null);
+
   const [medName, setMedName] = useState('');
   const [medTime, setMedTime] = useState('');
   const [medRecurrence, setMedRecurrence] = useState('once');
@@ -106,41 +118,23 @@ const HotelTab: React.FC = () => {
     setLoading(true);
     try {
       const { data: staysData, error: sErr } = await supabase
-        .from('hotel_stays')
-        .select('*')
-        .eq('active', true)
-        .order('check_in', { ascending: false });
+        .from('hotel_stays').select('*').eq('active', true).order('check_in', { ascending: false });
       if (sErr) throw sErr;
 
       const { data: allData } = await supabase
-        .from('hotel_stays')
-        .select('*')
-        .order('check_in', { ascending: false });
+        .from('hotel_stays').select('*').order('check_in', { ascending: false });
 
       const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const { data: recentCO } = await supabase
-        .from('hotel_stays')
-        .select('*')
-        .eq('active', false)
-        .gte('check_out', oneDayAgo)
-        .order('check_out', { ascending: false });
+        .from('hotel_stays').select('*').eq('active', false).gte('check_out', oneDayAgo).order('check_out', { ascending: false });
 
       const activeIds = (staysData || []).map((s: any) => s.id);
       let medsData: any[] = [];
       let mealsData: any[] = [];
       if (activeIds.length > 0) {
-        const { data: md } = await supabase
-          .from('hotel_medications')
-          .select('*')
-          .in('hotel_stay_id', activeIds)
-          .order('scheduled_time', { ascending: true });
+        const { data: md } = await supabase.from('hotel_medications').select('*').in('hotel_stay_id', activeIds).order('scheduled_time', { ascending: true });
+        const { data: ml } = await supabase.from('hotel_meals').select('*').in('hotel_stay_id', activeIds).order('date', { ascending: true });
         medsData = md || [];
-
-        const { data: ml } = await supabase
-          .from('hotel_meals')
-          .select('*')
-          .in('hotel_stay_id', activeIds)
-          .order('date', { ascending: true });
         mealsData = ml || [];
       }
 
@@ -192,11 +186,7 @@ const HotelTab: React.FC = () => {
   const filteredClients = useMemo(() => {
     if (!searchFilter) return clients;
     const q = searchFilter.toLowerCase();
-    return clients.filter(c =>
-      c.name.toLowerCase().includes(q) ||
-      c.breed.toLowerCase().includes(q) ||
-      c.tutorName.toLowerCase().includes(q)
-    );
+    return clients.filter(c => c.name.toLowerCase().includes(q) || c.breed.toLowerCase().includes(q) || c.tutorName.toLowerCase().includes(q));
   }, [clients, searchFilter]);
 
   const datesWithStays = useMemo(() => {
@@ -208,11 +198,22 @@ const HotelTab: React.FC = () => {
   const staysForSelectedDate = useMemo(() => {
     if (!selectedDate) return [];
     const dayStart = startOfDay(selectedDate);
-    return allStays.filter(s => {
-      const sDate = startOfDay(new Date(s.check_in));
-      return sDate.getTime() === dayStart.getTime();
-    });
+    return allStays.filter(s => startOfDay(new Date(s.check_in)).getTime() === dayStart.getTime());
   }, [allStays, selectedDate]);
+
+  const resetCheckinForm = () => {
+    setSelectedClientId('');
+    setObservations('');
+    setSearchFilter('');
+    setCheckInDate(new Date());
+    setExpectedCheckoutDate(addDays(new Date(), 1));
+    setCheckinStep(1);
+    setCheckinMeds([]);
+    setCheckinPhotos([]);
+    setNewMedName('');
+    setNewMedTime('');
+    setNewMedRecurrence('once');
+  };
 
   const handleAddStay = async () => {
     if (!selectedClientId) { toast.error('Selecione um dog'); return; }
@@ -220,50 +221,57 @@ const HotelTab: React.FC = () => {
     if (!client) return;
     try {
       const { error } = await supabase.from('hotel_stays').insert({
-        client_id: client.id,
-        dog_name: client.name,
-        tutor_name: client.tutorName,
-        observations,
-        check_in: checkInDate.toISOString(),
-        expected_checkout: expectedCheckoutDate.toISOString(),
+        client_id: client.id, dog_name: client.name, tutor_name: client.tutorName,
+        observations, check_in: checkInDate.toISOString(), expected_checkout: expectedCheckoutDate.toISOString(),
       });
       if (error) throw error;
 
       const days = eachDayOfInterval({ start: checkInDate, end: expectedCheckoutDate });
       const { data: newStay } = await supabase
-        .from('hotel_stays')
-        .select('id')
-        .eq('client_id', client.id)
-        .eq('active', true)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+        .from('hotel_stays').select('id').eq('client_id', client.id).eq('active', true)
+        .order('created_at', { ascending: false }).limit(1).single();
 
       if (newStay) {
-        const mealRows = days.flatMap(day =>
-          MEAL_TYPES.map(mt => ({
-            hotel_stay_id: newStay.id,
-            date: format(day, 'yyyy-MM-dd'),
-            meal_type: mt.key,
-            ate: false,
-          }))
-        );
-        if (mealRows.length > 0) {
-          await supabase.from('hotel_meals').insert(mealRows);
+        // Insert meals
+        const mealRows = days.flatMap(day => MEAL_TYPES.map(mt => ({
+          hotel_stay_id: newStay.id, date: format(day, 'yyyy-MM-dd'), meal_type: mt.key, ate: false,
+        })));
+        if (mealRows.length > 0) await supabase.from('hotel_meals').insert(mealRows);
+
+        // Insert medications from check-in form
+        if (checkinMeds.length > 0) {
+          const medRows = checkinMeds.map(m => ({
+            hotel_stay_id: newStay.id, medication_name: m.name, scheduled_time: m.time, recurrence: m.recurrence,
+          }));
+          await supabase.from('hotel_medications').insert(medRows);
         }
+
+        // Upload belongings photos from check-in form
+        if (checkinPhotos.length > 0) {
+          const photoUrls: string[] = [];
+          const photoLabels: Record<string, string> = {};
+          for (const p of checkinPhotos) {
+            const ext = p.file.name.split('.').pop();
+            const path = `${newStay.id}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+            const { error: upErr } = await supabase.storage.from('hotel-belongings').upload(path, p.file);
+            if (upErr) { console.error(upErr); continue; }
+            const { data: urlData } = supabase.storage.from('hotel-belongings').getPublicUrl(path);
+            photoUrls.push(urlData.publicUrl);
+            if (p.label) photoLabels[urlData.publicUrl] = p.label;
+          }
+          if (photoUrls.length > 0) {
+            await supabase.from('hotel_stays').update({ belongings_photos: photoUrls, belonging_labels: photoLabels }).eq('id', newStay.id);
+          }
+        }
+
+        logAction('checkin', 'hotel', newStay.id, { dog_name: client.name, tutor_name: client.tutorName });
+        setExpandedStay(newStay.id);
       }
 
-      logAction('checkin', 'hotel', newStay?.id, { dog_name: client.name, tutor_name: client.tutorName });
       toast.success(`${client.name} entrou no hotel! 🏨`);
       setAddDialogOpen(false);
-      setSelectedClientId('');
-      setObservations('');
-      setSearchFilter('');
-      setCheckInDate(new Date());
-      setExpectedCheckoutDate(addDays(new Date(), 1));
+      resetCheckinForm();
       await fetchData();
-      // Auto-expand the new stay
-      if (newStay) setExpandedStay(newStay.id);
     } catch (err) {
       console.error(err);
       toast.error('Erro ao registrar entrada');
@@ -272,16 +280,10 @@ const HotelTab: React.FC = () => {
 
   const handleCheckout = async (stay: HotelStay) => {
     try {
-      const { error } = await supabase
-        .from('hotel_stays')
-        .update({ active: false, check_out: new Date().toISOString() })
-        .eq('id', stay.id);
+      const { error } = await supabase.from('hotel_stays').update({ active: false, check_out: new Date().toISOString() }).eq('id', stay.id);
       if (error) throw error;
       logAction('checkout', 'hotel', stay.id, { dog_name: stay.dog_name, tutor_name: stay.tutor_name });
-      toast.success(`${stay.dog_name} fez checkout!`, {
-        duration: 8000,
-        action: { label: 'Desfazer', onClick: () => handleUndoCheckout(stay.id) },
-      });
+      toast.success(`${stay.dog_name} fez checkout!`, { duration: 8000, action: { label: 'Desfazer', onClick: () => handleUndoCheckout(stay.id) } });
       fetchData();
     } catch { toast.error('Erro ao fazer checkout'); }
   };
@@ -297,7 +299,6 @@ const HotelTab: React.FC = () => {
 
   const handleDeleteStay = async (stayId: string) => {
     try {
-      // Delete related meals and medications first
       await supabase.from('hotel_meals').delete().eq('hotel_stay_id', stayId);
       await supabase.from('hotel_medications').delete().eq('hotel_stay_id', stayId);
       const { error } = await supabase.from('hotel_stays').delete().eq('id', stayId);
@@ -314,28 +315,23 @@ const HotelTab: React.FC = () => {
     try {
       if (existing) {
         await supabase.from('hotel_meals').update({ ate: !existing.ate }).eq('id', existing.id);
-        logAction('mark_meal', 'meal', existing.id, { meal_type: mealType, date, ate: !existing.ate, meal_id: existing.id });
+        logAction('mark_meal', 'meal', existing.id, { meal_type: mealType, date, ate: !existing.ate });
       } else {
         const { data: newMeal } = await supabase.from('hotel_meals').insert({ hotel_stay_id: stayId, date, meal_type: mealType, ate: true }).select('id').single();
-        logAction('mark_meal', 'meal', newMeal?.id, { meal_type: mealType, date, ate: true, meal_id: newMeal?.id });
+        logAction('mark_meal', 'meal', newMeal?.id, { meal_type: mealType, date, ate: true });
       }
       fetchData();
     } catch { toast.error('Erro ao atualizar refeição'); }
   };
 
   const handleUpdateObservations = async (stayId: string, obs: string) => {
-    try {
-      await supabase.from('hotel_stays').update({ observations: obs, updated_at: new Date().toISOString() }).eq('id', stayId);
-      toast.success('Observação salva');
-    } catch { toast.error('Erro ao salvar'); }
+    try { await supabase.from('hotel_stays').update({ observations: obs, updated_at: new Date().toISOString() }).eq('id', stayId); toast.success('Observação salva'); } catch { toast.error('Erro ao salvar'); }
   };
 
   const handleAddMedication = async (stayId: string) => {
     if (!medName || !medTime) { toast.error('Preencha nome e horário'); return; }
     try {
-      await supabase.from('hotel_medications').insert({
-        hotel_stay_id: stayId, medication_name: medName, scheduled_time: medTime, recurrence: medRecurrence,
-      });
+      await supabase.from('hotel_medications').insert({ hotel_stay_id: stayId, medication_name: medName, scheduled_time: medTime, recurrence: medRecurrence });
       toast.success(`Remédio ${medName} adicionado`);
       setMedName(''); setMedTime(''); setMedRecurrence('once'); setAddMedStayId(null);
       fetchData();
@@ -344,11 +340,8 @@ const HotelTab: React.FC = () => {
 
   const handleToggleMed = async (med: Medication) => {
     try {
-      await supabase.from('hotel_medications').update({
-        administered: !med.administered,
-        administered_at: !med.administered ? new Date().toISOString() : null,
-      }).eq('id', med.id);
-      if (!med.administered) logAction('administer_med', 'medication', med.id, { medication_name: med.medication_name, medication_id: med.id });
+      await supabase.from('hotel_medications').update({ administered: !med.administered, administered_at: !med.administered ? new Date().toISOString() : null }).eq('id', med.id);
+      if (!med.administered) logAction('administer_med', 'medication', med.id, { medication_name: med.medication_name });
       fetchData();
     } catch { toast.error('Erro ao atualizar'); }
   };
@@ -374,39 +367,25 @@ const HotelTab: React.FC = () => {
         newLabels[urlData.publicUrl] = labels[`file_${i}`] || '';
       }
       await supabase.from('hotel_stays').update({ belongings_photos: newPhotos, belonging_labels: newLabels }).eq('id', stayId);
-      toast.success('Foto(s) enviada(s) com etiqueta!');
+      toast.success('Foto(s) enviada(s)!');
       fetchData();
-    } catch (err) {
-      console.error(err);
-      toast.error('Erro ao enviar foto');
-    } finally {
-      setUploadingStayId(null);
-      setPendingFiles(null);
-      setUploadLabels({});
-    }
+    } catch (err) { console.error(err); toast.error('Erro ao enviar foto'); }
+    finally { setUploadingStayId(null); setPendingFiles(null); setUploadLabels({}); }
   };
 
   const handleDeletePhoto = async (stayId: string, photoUrl: string) => {
     const stay = stays.find(s => s.id === stayId);
     if (!stay) return;
     const newPhotos = stay.belongings_photos.filter(p => p !== photoUrl);
-    const newLabels = { ...stay.belonging_labels };
-    delete newLabels[photoUrl];
-    try {
-      await supabase.from('hotel_stays').update({ belongings_photos: newPhotos, belonging_labels: newLabels }).eq('id', stayId);
-      toast.success('Foto removida');
-      fetchData();
-    } catch { toast.error('Erro ao remover foto'); }
+    const newLabels = { ...stay.belonging_labels }; delete newLabels[photoUrl];
+    try { await supabase.from('hotel_stays').update({ belongings_photos: newPhotos, belonging_labels: newLabels }).eq('id', stayId); toast.success('Foto removida'); fetchData(); } catch { toast.error('Erro ao remover foto'); }
   };
 
   const handleUpdateLabel = async (stayId: string, photoUrl: string, label: string) => {
     const stay = stays.find(s => s.id === stayId);
     if (!stay) return;
     const newLabels = { ...(stay.belonging_labels || {}), [photoUrl]: label };
-    try {
-      await supabase.from('hotel_stays').update({ belonging_labels: newLabels }).eq('id', stayId);
-      setStays(prev => prev.map(s => s.id === stayId ? { ...s, belonging_labels: newLabels } : s));
-    } catch { /* silent */ }
+    try { await supabase.from('hotel_stays').update({ belonging_labels: newLabels }).eq('id', stayId); setStays(prev => prev.map(s => s.id === stayId ? { ...s, belonging_labels: newLabels } : s)); } catch { /* silent */ }
   };
 
   const copySelectedDateHotel = () => {
@@ -416,7 +395,7 @@ const HotelTab: React.FC = () => {
     const lines = staysForSelectedDate.map((s, i) => `${i + 1}. ${s.dog_name.toUpperCase()}`);
     const footer = `\`TOTAL:${staysForSelectedDate.length}\``;
     navigator.clipboard.writeText(`${header}\n\n${lines.join('\n\n')}\n\n${footer}`);
-    toast.success('Lista copiada no formato WhatsApp!');
+    toast.success('Lista copiada!');
   };
 
   const getMedsForStay = (stayId: string) => medications.filter(m => m.hotel_stay_id === stayId);
@@ -429,74 +408,95 @@ const HotelTab: React.FC = () => {
     return eachDayOfInterval({ start: startOfDay(start), end: startOfDay(end) });
   };
 
+  // ============ RENDER ============
   return (
     <>
       <Tabs defaultValue="active" className="space-y-4">
-        <TabsList className="w-full grid grid-cols-4">
-          <TabsTrigger value="active" className="gap-1 text-xs">
+        <TabsList className="w-full grid grid-cols-3 h-10">
+          <TabsTrigger value="active" className="gap-1.5 text-xs font-medium">
             <Hotel size={14} /> Hospedados
+            {stays.length > 0 && <Badge variant="secondary" className="text-[9px] px-1.5 py-0 ml-0.5">{stays.length}</Badge>}
           </TabsTrigger>
-          <TabsTrigger value="belongings" className="gap-1 text-xs">
-            <Package size={14} /> Pertences
-          </TabsTrigger>
-          <TabsTrigger value="history" className="gap-1 text-xs">
+          <TabsTrigger value="history" className="gap-1.5 text-xs font-medium">
             <CalendarIcon size={14} /> Histórico
           </TabsTrigger>
-          <TabsTrigger value="analytics" className="gap-1 text-xs">
+          <TabsTrigger value="analytics" className="gap-1.5 text-xs font-medium">
             <Timer size={14} /> Análise
           </TabsTrigger>
         </TabsList>
 
         {/* ===== ACTIVE STAYS ===== */}
         <TabsContent value="active" className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Hotel size={16} className="text-primary" />
-              <span className="text-sm font-medium text-foreground">{stays.length} dog(s) hospedado(s)</span>
-            </div>
-            <Dialog open={addDialogOpen} onOpenChange={(open) => { setAddDialogOpen(open); if (!open) { setSearchFilter(''); setSelectedClientId(''); } }}>
-              <DialogTrigger asChild>
-                <Button size="sm" className="gap-1"><Plus size={14} /> Check-in</Button>
-              </DialogTrigger>
-              <DialogContent className="max-h-[85vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Check-in Hotel</DialogTitle>
-                </DialogHeader>
+          {/* Check-in button */}
+          <Dialog open={addDialogOpen} onOpenChange={(open) => { setAddDialogOpen(open); if (!open) resetCheckinForm(); }}>
+            <DialogTrigger asChild>
+              <Button className="w-full gap-2 h-11 text-sm font-semibold rounded-xl">
+                <Plus size={16} /> Novo Check-in
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Hotel size={18} className="text-primary" /> Check-in Hotel
+                </DialogTitle>
+              </DialogHeader>
+
+              {/* Step indicators */}
+              <div className="flex items-center gap-2 mb-2">
+                {[1, 2, 3].map(step => (
+                  <button
+                    key={step}
+                    onClick={() => step === 1 || (step === 2 && selectedClientId) || (step === 3 && selectedClientId) ? setCheckinStep(step as 1|2|3) : null}
+                    className={cn(
+                      "flex-1 h-1.5 rounded-full transition-all",
+                      checkinStep >= step ? "bg-primary" : "bg-muted"
+                    )}
+                  />
+                ))}
+              </div>
+              <div className="flex justify-between text-[10px] text-muted-foreground mb-2">
+                <span className={checkinStep === 1 ? "text-primary font-semibold" : ""}>1. Dog & Datas</span>
+                <span className={checkinStep === 2 ? "text-primary font-semibold" : ""}>2. Pertences</span>
+                <span className={checkinStep === 3 ? "text-primary font-semibold" : ""}>3. Remédios</span>
+              </div>
+
+              {/* Step 1: Select dog + dates */}
+              {checkinStep === 1 && (
                 <div className="space-y-4">
                   <div className="relative">
                     <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                    <Input placeholder="Buscar por nome, raça ou tutor..." value={searchFilter} onChange={e => setSearchFilter(e.target.value)} className="pl-9" />
+                    <Input placeholder="Buscar dog..." value={searchFilter} onChange={e => setSearchFilter(e.target.value)} className="pl-9" />
                   </div>
-                  <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-1">
+                  <div className="grid grid-cols-3 gap-2 max-h-[200px] overflow-y-auto pr-1">
                     {filteredClients.map(c => (
                       <button
                         key={c.id}
                         onClick={() => setSelectedClientId(c.id)}
                         className={cn(
-                          "flex flex-col items-center p-3 rounded-xl border-2 transition-all text-center",
-                          selectedClientId === c.id ? 'border-primary bg-primary/5 ring-2 ring-primary/20' : 'border-border hover:border-primary/40 bg-card'
+                          "flex flex-col items-center p-2 rounded-xl border-2 transition-all text-center",
+                          selectedClientId === c.id ? 'border-primary bg-primary/10 ring-2 ring-primary/20' : 'border-border hover:border-primary/40 bg-card'
                         )}
                       >
                         {c.photo ? (
-                          <img src={c.photo} alt={c.name} className="w-12 h-12 rounded-full object-cover mb-1 border-2 border-border" />
+                          <img src={c.photo} alt={c.name} className="w-12 h-12 rounded-xl object-cover mb-1 border border-border" />
                         ) : (
-                          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-1"><Dog size={20} className="text-muted-foreground" /></div>
+                          <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center mb-1"><Dog size={20} className="text-muted-foreground" /></div>
                         )}
-                        <p className="font-semibold text-xs text-foreground truncate w-full">{c.name}</p>
-                        <p className="text-[10px] text-muted-foreground truncate w-full">{c.tutorName}</p>
+                        <p className="font-semibold text-[10px] text-foreground truncate w-full">{c.name}</p>
+                        <p className="text-[8px] text-muted-foreground truncate w-full">{c.breed}</p>
                       </button>
                     ))}
-                    {filteredClients.length === 0 && <p className="col-span-2 text-center text-sm text-muted-foreground py-8">Nenhum dog encontrado</p>}
+                    {filteredClients.length === 0 && <p className="col-span-3 text-center text-xs text-muted-foreground py-6">Nenhum dog encontrado</p>}
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-medium text-foreground mb-1 block">Data Entrada</label>
+                      <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Entrada</label>
                       <Popover>
                         <PopoverTrigger asChild>
-                          <Button variant="outline" className="w-full justify-start text-left text-sm h-9">
-                            <CalendarIcon size={14} className="mr-2" />
-                            {format(checkInDate, 'dd/MM/yyyy', { locale: ptBR })}
+                          <Button variant="outline" className="w-full justify-start text-left text-xs h-9">
+                            <CalendarIcon size={12} className="mr-1.5" />
+                            {format(checkInDate, 'dd/MM/yy', { locale: ptBR })}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
@@ -505,12 +505,12 @@ const HotelTab: React.FC = () => {
                       </Popover>
                     </div>
                     <div>
-                      <label className="text-xs font-medium text-foreground mb-1 block">Data Saída Prevista</label>
+                      <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Saída Prevista</label>
                       <Popover>
                         <PopoverTrigger asChild>
-                          <Button variant="outline" className="w-full justify-start text-left text-sm h-9">
-                            <CalendarIcon size={14} className="mr-2" />
-                            {format(expectedCheckoutDate, 'dd/MM/yyyy', { locale: ptBR })}
+                          <Button variant="outline" className="w-full justify-start text-left text-xs h-9">
+                            <CalendarIcon size={12} className="mr-1.5" />
+                            {format(expectedCheckoutDate, 'dd/MM/yy', { locale: ptBR })}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
@@ -519,50 +519,162 @@ const HotelTab: React.FC = () => {
                       </Popover>
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground text-center">
+                  <p className="text-[10px] text-muted-foreground text-center">
                     {differenceInDays(expectedCheckoutDate, checkInDate) + 1} dia(s) · {(differenceInDays(expectedCheckoutDate, checkInDate) + 1) * 2} refeições
                   </p>
 
-                  <div>
-                    <label className="text-sm font-medium text-foreground">Observações</label>
-                    <Textarea value={observations} onChange={e => setObservations(e.target.value)} placeholder="Alergias, comportamento, cuidados especiais..." className="mt-1" rows={2} />
+                  <Textarea value={observations} onChange={e => setObservations(e.target.value)} placeholder="Observações (alergias, comportamento...)" rows={2} className="text-xs" />
+
+                  <Button className="w-full" onClick={() => { if (!selectedClientId) { toast.error('Selecione um dog'); return; } setCheckinStep(2); }} disabled={!selectedClientId}>
+                    Próximo: Pertences →
+                  </Button>
+                </div>
+              )}
+
+              {/* Step 2: Belongings photos */}
+              {checkinStep === 2 && (
+                <div className="space-y-4">
+                  <p className="text-xs text-muted-foreground">Fotografe os pertences do dog para registro.</p>
+                  <div className="flex gap-2">
+                    <Button variant="outline" className="flex-1 gap-1.5 text-xs" onClick={() => checkinCameraRef.current?.click()}>
+                      <Camera size={14} /> Tirar Foto
+                    </Button>
+                    <Button variant="outline" className="flex-1 gap-1.5 text-xs" onClick={() => checkinFileRef.current?.click()}>
+                      <Plus size={14} /> Galeria
+                    </Button>
+                  </div>
+                  <input ref={checkinCameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => {
+                    if (e.target.files?.[0]) setCheckinPhotos(prev => [...prev, { file: e.target.files![0], label: '' }]);
+                    e.target.value = '';
+                  }} />
+                  <input ref={checkinFileRef} type="file" accept="image/*" multiple className="hidden" onChange={e => {
+                    if (e.target.files) {
+                      const newFiles = Array.from(e.target.files).map(f => ({ file: f, label: '' }));
+                      setCheckinPhotos(prev => [...prev, ...newFiles]);
+                    }
+                    e.target.value = '';
+                  }} />
+
+                  {checkinPhotos.length > 0 && (
+                    <div className="space-y-2">
+                      {checkinPhotos.map((p, i) => (
+                        <div key={i} className="flex items-center gap-2 bg-muted/30 rounded-lg p-2">
+                          <img src={URL.createObjectURL(p.file)} alt="" className="w-14 h-14 rounded-lg object-cover border border-border" />
+                          <Input
+                            placeholder="Ex: Coleira azul"
+                            value={p.label}
+                            onChange={e => setCheckinPhotos(prev => prev.map((x, j) => j === i ? { ...x, label: e.target.value } : x))}
+                            className="h-8 text-xs flex-1"
+                          />
+                          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setCheckinPhotos(prev => prev.filter((_, j) => j !== i))}>
+                            <X size={14} className="text-destructive" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {checkinPhotos.length === 0 && (
+                    <div className="text-center py-6 text-muted-foreground">
+                      <Camera size={32} className="mx-auto mb-2 opacity-30" />
+                      <p className="text-xs">Nenhum pertence adicionado</p>
+                      <p className="text-[10px]">Você pode pular esta etapa</p>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2">
+                    <Button variant="outline" className="flex-1" onClick={() => setCheckinStep(1)}>← Voltar</Button>
+                    <Button className="flex-1" onClick={() => setCheckinStep(3)}>Próximo: Remédios →</Button>
                   </div>
                 </div>
-                <DialogFooter>
-                  <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
-                  <Button onClick={handleAddStay} disabled={!selectedClientId}>Confirmar Check-in</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
+              )}
 
+              {/* Step 3: Medications */}
+              {checkinStep === 3 && (
+                <div className="space-y-4">
+                  <p className="text-xs text-muted-foreground">Adicione remédios que o dog precisa tomar durante a estadia.</p>
+
+                  {checkinMeds.length > 0 && (
+                    <div className="space-y-1.5">
+                      {checkinMeds.map((m, i) => (
+                        <div key={i} className="flex items-center gap-2 bg-muted/30 rounded-lg p-2.5 text-xs">
+                          <Pill size={14} className="text-purple-500 shrink-0" />
+                          <span className="font-medium flex-1">{m.name}</span>
+                          <span className="font-mono text-muted-foreground">{m.time}</span>
+                          <Badge variant="outline" className="text-[8px] px-1 py-0">{recurrenceLabel(m.recurrence)}</Badge>
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setCheckinMeds(prev => prev.filter((_, j) => j !== i))}>
+                            <X size={12} className="text-destructive" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="bg-muted/30 rounded-lg p-3 space-y-2">
+                    <div className="flex gap-2">
+                      <Input placeholder="Nome do remédio" value={newMedName} onChange={e => setNewMedName(e.target.value)} className="text-xs h-8 flex-1" />
+                      <Input type="time" value={newMedTime} onChange={e => setNewMedTime(e.target.value)} className="text-xs h-8 w-24" />
+                    </div>
+                    <div className="flex gap-2 items-center">
+                      <Select value={newMedRecurrence} onValueChange={setNewMedRecurrence}>
+                        <SelectTrigger className="h-8 text-xs flex-1"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {RECURRENCE_OPTIONS.map(o => <SelectItem key={o.value} value={o.value} className="text-xs">{o.label}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      <Button size="sm" className="h-8 gap-1" onClick={() => {
+                        if (!newMedName || !newMedTime) { toast.error('Preencha nome e horário'); return; }
+                        setCheckinMeds(prev => [...prev, { name: newMedName, time: newMedTime, recurrence: newMedRecurrence }]);
+                        setNewMedName(''); setNewMedTime(''); setNewMedRecurrence('once');
+                      }}>
+                        <Plus size={12} /> Adicionar
+                      </Button>
+                    </div>
+                  </div>
+
+                  {checkinMeds.length === 0 && (
+                    <div className="text-center py-4 text-muted-foreground">
+                      <Pill size={28} className="mx-auto mb-1.5 opacity-30" />
+                      <p className="text-[10px]">Nenhum remédio adicionado · Você pode pular esta etapa</p>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2">
+                    <Button variant="outline" className="flex-1" onClick={() => setCheckinStep(2)}>← Voltar</Button>
+                    <Button className="flex-1 gap-1.5" onClick={handleAddStay}>
+                      <Check size={14} /> Confirmar Check-in
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+
+          {/* Recent checkouts - undo bar */}
           {recentCheckouts.length > 0 && (
             <div className="bg-muted/30 border border-border rounded-xl p-3 space-y-2">
               <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1">
-                <Undo2 size={10} /> Checkouts recentes (desfazer)
+                <Undo2 size={10} /> Checkouts recentes
               </p>
-              <div className="space-y-1">
+              <div className="flex gap-2 overflow-x-auto pb-1">
                 {recentCheckouts.slice(0, 5).map(stay => (
-                  <div key={stay.id} className="flex items-center justify-between p-2 rounded-lg bg-card border border-border text-xs">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Dog size={12} className="text-muted-foreground shrink-0" />
-                      <span className="font-medium truncate">{stay.dog_name}</span>
-                      <span className="text-muted-foreground text-[10px]">{stay.check_out && format(new Date(stay.check_out), 'HH:mm')}</span>
-                    </div>
-                    <Button variant="outline" size="sm" className="h-6 text-[10px] gap-1 px-2" onClick={() => handleUndoCheckout(stay.id)}>
-                      <Undo2 size={10} /> Desfazer
-                    </Button>
-                  </div>
+                  <button key={stay.id} onClick={() => handleUndoCheckout(stay.id)}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-card border border-border text-xs shrink-0 hover:border-primary/50 transition-colors">
+                    <Undo2 size={10} className="text-primary" />
+                    <span className="font-medium">{stay.dog_name}</span>
+                    <span className="text-[10px] text-muted-foreground">{stay.check_out && format(new Date(stay.check_out), 'HH:mm')}</span>
+                  </button>
                 ))}
               </div>
             </div>
           )}
 
+          {/* Active stays as cards */}
           {stays.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <Hotel size={48} className="mx-auto mb-3 opacity-30" />
+            <div className="text-center py-16 text-muted-foreground">
+              <Hotel size={48} className="mx-auto mb-3 opacity-20" />
               <p className="text-sm font-medium">Nenhum dog no hotel</p>
-              <p className="text-xs mt-1">Faça um check-in para começar</p>
+              <p className="text-xs mt-1 opacity-60">Faça um check-in para começar</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -578,338 +690,247 @@ const HotelTab: React.FC = () => {
                 const mealsEaten = stayMeals.filter(m => m.ate).length;
                 const totalMealsExpected = totalDays * 2;
                 const mealPercent = totalMealsExpected > 0 ? Math.round((mealsEaten / totalMealsExpected) * 100) : 0;
+                const hasPhotos = (stay.belongings_photos?.length || 0) > 0;
 
                 return (
-                  <div key={stay.id} className="bg-card border border-border rounded-xl overflow-hidden shadow-soft">
-                    {/* Collapsed header */}
-                    <div className="flex items-center justify-between p-3 cursor-pointer" onClick={() => setExpandedStay(isExpanded ? null : stay.id)}>
-                      <div className="flex items-center gap-3 min-w-0">
+                  <div key={stay.id} className="bg-card border border-border rounded-2xl overflow-hidden shadow-soft">
+                    {/* Card header with dog photo */}
+                    <div className="cursor-pointer" onClick={() => setExpandedStay(isExpanded ? null : stay.id)}>
+                      <div className="flex gap-3 p-3">
+                        {/* Dog photo - larger */}
                         {client?.photo ? (
-                          <img src={client.photo} alt={stay.dog_name} className="w-11 h-11 rounded-full object-cover border-2 border-border shrink-0" />
+                          <img src={client.photo} alt={stay.dog_name} className="w-16 h-16 rounded-xl object-cover border-2 border-border shrink-0" />
                         ) : (
-                          <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center shrink-0"><Dog size={20} className="text-primary" /></div>
+                          <div className="w-16 h-16 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                            <Dog size={24} className="text-primary" />
+                          </div>
                         )}
-                        <div className="min-w-0">
-                          <p className="font-bold text-sm text-foreground truncate">{stay.dog_name}</p>
-                          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                            {client?.breed && <Badge variant="secondary" className="text-[8px] px-1.5 py-0">{client.breed}</Badge>}
-                            {client?.petSize && <Badge variant="outline" className="text-[8px] px-1 py-0">{client.petSize}</Badge>}
-                            <span className="text-[9px] text-muted-foreground">📅 {format(new Date(stay.check_in), 'dd/MM')} → {stay.expected_checkout ? format(new Date(stay.expected_checkout), 'dd/MM') : '?'}</span>
-                            <span className="text-[9px] font-medium text-primary">{daysElapsed}/{totalDays}d</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between">
+                            <div className="min-w-0">
+                              <p className="font-bold text-sm text-foreground truncate">{stay.dog_name}</p>
+                              <p className="text-[10px] text-muted-foreground truncate">{stay.tutor_name}</p>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                              {pendingMeds > 0 && (
+                                <Badge variant="destructive" className="text-[9px] px-1.5 py-0 animate-pulse">
+                                  <Pill size={9} className="mr-0.5" />{pendingMeds}
+                                </Badge>
+                              )}
+                              {hasPhotos && <Package size={12} className="text-muted-foreground" />}
+                              {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                            </div>
+                          </div>
+                          {/* Mini stats */}
+                          <div className="flex items-center gap-2 mt-1.5">
+                            <span className="text-[9px] text-muted-foreground">
+                              📅 {format(new Date(stay.check_in), 'dd/MM')} → {stay.expected_checkout ? format(new Date(stay.expected_checkout), 'dd/MM') : '?'}
+                            </span>
+                            <Badge variant="secondary" className="text-[8px] px-1 py-0">{daysElapsed}/{totalDays}d</Badge>
+                          </div>
+                          {/* Meal progress bar */}
+                          <div className="flex items-center gap-1.5 mt-1">
+                            <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                              <div className={cn("h-full rounded-full transition-all", mealPercent >= 70 ? "bg-green-500" : mealPercent >= 40 ? "bg-amber-500" : "bg-destructive")} style={{ width: `${mealPercent}%` }} />
+                            </div>
+                            <span className="text-[8px] text-muted-foreground font-mono">{mealsEaten}/{totalMealsExpected}</span>
                           </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        {/* Meal progress mini */}
-                        <div className="flex flex-col items-center">
-                          <div className="w-10 h-1.5 bg-muted rounded-full overflow-hidden">
-                            <div className={cn("h-full rounded-full", mealPercent >= 70 ? "bg-green-500" : mealPercent >= 40 ? "bg-amber-500" : "bg-destructive")} style={{ width: `${mealPercent}%` }} />
-                          </div>
-                          <span className="text-[8px] text-muted-foreground">{mealsEaten}/{totalMealsExpected}</span>
-                        </div>
-                        {pendingMeds > 0 && (
-                          <Badge variant="destructive" className="text-[9px] px-1.5 py-0">
-                            <Pill size={10} className="mr-0.5" />{pendingMeds}
-                          </Badge>
-                        )}
-                        {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                       </div>
                     </div>
 
+                    {/* Expanded content */}
                     {isExpanded && (
-                      <div className="border-t border-border p-3 space-y-4">
-                        {/* Extra info */}
-                        {client && (
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[10px] text-muted-foreground bg-muted/30 rounded-lg p-2.5">
-                            {client.petSize && <span>📏 Porte: <b className="text-foreground">{client.petSize}</b></span>}
-                            {client.weight && <span>⚖️ Peso: <b className="text-foreground">{client.weight}kg</b></span>}
-                            {client.gender && <span>{client.gender === 'Fêmea' ? '♀' : '♂'} Gênero: <b className="text-foreground">{client.gender}</b></span>}
-                            {client.castrated !== undefined && <span>✂️ Castrado: <b className="text-foreground">{client.castrated ? 'Sim' : 'Não'}</b></span>}
-                            {client.tutorPhone && <span>📞 Tel: <b className="text-foreground">{client.tutorPhone}</b></span>}
-                            {stay.observations && <span className="col-span-2 sm:col-span-3">📝 {stay.observations}</span>}
-                          </div>
-                        )}
+                      <div className="border-t border-border">
+                        {/* Quick action tabs inside card */}
+                        <Tabs defaultValue="meals" className="w-full">
+                          <TabsList className="w-full grid grid-cols-4 h-9 rounded-none bg-muted/30">
+                            <TabsTrigger value="meals" className="text-[10px] gap-1 h-full"><Utensils size={12} /> Refeições</TabsTrigger>
+                            <TabsTrigger value="meds" className="text-[10px] gap-1 h-full"><Pill size={12} /> Remédios</TabsTrigger>
+                            <TabsTrigger value="belongings" className="text-[10px] gap-1 h-full"><Camera size={12} /> Pertences</TabsTrigger>
+                            <TabsTrigger value="info" className="text-[10px] gap-1 h-full"><FileText size={12} /> Info</TabsTrigger>
+                          </TabsList>
 
-                        {/* Meals - Interactive Grid */}
-                        <div>
-                          <label className="text-xs font-semibold text-foreground flex items-center gap-1 mb-2">
-                            <Utensils size={14} className="text-green-600" /> Refeições
-                            <span className="text-[10px] text-muted-foreground font-normal ml-1">({mealsEaten}/{totalMealsExpected})</span>
-                            <div className="flex-1 mx-2 h-1.5 bg-muted rounded-full overflow-hidden">
-                              <div className={cn("h-full rounded-full transition-all", mealPercent >= 70 ? "bg-green-500" : mealPercent >= 40 ? "bg-amber-500" : "bg-destructive")} style={{ width: `${mealPercent}%` }} />
+                          {/* Meals tab */}
+                          <TabsContent value="meals" className="p-3 space-y-2">
+                            <div className="overflow-x-auto -mx-1 px-1">
+                              <div className="inline-grid gap-1" style={{ gridTemplateColumns: `60px repeat(${Math.min(stayDays.length, 7)}, minmax(40px, 1fr))` }}>
+                                <div />
+                                {stayDays.slice(0, 7).map((day, i) => (
+                                  <div key={i} className={cn("text-[8px] text-center font-medium px-0.5 py-0.5 rounded", isSameDay(day, new Date()) ? "bg-primary/10 text-primary font-bold" : "text-muted-foreground")}>
+                                    {format(day, 'EEE', { locale: ptBR })}<br />{format(day, 'dd/MM')}
+                                  </div>
+                                ))}
+                                {MEAL_TYPES.map(mt => (
+                                  <React.Fragment key={mt.key}>
+                                    <div className="text-[10px] text-muted-foreground flex items-center gap-0.5">{mt.icon}</div>
+                                    {stayDays.slice(0, 7).map((day, i) => {
+                                      const dateStr = format(day, 'yyyy-MM-dd');
+                                      const meal = stayMeals.find(m => m.date === dateStr && m.meal_type === mt.key);
+                                      const ate = meal?.ate || false;
+                                      return (
+                                        <button key={i} onClick={() => handleToggleMeal(stay.id, dateStr, mt.key)}
+                                          className={cn("w-full h-8 rounded-lg border-2 text-xs font-bold transition-all active:scale-95",
+                                            ate ? "bg-green-500/20 border-green-500/50 text-green-500" : "bg-card border-border text-muted-foreground hover:border-primary/40"
+                                          )}>
+                                          {ate ? '✓' : '·'}
+                                        </button>
+                                      );
+                                    })}
+                                  </React.Fragment>
+                                ))}
+                              </div>
+                              {stayDays.length > 7 && <p className="text-[8px] text-muted-foreground mt-1">Mostrando 7 de {stayDays.length} dias</p>}
                             </div>
-                            <span className="text-[10px] font-bold">{mealPercent}%</span>
-                          </label>
-                          <div className="overflow-x-auto -mx-1 px-1">
-                            <div className="inline-grid gap-1" style={{ gridTemplateColumns: `70px repeat(${Math.min(stayDays.length, 7)}, minmax(44px, 1fr))` }}>
-                              <div />
-                              {stayDays.slice(0, 7).map((day, i) => (
-                                <div key={i} className={cn("text-[9px] text-center font-medium px-1 py-0.5 rounded", isSameDay(day, new Date()) ? "bg-primary/10 text-primary font-bold" : "text-muted-foreground")}>
-                                  {format(day, 'EEE', { locale: ptBR })}<br />{format(day, 'dd/MM')}
-                                </div>
-                              ))}
-                              {MEAL_TYPES.map(mt => (
-                                <React.Fragment key={mt.key}>
-                                  <div className="text-[10px] text-muted-foreground flex items-center gap-1">{mt.icon} <span className="hidden sm:inline">{mt.label.split(' ')[1]}</span></div>
-                                  {stayDays.slice(0, 7).map((day, i) => {
-                                    const dateStr = format(day, 'yyyy-MM-dd');
-                                    const meal = stayMeals.find(m => m.date === dateStr && m.meal_type === mt.key);
-                                    const ate = meal?.ate || false;
-                                    return (
-                                      <button
-                                        key={i}
-                                        onClick={() => handleToggleMeal(stay.id, dateStr, mt.key)}
-                                        className={cn(
-                                          "w-full h-9 rounded-lg border-2 text-sm font-bold transition-all active:scale-95",
-                                          ate
-                                            ? "bg-green-100 dark:bg-green-900/40 border-green-400 dark:border-green-700 text-green-700 dark:text-green-400"
-                                            : "bg-card border-border text-muted-foreground hover:border-primary/40 hover:bg-primary/5"
-                                        )}
-                                      >
-                                        {ate ? '✓' : '·'}
+                          </TabsContent>
+
+                          {/* Meds tab */}
+                          <TabsContent value="meds" className="p-3 space-y-2">
+                            {stayMeds.length > 0 && (
+                              <div className="space-y-1.5">
+                                {stayMeds.map(med => (
+                                  <div key={med.id} className={cn("flex items-center justify-between p-2 rounded-lg border text-xs transition-all",
+                                    med.administered ? 'bg-green-500/10 border-green-500/30' : 'bg-card border-border')}>
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <button onClick={() => handleToggleMed(med)}
+                                        className={cn("w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all",
+                                          med.administered ? "bg-green-500 border-green-500 text-white" : "border-muted-foreground/30 hover:border-primary")}>
+                                        {med.administered && <Check size={10} />}
                                       </button>
-                                    );
-                                  })}
-                                </React.Fragment>
-                              ))}
-                            </div>
-                            {stayDays.length > 7 && (
-                              <p className="text-[9px] text-muted-foreground mt-1">Mostrando 7 de {stayDays.length} dias</p>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Observations */}
-                        <div>
-                          <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-1">
-                            <FileText size={12} /> Observações
-                          </label>
-                          <Textarea defaultValue={stay.observations} onBlur={e => handleUpdateObservations(stay.id, e.target.value)} placeholder="Adicione observações..." rows={2} className="text-xs" />
-                        </div>
-
-                        {/* Inline photos */}
-                        <div>
-                          <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-1">
-                            <Camera size={12} /> Pertences ({stay.belongings_photos?.length || 0})
-                          </label>
-                          <div className="flex flex-wrap gap-2">
-                            {stay.belongings_photos?.map((url, i) => (
-                              <div key={i} className="relative group">
-                                <button onClick={() => setLightboxUrl(url)} className="relative w-14 h-14 rounded-lg overflow-hidden border border-border hover:ring-2 hover:ring-primary/50 transition-all">
-                                  <img src={url} alt={stay.belonging_labels?.[url] || `Pertence ${i + 1}`} className="w-full h-full object-cover" />
-                                </button>
-                                <button
-                                  onClick={() => handleDeletePhoto(stay.id, url)}
-                                  className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-destructive text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
-                                >
-                                  <X size={10} />
-                                </button>
-                                {stay.belonging_labels?.[url] && (
-                                  <p className="text-[7px] text-center text-muted-foreground truncate w-14 mt-0.5">{stay.belonging_labels[url]}</p>
-                                )}
-                              </div>
-                            ))}
-                            <button
-                              onClick={() => { setUploadingStayId(stay.id); cameraInputRef.current?.click(); }}
-                              disabled={uploadingStayId === stay.id}
-                              className="w-14 h-14 rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors"
-                            >
-                              {uploadingStayId === stay.id ? <span className="animate-spin text-xs">⏳</span> : (
-                                <>
-                                  <Camera size={14} />
-                                  <span className="text-[7px] mt-0.5">Foto</span>
-                                </>
-                              )}
-                            </button>
-                            <button
-                              onClick={() => { setUploadingStayId(stay.id); fileInputRef.current?.click(); }}
-                              disabled={uploadingStayId === stay.id}
-                              className="w-14 h-14 rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors"
-                            >
-                              <Plus size={14} />
-                              <span className="text-[7px] mt-0.5">Arquivo</span>
-                            </button>
-                          </div>
-                          <input
-                            ref={cameraInputRef}
-                            type="file"
-                            accept="image/*"
-                            capture="environment"
-                            className="hidden"
-                            onChange={e => {
-                              if (uploadingStayId && e.target.files && e.target.files.length > 0) {
-                                const filesArr = Array.from(e.target.files);
-                                setPendingFiles({ stayId: uploadingStayId, files: filesArr });
-                                setUploadLabels({});
-                              }
-                              e.target.value = '';
-                            }}
-                          />
-                          <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            className="hidden"
-                            onChange={e => {
-                              if (uploadingStayId && e.target.files && e.target.files.length > 0) {
-                                const filesArr = Array.from(e.target.files);
-                                setPendingFiles({ stayId: uploadingStayId, files: filesArr });
-                                setUploadLabels({});
-                              }
-                              e.target.value = '';
-                            }}
-                          />
-                        </div>
-
-                        {pendingFiles && pendingFiles.stayId === stay.id && (
-                          <div className="bg-muted/50 border border-border rounded-lg p-3 space-y-2">
-                            <p className="text-xs font-medium text-foreground">Etiquetas para {pendingFiles.files.length} foto(s):</p>
-                            {pendingFiles.files.map((file, i) => (
-                              <div key={i} className="flex items-center gap-2">
-                                <img src={URL.createObjectURL(file)} alt="" className="w-10 h-10 rounded object-cover border border-border" />
-                                <Input
-                                  placeholder="Ex: Coleira azul"
-                                  value={uploadLabels[`file_${i}`] || ''}
-                                  onChange={e => setUploadLabels(prev => ({ ...prev, [`file_${i}`]: e.target.value }))}
-                                  className="h-7 text-xs flex-1"
-                                />
-                              </div>
-                            ))}
-                            <div className="flex gap-2">
-                              <Button size="sm" className="flex-1 h-7 text-xs" onClick={() => handlePhotoUploadWithLabels(pendingFiles.stayId, pendingFiles.files, uploadLabels)}>
-                                <Check size={12} className="mr-1" /> Enviar
-                              </Button>
-                              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => { setPendingFiles(null); setUploadLabels({}); setUploadingStayId(null); }}>
-                                <X size={12} />
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Medications */}
-                        <div>
-                          <label className="text-xs font-semibold text-foreground flex items-center gap-1 mb-2">
-                            <Pill size={14} className="text-purple-600" /> Remédios
-                            {stayMeds.length > 0 && stay.expected_checkout && (
-                              <span className="text-[9px] text-muted-foreground ml-1 font-normal">
-                                ({Math.max(0, differenceInDays(new Date(stay.expected_checkout), new Date()))} dias restantes)
-                              </span>
-                            )}
-                          </label>
-                          {stayMeds.length > 0 && (
-                            <div className="space-y-1.5 mb-2">
-                              {stayMeds.map(med => (
-                                <div
-                                  key={med.id}
-                                  className={cn(
-                                    "flex items-center justify-between p-2.5 rounded-lg border-2 text-xs transition-all",
-                                    med.administered ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900' : 'bg-card border-border hover:border-primary/30'
-                                  )}
-                                >
-                                  <div className="flex items-center gap-2 min-w-0">
-                                    <button
-                                      onClick={() => handleToggleMed(med)}
-                                      className={cn(
-                                        "w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all",
-                                        med.administered ? "bg-green-500 border-green-500 text-white" : "border-muted-foreground/30 hover:border-primary"
-                                      )}
-                                    >
-                                      {med.administered && <Check size={12} />}
-                                    </button>
-                                    <Clock size={12} className="text-muted-foreground shrink-0" />
-                                    <span className="font-mono">{med.scheduled_time.slice(0, 5)}</span>
-                                    <span className="font-medium truncate">{med.medication_name}</span>
-                                    <Badge variant="outline" className="text-[8px] px-1 py-0 shrink-0">{recurrenceLabel(med.recurrence)}</Badge>
+                                      <span className="font-mono text-[10px]">{med.scheduled_time.slice(0, 5)}</span>
+                                      <span className="font-medium truncate">{med.medication_name}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1 shrink-0">
+                                      {med.administered && med.administered_at && <span className="text-[8px] text-green-500">✓{format(new Date(med.administered_at), 'HH:mm')}</span>}
+                                      <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => handleDeleteMed(med.id)}>
+                                        <Trash2 size={10} className="text-destructive" />
+                                      </Button>
+                                    </div>
                                   </div>
-                                  <div className="flex items-center gap-1 shrink-0">
-                                    {med.administered && med.administered_at && (
-                                      <span className="text-[9px] text-green-600">✓ {format(new Date(med.administered_at), 'HH:mm')}</span>
-                                    )}
-                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDeleteMed(med.id)}>
-                                      <Trash2 size={12} className="text-destructive" />
-                                    </Button>
-                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {addMedStayId === stay.id ? (
+                              <div className="space-y-2 bg-muted/30 rounded-lg p-2.5">
+                                <div className="flex gap-2">
+                                  <Input placeholder="Remédio" value={medName} onChange={e => setMedName(e.target.value)} className="text-xs h-8 flex-1" />
+                                  <Input type="time" value={medTime} onChange={e => setMedTime(e.target.value)} className="text-xs h-8 w-24" />
+                                </div>
+                                <div className="flex gap-2">
+                                  <Select value={medRecurrence} onValueChange={setMedRecurrence}>
+                                    <SelectTrigger className="h-8 text-xs flex-1"><SelectValue /></SelectTrigger>
+                                    <SelectContent>{RECURRENCE_OPTIONS.map(o => <SelectItem key={o.value} value={o.value} className="text-xs">{o.label}</SelectItem>)}</SelectContent>
+                                  </Select>
+                                  <Button size="sm" className="h-8" onClick={() => handleAddMedication(stay.id)}><Check size={14} /></Button>
+                                  <Button size="sm" variant="ghost" className="h-8" onClick={() => setAddMedStayId(null)}><X size={14} /></Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <Button variant="outline" size="sm" className="gap-1 text-xs w-full" onClick={() => { setAddMedStayId(stay.id); setMedName(''); setMedTime(''); setMedRecurrence('once'); }}>
+                                <Plus size={12} /> Adicionar Remédio
+                              </Button>
+                            )}
+                          </TabsContent>
+
+                          {/* Belongings tab */}
+                          <TabsContent value="belongings" className="p-3 space-y-2">
+                            <div className="flex flex-wrap gap-2">
+                              {stay.belongings_photos?.map((url, i) => (
+                                <div key={i} className="relative group">
+                                  <button onClick={() => setLightboxUrl(url)} className="relative w-16 h-16 rounded-xl overflow-hidden border border-border hover:ring-2 hover:ring-primary/50 transition-all">
+                                    <img src={url} alt={stay.belonging_labels?.[url] || `Pertence ${i + 1}`} className="w-full h-full object-cover" />
+                                  </button>
+                                  <button onClick={() => handleDeletePhoto(stay.id, url)}
+                                    className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-destructive text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
+                                    <X size={8} />
+                                  </button>
+                                  {stay.belonging_labels?.[url] && <p className="text-[7px] text-center text-muted-foreground truncate w-16 mt-0.5">{stay.belonging_labels[url]}</p>}
                                 </div>
                               ))}
+                              <button onClick={() => { setUploadingStayId(stay.id); cameraInputRef.current?.click(); }}
+                                className="w-16 h-16 rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors">
+                                <Camera size={14} /><span className="text-[7px] mt-0.5">Foto</span>
+                              </button>
+                              <button onClick={() => { setUploadingStayId(stay.id); fileInputRef.current?.click(); }}
+                                className="w-16 h-16 rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors">
+                                <Plus size={14} /><span className="text-[7px] mt-0.5">Arquivo</span>
+                              </button>
                             </div>
-                          )}
-
-                          {addMedStayId === stay.id ? (
-                            <div className="space-y-2 bg-muted/30 rounded-lg p-2.5">
-                              <div className="flex gap-2">
-                                <Input placeholder="Nome do remédio" value={medName} onChange={e => setMedName(e.target.value)} className="text-xs h-8 flex-1" />
-                                <Input type="time" value={medTime} onChange={e => setMedTime(e.target.value)} className="text-xs h-8 w-24" />
+                            <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden"
+                              onChange={e => { if (uploadingStayId && e.target.files?.[0]) { setPendingFiles({ stayId: uploadingStayId, files: [e.target.files[0]] }); setUploadLabels({}); } e.target.value = ''; }} />
+                            <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden"
+                              onChange={e => { if (uploadingStayId && e.target.files?.length) { setPendingFiles({ stayId: uploadingStayId, files: Array.from(e.target.files) }); setUploadLabels({}); } e.target.value = ''; }} />
+                            {pendingFiles && pendingFiles.stayId === stay.id && (
+                              <div className="bg-muted/50 border border-border rounded-lg p-2 space-y-1.5">
+                                {pendingFiles.files.map((file, i) => (
+                                  <div key={i} className="flex items-center gap-2">
+                                    <img src={URL.createObjectURL(file)} alt="" className="w-10 h-10 rounded object-cover border border-border" />
+                                    <Input placeholder="Etiqueta" value={uploadLabels[`file_${i}`] || ''} onChange={e => setUploadLabels(prev => ({ ...prev, [`file_${i}`]: e.target.value }))} className="h-7 text-xs flex-1" />
+                                  </div>
+                                ))}
+                                <div className="flex gap-2">
+                                  <Button size="sm" className="flex-1 h-7 text-xs" onClick={() => handlePhotoUploadWithLabels(pendingFiles.stayId, pendingFiles.files, uploadLabels)}>Enviar</Button>
+                                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => { setPendingFiles(null); setUploadLabels({}); setUploadingStayId(null); }}><X size={12} /></Button>
+                                </div>
                               </div>
-                              <div className="flex gap-2 items-center">
-                                <Select value={medRecurrence} onValueChange={setMedRecurrence}>
-                                  <SelectTrigger className="h-8 text-xs flex-1"><SelectValue placeholder="Recorrência" /></SelectTrigger>
-                                  <SelectContent>
-                                    {RECURRENCE_OPTIONS.map(o => <SelectItem key={o.value} value={o.value} className="text-xs">{o.label}</SelectItem>)}
-                                  </SelectContent>
-                                </Select>
-                                <Button size="sm" className="h-8" onClick={() => handleAddMedication(stay.id)}><Check size={14} /></Button>
-                                <Button size="sm" variant="ghost" className="h-8" onClick={() => setAddMedStayId(null)}><X size={14} /></Button>
-                              </div>
-                            </div>
-                          ) : (
-                            <Button variant="outline" size="sm" className="gap-1 text-xs w-full" onClick={() => { setAddMedStayId(stay.id); setMedName(''); setMedTime(''); setMedRecurrence('once'); }}>
-                              <Plus size={12} /> Adicionar Remédio
-                            </Button>
-                          )}
-                        </div>
+                            )}
+                          </TabsContent>
 
-                        {/* Actions */}
-                        <div className="flex gap-2 flex-wrap">
-                          <Button variant="destructive" size="sm" className="flex-1 gap-1" onClick={() => handleCheckout(stay)}>
-                            <Check size={14} /> Checkout
+                          {/* Info tab */}
+                          <TabsContent value="info" className="p-3 space-y-3">
+                            {client && (
+                              <div className="grid grid-cols-2 gap-2 text-[10px] text-muted-foreground">
+                                {client.breed && <span>🐕 <b className="text-foreground">{client.breed}</b></span>}
+                                {client.petSize && <span>📏 <b className="text-foreground">{client.petSize}</b></span>}
+                                {client.weight && <span>⚖️ <b className="text-foreground">{client.weight}kg</b></span>}
+                                {client.gender && <span>{client.gender === 'Fêmea' ? '♀' : '♂'} <b className="text-foreground">{client.gender}</b></span>}
+                                {client.castrated !== undefined && <span>✂️ <b className="text-foreground">{client.castrated ? 'Sim' : 'Não'}</b></span>}
+                                {client.tutorPhone && <span>📞 <b className="text-foreground">{client.tutorPhone}</b></span>}
+                              </div>
+                            )}
+                            <Textarea defaultValue={stay.observations} onBlur={e => handleUpdateObservations(stay.id, e.target.value)} placeholder="Observações..." rows={2} className="text-xs" />
+                          </TabsContent>
+                        </Tabs>
+
+                        {/* Actions bar */}
+                        <div className="flex gap-2 p-3 border-t border-border bg-muted/20">
+                          <Button variant="destructive" size="sm" className="flex-1 gap-1 text-xs" onClick={() => handleCheckout(stay)}>
+                            <Check size={12} /> Checkout
                           </Button>
                           <Popover>
                             <PopoverTrigger asChild>
                               <Button variant="outline" size="sm" className="gap-1 text-xs">
-                                <CalendarIcon size={14} /> Prolongar
+                                <CalendarIcon size={12} /> Prolongar
                               </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar
-                                mode="single"
-                                selected={stay.expected_checkout ? new Date(stay.expected_checkout) : undefined}
+                              <Calendar mode="single" selected={stay.expected_checkout ? new Date(stay.expected_checkout) : undefined}
                                 onSelect={async (d) => {
                                   if (!d) return;
                                   try {
-                                    // Extend expected checkout
                                     await supabase.from('hotel_stays').update({ expected_checkout: d.toISOString() }).eq('id', stay.id);
-                                    // Add meal rows for new days
                                     const oldEnd = stay.expected_checkout ? startOfDay(new Date(stay.expected_checkout)) : startOfDay(new Date());
                                     const newEnd = startOfDay(d);
                                     if (newEnd > oldEnd) {
                                       const newDays = eachDayOfInterval({ start: addDays(oldEnd, 1), end: newEnd });
-                                      const newMealRows = newDays.flatMap(day =>
-                                        MEAL_TYPES.map(mt => ({ hotel_stay_id: stay.id, date: format(day, 'yyyy-MM-dd'), meal_type: mt.key, ate: false }))
-                                      );
+                                      const newMealRows = newDays.flatMap(day => MEAL_TYPES.map(mt => ({ hotel_stay_id: stay.id, date: format(day, 'yyyy-MM-dd'), meal_type: mt.key, ate: false })));
                                       if (newMealRows.length > 0) await supabase.from('hotel_meals').insert(newMealRows);
                                     }
-                                    toast.success(`Estadia de ${stay.dog_name} prolongada até ${format(d, 'dd/MM')}!`);
+                                    toast.success(`Prolongado até ${format(d, 'dd/MM')}!`);
                                     fetchData();
                                   } catch { toast.error('Erro ao prolongar'); }
                                 }}
-                                locale={ptBR}
-                                className="pointer-events-auto"
-                              />
+                                locale={ptBR} className="pointer-events-auto" />
                             </PopoverContent>
                           </Popover>
                           {deleteConfirmId === stay.id ? (
                             <div className="flex gap-1">
-                              <Button variant="destructive" size="sm" className="gap-1 text-[10px]" onClick={() => handleDeleteStay(stay.id)}>
-                                Confirmar
-                              </Button>
-                              <Button variant="outline" size="sm" className="text-[10px]" onClick={() => setDeleteConfirmId(null)}>
-                                Cancelar
-                              </Button>
+                              <Button variant="destructive" size="sm" className="text-[10px]" onClick={() => handleDeleteStay(stay.id)}>Confirmar</Button>
+                              <Button variant="outline" size="sm" className="text-[10px]" onClick={() => setDeleteConfirmId(null)}>Não</Button>
                             </div>
                           ) : (
-                            <Button variant="outline" size="sm" className="gap-1 text-destructive hover:bg-destructive/10" onClick={() => setDeleteConfirmId(stay.id)}>
-                              <Trash2 size={14} /> Apagar
+                            <Button variant="outline" size="sm" className="gap-1 text-destructive hover:bg-destructive/10 text-xs" onClick={() => setDeleteConfirmId(stay.id)}>
+                              <Trash2 size={12} />
                             </Button>
                           )}
                         </div>
@@ -922,81 +943,17 @@ const HotelTab: React.FC = () => {
           )}
         </TabsContent>
 
-        {/* ===== BELONGINGS TAB ===== */}
-        <TabsContent value="belongings" className="space-y-4">
-          {stays.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <Package size={48} className="mx-auto mb-3 opacity-30" />
-              <p className="text-sm font-medium">Nenhum dog hospedado</p>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {stays.map(stay => {
-                const photos = stay.belongings_photos || [];
-                const labels = stay.belonging_labels || {};
-                if (photos.length === 0) return null;
-                return (
-                  <div key={stay.id} className="bg-card border border-border rounded-xl p-4 shadow-soft space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Dog size={16} className="text-primary" />
-                      <h4 className="text-sm font-bold text-foreground">{stay.dog_name}</h4>
-                      <Badge variant="secondary" className="text-[10px]">{photos.length} item(ns)</Badge>
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      {photos.map((url, i) => (
-                        <div key={i} className="space-y-1.5 group">
-                          <button onClick={() => setLightboxUrl(url)} className="relative w-full aspect-square rounded-xl overflow-hidden border-2 border-border hover:border-primary/50 transition-all shadow-sm hover:shadow-md">
-                            <img src={url} alt={labels[url] || `Pertence ${i + 1}`} className="w-full h-full object-cover" />
-                            <div className="absolute inset-0 bg-black/0 hover:bg-black/20 transition-colors flex items-center justify-center">
-                              <Eye size={24} className="text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
-                            </div>
-                          </button>
-                          <div className="flex items-center gap-1">
-                            <Tag size={10} className="text-muted-foreground shrink-0" />
-                            <Input
-                              placeholder="Ex: Coleira azul"
-                              value={labels[url] || ''}
-                              onChange={e => setStays(prev => prev.map(s => s.id === stay.id ? { ...s, belonging_labels: { ...s.belonging_labels, [url]: e.target.value } } : s))}
-                              onBlur={e => handleUpdateLabel(stay.id, url, e.target.value)}
-                              className="h-6 text-[10px] px-1.5"
-                            />
-                            <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => handleDeletePhoto(stay.id, url)}>
-                              <Trash2 size={10} className="text-destructive" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-              {stays.every(s => !s.belongings_photos?.length) && (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Camera size={48} className="mx-auto mb-3 opacity-30" />
-                  <p className="text-sm font-medium">Nenhum pertence registrado</p>
-                  <p className="text-xs mt-1">Adicione fotos na aba Hospedados</p>
-                </div>
-              )}
-            </div>
-          )}
-        </TabsContent>
-
         {/* ===== HISTORY TAB ===== */}
         <TabsContent value="history" className="space-y-4">
-          <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
+          <div className="bg-card border border-border rounded-2xl p-4 shadow-soft">
             <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-              <CalendarIcon size={16} className="text-primary" />
-              Calendário de Estadias
+              <CalendarIcon size={16} className="text-primary" /> Calendário de Estadias
             </h3>
             <div className="flex flex-col lg:flex-row gap-4">
               <div className="flex-shrink-0">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={setSelectedDate}
+                <Calendar mode="single" selected={selectedDate} onSelect={setSelectedDate}
                   modifiers={{ hasStay: (date) => datesWithStays.has(format(date, 'yyyy-MM-dd')) }}
-                  modifiersStyles={{ hasStay: { backgroundColor: 'hsl(24, 95%, 60%)', color: 'white', borderRadius: '50%' } }}
-                />
+                  modifiersStyles={{ hasStay: { backgroundColor: 'hsl(24, 95%, 60%)', color: 'white', borderRadius: '50%' } }} />
               </div>
               <div className="flex-1 min-w-0">
                 {selectedDate ? (
@@ -1004,50 +961,48 @@ const HotelTab: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <h4 className="text-sm font-semibold text-foreground">{format(selectedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</h4>
                       {staysForSelectedDate.length > 0 && (
-                        <Button variant="outline" size="sm" className="gap-1.5" onClick={copySelectedDateHotel}>
-                          <Copy size={14} /> Copiar
+                        <Button variant="outline" size="sm" className="gap-1" onClick={copySelectedDateHotel}>
+                          <Copy size={12} /> Copiar
                         </Button>
                       )}
                     </div>
                     {staysForSelectedDate.length === 0 ? (
-                      <p className="text-sm text-muted-foreground py-4 text-center">Nenhuma estadia neste dia</p>
+                      <p className="text-xs text-muted-foreground py-4 text-center">Nenhuma estadia neste dia</p>
                     ) : (
                       <>
                         <Badge variant="secondary" className="text-xs">{staysForSelectedDate.length} estadia(s)</Badge>
                         <div className="space-y-2">
-                          {staysForSelectedDate.map((s, i) => (
-                            <div key={s.id} className="flex items-center gap-3 p-2 rounded-lg border border-border bg-muted/30">
-                              <span className="text-xs font-mono text-muted-foreground w-5 text-right">{i + 1}.</span>
-                              <div className="min-w-0 flex-1">
-                                <p className="font-semibold text-xs text-foreground truncate">{s.dog_name}</p>
-                                <p className="text-[10px] text-muted-foreground truncate">{s.tutor_name}</p>
-                                {s.check_out && <p className="text-[10px] text-muted-foreground">Checkout: {format(new Date(s.check_out), 'dd/MM HH:mm')}</p>}
-                              </div>
-                              <Badge variant={s.active ? 'default' : 'secondary'} className="text-[9px]">
-                                {s.active ? 'Ativo' : 'Checkout'}
-                              </Badge>
-                              {deleteConfirmId === s.id ? (
-                                <div className="flex gap-1">
-                                  <Button variant="destructive" size="icon" className="h-7 w-7" onClick={() => handleDeleteStay(s.id)}>
-                                    <Check size={12} />
-                                  </Button>
-                                  <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => setDeleteConfirmId(null)}>
-                                    <X size={12} />
-                                  </Button>
+                          {staysForSelectedDate.map((s, i) => {
+                            const sc = clients.find(c => c.id === s.client_id);
+                            return (
+                              <div key={s.id} className="flex items-center gap-3 p-2 rounded-xl border border-border bg-muted/30">
+                                {sc?.photo ? (
+                                  <img src={sc.photo} alt={s.dog_name} className="w-10 h-10 rounded-lg object-cover border border-border" />
+                                ) : (
+                                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center"><Dog size={16} className="text-primary" /></div>
+                                )}
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-semibold text-xs text-foreground truncate">{s.dog_name}</p>
+                                  <p className="text-[10px] text-muted-foreground truncate">{s.tutor_name}</p>
                                 </div>
-                              ) : (
-                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:bg-destructive/10" onClick={() => setDeleteConfirmId(s.id)}>
-                                  <Trash2 size={14} />
-                                </Button>
-                              )}
-                            </div>
-                          ))}
+                                <Badge variant={s.active ? 'default' : 'secondary'} className="text-[9px]">{s.active ? 'Ativo' : 'Checkout'}</Badge>
+                                {deleteConfirmId === s.id ? (
+                                  <div className="flex gap-1">
+                                    <Button variant="destructive" size="icon" className="h-7 w-7" onClick={() => handleDeleteStay(s.id)}><Check size={12} /></Button>
+                                    <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => setDeleteConfirmId(null)}><X size={12} /></Button>
+                                  </div>
+                                ) : (
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:bg-destructive/10" onClick={() => setDeleteConfirmId(s.id)}><Trash2 size={12} /></Button>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       </>
                     )}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground py-8 text-center">Selecione uma data para ver as estadias</p>
+                  <p className="text-xs text-muted-foreground py-8 text-center">Selecione uma data para ver as estadias</p>
                 )}
               </div>
             </div>
