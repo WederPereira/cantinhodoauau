@@ -5,7 +5,7 @@ import { LayoutDashboard, Users, FileSpreadsheet, UserCircle, Camera } from 'luc
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Home' },
-  { to: '/clients', icon: Users, label: 'Clientes' },
+  { to: '/clients', icon: Dog, label: 'Dogs' },
   { to: '/reels', icon: Camera, label: 'Mural' },
   { to: '/spreadsheet', icon: FileSpreadsheet, label: 'Planilha' },
   { to: '/account', icon: UserCircle, label: 'Conta' },
