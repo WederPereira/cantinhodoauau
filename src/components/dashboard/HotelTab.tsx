@@ -412,10 +412,13 @@ const HotelTab: React.FC = () => {
   return (
     <>
       <Tabs defaultValue="active" className="space-y-4">
-        <TabsList className="w-full grid grid-cols-3 h-10">
+        <TabsList className="w-full grid grid-cols-4 h-10">
           <TabsTrigger value="active" className="gap-1.5 text-xs font-medium">
             <Hotel size={14} /> Hospedados
             {stays.length > 0 && <Badge variant="secondary" className="text-[9px] px-1.5 py-0 ml-0.5">{stays.length}</Badge>}
+          </TabsTrigger>
+          <TabsTrigger value="belongings-all" className="gap-1.5 text-xs font-medium">
+            <Package size={14} /> Pertences
           </TabsTrigger>
           <TabsTrigger value="history" className="gap-1.5 text-xs font-medium">
             <CalendarIcon size={14} /> Histórico
