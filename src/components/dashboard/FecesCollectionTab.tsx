@@ -2,15 +2,14 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useClients } from '@/context/ClientContext';
 import { useAuth } from '@/hooks/useAuth';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { CheckCircle2, Circle, Search, ChevronLeft, ChevronRight, ClipboardList, FlaskConical } from 'lucide-react';
+import { CheckCircle2, Circle, Search, ChevronLeft, ChevronRight, Calendar, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, startOfMonth, addMonths, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 interface FecesCollection {
   id: string;
@@ -30,6 +29,7 @@ const FecesCollectionTab: React.FC = () => {
   const [currentMonth, setCurrentMonth] = useState(() => startOfMonth(new Date()));
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [viewTab, setViewTab] = useState<'pending' | 'collected'>('pending');
 
   const monthKey = format(currentMonth, 'yyyy-MM');
   const monthLabel = format(currentMonth, "MMMM 'de' yyyy", { locale: ptBR });
@@ -65,15 +65,21 @@ const FecesCollectionTab: React.FC = () => {
       const s = search.toLowerCase();
       list = list.filter(c => c.name.toLowerCase().includes(s) || c.tutorName.toLowerCase().includes(s));
     }
-    // Sort: not collected first
-    list.sort((a, b) => {
-      const aCollected = collectedMap.get(a.id)?.collected ?? false;
-      const bCollected = collectedMap.get(b.id)?.collected ?? false;
-      if (aCollected === bCollected) return a.name.localeCompare(b.name);
-      return aCollected ? 1 : -1;
-    });
+
+    if (viewTab === 'collected') {
+      list = list.filter(c => collectedMap.get(c.id)?.collected);
+      list.sort((a, b) => {
+        const aDate = collectedMap.get(a.id)?.collected_at || '';
+        const bDate = collectedMap.get(b.id)?.collected_at || '';
+        return bDate.localeCompare(aDate);
+      });
+    } else {
+      list = list.filter(c => !collectedMap.get(c.id)?.collected);
+      list.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
     return list;
-  }, [clients, search, collectedMap]);
+  }, [clients, search, collectedMap, viewTab]);
 
   const collectedCount = useMemo(() => {
     return clients.filter(c => collectedMap.get(c.id)?.collected).length;
@@ -138,6 +144,18 @@ const FecesCollectionTab: React.FC = () => {
         </div>
       </div>
 
+      {/* Tabs: Pendentes / Coletados */}
+      <Tabs value={viewTab} onValueChange={(v) => setViewTab(v as 'pending' | 'collected')} className="w-full">
+        <TabsList className="w-full grid grid-cols-2">
+          <TabsTrigger value="pending" className="text-xs gap-1">
+            <Circle size={12} /> Pendentes ({clients.length - collectedCount})
+          </TabsTrigger>
+          <TabsTrigger value="collected" className="text-xs gap-1">
+            <CheckCircle2 size={12} /> Coletados ({collectedCount})
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+
       {/* Search */}
       <div className="relative">
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -151,6 +169,11 @@ const FecesCollectionTab: React.FC = () => {
 
       {/* List */}
       <div className="space-y-1.5 max-h-[50vh] overflow-y-auto pr-0.5">
+        {filteredClients.length === 0 && (
+          <div className="text-center py-8 text-muted-foreground text-sm">
+            {viewTab === 'collected' ? 'Nenhuma coleta registrada' : 'Todos coletados! 🎉'}
+          </div>
+        )}
         {filteredClients.map(client => {
           const record = collectedMap.get(client.id);
           const isCollected = record?.collected ?? false;
@@ -178,12 +201,23 @@ const FecesCollectionTab: React.FC = () => {
                 <p className="text-[11px] text-muted-foreground truncate">
                   {client.breed || 'SRD'} • {client.tutorName}
                 </p>
+                {isCollected && record && (
+                  <div className="flex items-center gap-2 mt-1">
+                    {record.collected_at && (
+                      <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400">
+                        <Calendar size={10} />
+                        {format(new Date(record.collected_at), "dd/MM/yyyy 'às' HH:mm")}
+                      </span>
+                    )}
+                    {record.collected_by_name && (
+                      <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+                        <User size={10} />
+                        {record.collected_by_name}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
-              {isCollected && record?.collected_by_name && (
-                <span className="text-[10px] text-muted-foreground shrink-0">
-                  por {record.collected_by_name.split(' ')[0]}
-                </span>
-              )}
             </div>
           );
         })}
