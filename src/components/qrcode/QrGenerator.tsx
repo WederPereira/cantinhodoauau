@@ -122,11 +122,19 @@ const QrGenerator: React.FC = () => {
         <Card className="mt-4">
           <CardContent className="flex flex-col items-center p-6 gap-4">
             <div ref={qrRef}>
-              <QRCodeSVG
-                value={`Tutor: ${generated.tutor}\nDog: ${generated.dog}\nRaça: ${generated.breed || 'N/A'}`}
-                size={200}
-                level="H"
-              />
+              <div className="relative">
+                <QRCodeCanvas
+                  value={`Tutor: ${generated.tutor}\nDog: ${generated.dog}\nRaça: ${generated.breed || 'N/A'}`}
+                  size={200}
+                  level="H"
+                  includeMargin={false}
+                />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="bg-white rounded-full p-1">
+                    <img src={logoSrc} alt="Logo" className="w-10 h-10 rounded-full" />
+                  </div>
+                </div>
+              </div>
             </div>
             <div className="text-center text-sm space-y-0.5">
               <p><strong>Tutor:</strong> {generated.tutor}</p>
