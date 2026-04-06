@@ -36,40 +36,59 @@ const QrGenerator: React.FC = () => {
   };
 
   const handleDownload = () => {
-    if (!qrRef.current) return;
-    const svg = qrRef.current.querySelector('svg');
-    if (!svg) return;
+    if (!qrRef.current || !generated) return;
+    const sourceCanvas = qrRef.current.querySelector('canvas');
+    if (!sourceCanvas) return;
 
+    const padding = 40;
+    const textHeight = 80;
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-    if (!ctx || !generated) return;
+    if (!ctx) return;
 
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const img = new Image();
-    img.onload = () => {
-      const padding = 40;
-      const textHeight = 80;
-      canvas.width = img.width + padding * 2;
-      canvas.height = img.height + padding * 2 + textHeight;
+    canvas.width = sourceCanvas.width + padding * 2;
+    canvas.height = sourceCanvas.height + padding * 2 + textHeight;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(sourceCanvas, padding, padding);
+
+    // Draw logo on center of QR
+    const logoImg = new Image();
+    logoImg.crossOrigin = 'anonymous';
+    logoImg.onload = () => {
+      const logoSize = 50;
+      const lx = padding + sourceCanvas.width / 2 - logoSize / 2;
+      const ly = padding + sourceCanvas.height / 2 - logoSize / 2;
       ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, padding, padding);
+      ctx.beginPath();
+      ctx.arc(lx + logoSize / 2, ly + logoSize / 2, logoSize / 2 + 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(lx + logoSize / 2, ly + logoSize / 2, logoSize / 2, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.drawImage(logoImg, lx, ly, logoSize, logoSize);
+      ctx.restore();
+      finishDownload();
+    };
+    logoImg.onerror = () => finishDownload();
+    logoImg.src = logoSrc;
 
-      ctx.fillStyle = '#000000';
-      ctx.font = 'bold 14px sans-serif';
-      ctx.textAlign = 'center';
-      const y = img.height + padding + 20;
-      ctx.fillText(`Tutor: ${generated.tutor}`, canvas.width / 2, y);
-      ctx.fillText(`Dog: ${generated.dog}`, canvas.width / 2, y + 22);
-      ctx.fillText(`Raça: ${generated.breed || 'N/A'}`, canvas.width / 2, y + 44);
+    function finishDownload() {
+      ctx!.fillStyle = '#000000';
+      ctx!.font = 'bold 14px sans-serif';
+      ctx!.textAlign = 'center';
+      const y = sourceCanvas!.height + padding + 20;
+      ctx!.fillText(`Tutor: ${generated!.tutor}`, canvas.width / 2, y);
+      ctx!.fillText(`Dog: ${generated!.dog}`, canvas.width / 2, y + 22);
+      ctx!.fillText(`Raça: ${generated!.breed || 'N/A'}`, canvas.width / 2, y + 44);
 
       const link = document.createElement('a');
-      link.download = `qr_${generated.dog}_${generated.tutor}.png`;
+      link.download = `qr_${generated!.dog}_${generated!.tutor}.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
       toast.success('QR Code baixado!');
-    };
-    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+    }
   };
 
   return (
