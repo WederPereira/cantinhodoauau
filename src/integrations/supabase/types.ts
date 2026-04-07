@@ -55,6 +55,7 @@ export type Database = {
           created_at: string
           entry_date: string
           gender: string | null
+          health_restrictions: string | null
           id: string
           name: string
           pet_size: string | null
@@ -76,6 +77,7 @@ export type Database = {
           created_at?: string
           entry_date?: string
           gender?: string | null
+          health_restrictions?: string | null
           id?: string
           name: string
           pet_size?: string | null
@@ -97,6 +99,7 @@ export type Database = {
           created_at?: string
           entry_date?: string
           gender?: string | null
+          health_restrictions?: string | null
           id?: string
           name?: string
           pet_size?: string | null

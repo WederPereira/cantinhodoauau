@@ -4,7 +4,7 @@ import { Client, VaccineType, VACCINE_TYPE_LABELS, getVaccineExpiryDate, getFlea
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Syringe, Bug, MessageCircle, Search, CheckCircle2, AlertTriangle, XCircle, Filter, FlaskConical } from 'lucide-react';
+import { Syringe, Bug, MessageCircle, Search, CheckCircle2, AlertTriangle, XCircle, Filter, FlaskConical, ShieldAlert, Save } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -13,8 +13,9 @@ import { ptBR } from 'date-fns/locale';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import FecesCollectionTab from './FecesCollectionTab';
+import { Textarea } from '@/components/ui/textarea';
 
-type HealthCategory = 'vaccines' | 'flea' | 'feces';
+type HealthCategory = 'vaccines' | 'flea' | 'feces' | 'restrictions';
 type HealthStatus = 'ok' | 'expiring' | 'expired' | 'none';
 
 interface VaccineStatus {
@@ -110,8 +111,118 @@ const openWhatsApp = (phone: string, message: string) => {
   window.open(url, '_blank');
 };
 
-export const HealthControlTab: React.FC = () => {
-  const { clients, addVaccineRecord, addFleaRecord } = useClients();
+const RestrictionsSection: React.FC<{ clients: Client[]; updateClient: (id: string, updates: Partial<Client>) => Promise<void> }> = ({ clients, updateClient }) => {
+  const [search, setSearch] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
+
+  const clientsWithRestrictions = useMemo(() => {
+    return clients.filter(c => c.healthRestrictions && c.healthRestrictions.trim().length > 0);
+  }, [clients]);
+
+  const allClients = useMemo(() => {
+    let list = clients;
+    if (search) {
+      const s = search.toLowerCase();
+      list = list.filter(c => c.name.toLowerCase().includes(s) || c.tutorName.toLowerCase().includes(s));
+    }
+    // Show clients with restrictions first
+    return list.sort((a, b) => {
+      const aHas = a.healthRestrictions && a.healthRestrictions.trim().length > 0 ? 0 : 1;
+      const bHas = b.healthRestrictions && b.healthRestrictions.trim().length > 0 ? 0 : 1;
+      return aHas - bHas;
+    });
+  }, [clients, search]);
+
+  const handleSave = async (clientId: string) => {
+    await updateClient(clientId, { healthRestrictions: editValue } as any);
+    toast.success('Restrição salva com sucesso!');
+    setEditingId(null);
+  };
+
+  return (
+    <div className="space-y-3">
+      {/* Summary */}
+      <div className="bg-[hsl(var(--status-warning-bg))] border border-[hsl(var(--status-warning)/0.2)] rounded-xl p-3 text-center">
+        <ShieldAlert size={20} className="text-[hsl(var(--status-warning))] mx-auto mb-1" />
+        <p className="text-xl font-bold text-[hsl(var(--status-warning))]">{clientsWithRestrictions.length}</p>
+        <p className="text-xs text-muted-foreground">Dogs com restrições</p>
+      </div>
+
+      {/* Search */}
+      <div className="relative">
+        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="Buscar pet ou tutor..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="pl-9 h-10 text-sm"
+        />
+      </div>
+
+      {/* List */}
+      <div className="space-y-3 max-h-[55vh] overflow-y-auto pr-0.5">
+        {allClients.map(client => {
+          const hasRestriction = client.healthRestrictions && client.healthRestrictions.trim().length > 0;
+          const isEditing = editingId === client.id;
+
+          return (
+            <div key={client.id} className={cn(
+              "bg-card border rounded-xl p-3 space-y-2 shadow-soft",
+              hasRestriction ? "border-[hsl(var(--status-warning)/0.3)]" : "border-border"
+            )}>
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold text-sm text-foreground truncate">{client.name}</p>
+                    {hasRestriction && (
+                      <Badge variant="outline" className="text-[10px] text-[hsl(var(--status-warning))] border-[hsl(var(--status-warning)/0.3)] bg-[hsl(var(--status-warning-bg))]">
+                        <ShieldAlert size={10} className="mr-0.5" /> Restrição
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground truncate">{client.tutorName} • {client.breed || 'SRD'}</p>
+                </div>
+                <Button
+                  size="sm"
+                  variant={isEditing ? "default" : "outline"}
+                  className="shrink-0 h-8 px-2.5 text-xs gap-1"
+                  onClick={() => {
+                    if (isEditing) {
+                      handleSave(client.id);
+                    } else {
+                      setEditingId(client.id);
+                      setEditValue(client.healthRestrictions || '');
+                    }
+                  }}
+                >
+                  {isEditing ? <><Save size={12} /> Salvar</> : 'Editar'}
+                </Button>
+              </div>
+
+              {isEditing ? (
+                <Textarea
+                  value={editValue}
+                  onChange={e => setEditValue(e.target.value)}
+                  placeholder="Ex: Alergia a frango, não pode comer ração com grãos, epilepsia..."
+                  className="text-sm min-h-[80px]"
+                  autoFocus
+                />
+              ) : hasRestriction ? (
+                <p className="text-sm text-[hsl(var(--status-warning))] bg-[hsl(var(--status-warning-bg))] rounded-lg p-2.5">
+                  <ShieldAlert size={13} className="inline mr-1.5 -mt-0.5" />
+                  {client.healthRestrictions}
+                </p>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+  const { clients, addVaccineRecord, addFleaRecord, updateClient } = useClients();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'expired' | 'expiring' | 'ok'>('all');
   const [category, setCategory] = useState<HealthCategory>('vaccines');
@@ -259,10 +370,24 @@ export const HealthControlTab: React.FC = () => {
           <FlaskConical size={15} />
           Coleta
         </button>
+        <button
+          onClick={() => { setCategory('restrictions'); setFilter('all'); }}
+          className={cn(
+            'flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs sm:text-sm font-medium transition-all',
+            category === 'restrictions'
+              ? 'bg-background shadow-sm text-foreground'
+              : 'text-muted-foreground hover:text-foreground'
+          )}
+        >
+          <ShieldAlert size={15} />
+          Restrições
+        </button>
       </div>
 
       {category === 'feces' ? (
         <FecesCollectionTab />
+      ) : category === 'restrictions' ? (
+        <RestrictionsSection clients={clients} updateClient={updateClient} />
       ) : (
       <>
       {/* Stats */}
