@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { format, startOfMonth, addMonths, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+
 
 interface FecesCollection {
   id: string;
