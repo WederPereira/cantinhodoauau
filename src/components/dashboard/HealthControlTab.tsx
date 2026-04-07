@@ -4,7 +4,7 @@ import { Client, VaccineType, VACCINE_TYPE_LABELS, getVaccineExpiryDate, getFlea
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Syringe, Bug, MessageCircle, Search, CheckCircle2, AlertTriangle, XCircle, Filter, FlaskConical, ShieldAlert } from 'lucide-react';
+import { Syringe, Bug, MessageCircle, Search, CheckCircle2, AlertTriangle, XCircle, Filter, FlaskConical } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -14,7 +14,7 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 import FecesCollectionTab from './FecesCollectionTab';
 
-type HealthCategory = 'vaccines' | 'flea' | 'feces' | 'restrictions';
+type HealthCategory = 'vaccines' | 'flea' | 'feces';
 type HealthStatus = 'ok' | 'expiring' | 'expired' | 'none';
 
 interface VaccineStatus {
@@ -108,72 +108,6 @@ const openWhatsApp = (phone: string, message: string) => {
   const fullPhone = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
   const url = `https://wa.me/${fullPhone}?text=${encodeURIComponent(message)}`;
   window.open(url, '_blank');
-};
-
-const RestrictionsSection: React.FC<{ clients: Client[] }> = ({ clients }) => {
-  const [search, setSearch] = useState('');
-  
-  const restrictedClients = useMemo(() => {
-    return clients
-      .filter(c => c.healthRestrictions && c.healthRestrictions.trim().length > 0)
-      .filter(c => {
-        if (!search) return true;
-        const s = search.toLowerCase();
-        return c.name.toLowerCase().includes(s) || c.tutorName.toLowerCase().includes(s) || (c.healthRestrictions || '').toLowerCase().includes(s);
-      })
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [clients, search]);
-
-  return (
-    <div className="space-y-3">
-      <div className="bg-[hsl(var(--status-warning-bg))] border border-[hsl(var(--status-warning)/0.2)] rounded-xl p-3 text-center">
-        <ShieldAlert size={20} className="text-[hsl(var(--status-warning))] mx-auto mb-1" />
-        <p className="text-xl font-bold text-[hsl(var(--status-warning))]">{clients.filter(c => c.healthRestrictions && c.healthRestrictions.trim().length > 0).length}</p>
-        <p className="text-xs text-muted-foreground">Dogs com restrições</p>
-      </div>
-
-      <div className="relative">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="Buscar por pet, tutor ou restrição..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="pl-9 h-10 text-sm"
-        />
-      </div>
-
-      <div className="space-y-3 max-h-[55vh] overflow-y-auto pr-0.5">
-        {restrictedClients.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-8">
-            {search ? 'Nenhum resultado encontrado.' : 'Nenhum dog com restrições registradas.'}
-          </p>
-        )}
-        {restrictedClients.map(client => (
-          <div key={client.id} className="bg-card border border-border rounded-xl p-3 sm:p-4 space-y-2 shadow-soft">
-            <div className="flex items-center gap-3">
-              {client.photo ? (
-                <img src={client.photo} alt={client.name} className="w-10 h-10 rounded-full object-cover" />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground text-sm font-medium">
-                  {client.name.charAt(0)}
-                </div>
-              )}
-              <div className="min-w-0">
-                <p className="font-semibold text-sm text-foreground truncate">{client.name}</p>
-                <p className="text-[11px] text-muted-foreground truncate">{client.tutorName} • {client.breed || 'SRD'}</p>
-              </div>
-            </div>
-            <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-2.5">
-              <p className="text-xs font-medium text-destructive mb-0.5 flex items-center gap-1">
-                <ShieldAlert size={12} /> Restrições
-              </p>
-              <p className="text-sm text-foreground">{client.healthRestrictions}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
 };
 
 export const HealthControlTab: React.FC = () => {
@@ -325,24 +259,10 @@ export const HealthControlTab: React.FC = () => {
           <FlaskConical size={15} />
           Coleta
         </button>
-        <button
-          onClick={() => { setCategory('restrictions'); setFilter('all'); }}
-          className={cn(
-            'flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs sm:text-sm font-medium transition-all',
-            category === 'restrictions'
-              ? 'bg-background shadow-sm text-foreground'
-              : 'text-muted-foreground hover:text-foreground'
-          )}
-        >
-          <ShieldAlert size={15} />
-          Restrições
-        </button>
       </div>
 
       {category === 'feces' ? (
         <FecesCollectionTab />
-      ) : category === 'restrictions' ? (
-        <RestrictionsSection clients={clients} />
       ) : (
       <>
       {/* Stats */}
