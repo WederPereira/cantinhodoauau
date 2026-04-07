@@ -49,6 +49,7 @@ export interface Client {
   vaccineHistory: VaccineRecord[];
   fleaHistory: FleaRecord[];
   createdAt: Date;
+  healthRestrictions?: string;
   updatedAt: Date;
 }
 
