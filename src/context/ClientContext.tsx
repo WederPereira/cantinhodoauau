@@ -169,6 +169,7 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     gender?: PetGender;
     castrated?: boolean;
     birthDate?: Date;
+    entryDate?: Date;
     weight?: number;
     vaccines?: Vaccines;
   }>) => {
@@ -186,6 +187,7 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       gender: c.gender || null,
       castrated: c.castrated ?? false,
       birth_date: c.birthDate?.toISOString() || null,
+      entry_date: c.entryDate?.toISOString() || null,
       weight: c.weight || null,
       vaccines: (c.vaccines || DEFAULT_VACCINES) as any,
     }));
