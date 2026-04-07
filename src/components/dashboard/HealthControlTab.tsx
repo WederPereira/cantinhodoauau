@@ -277,7 +277,6 @@ export const HealthControlTab: React.FC = () => {
         <FecesCollectionTab />
       ) : category === 'restrictions' ? (
         <RestrictionsSection clients={clients} />
-      ) :
       ) : (
       <>
       {/* Stats */}
