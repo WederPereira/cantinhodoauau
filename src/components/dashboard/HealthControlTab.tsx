@@ -259,10 +259,25 @@ export const HealthControlTab: React.FC = () => {
           <FlaskConical size={15} />
           Coleta
         </button>
+        <button
+          onClick={() => { setCategory('restrictions'); setFilter('all'); }}
+          className={cn(
+            'flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs sm:text-sm font-medium transition-all',
+            category === 'restrictions'
+              ? 'bg-background shadow-sm text-foreground'
+              : 'text-muted-foreground hover:text-foreground'
+          )}
+        >
+          <ShieldAlert size={15} />
+          Restrições
+        </button>
       </div>
 
       {category === 'feces' ? (
         <FecesCollectionTab />
+      ) : category === 'restrictions' ? (
+        <RestrictionsSection clients={clients} />
+      ) :
       ) : (
       <>
       {/* Stats */}
