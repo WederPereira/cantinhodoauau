@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { format, startOfMonth, addMonths, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+
 
 interface FecesCollection {
   id: string;
@@ -145,16 +145,24 @@ const FecesCollectionTab: React.FC = () => {
       </div>
 
       {/* Tabs: Pendentes / Coletados */}
-      <Tabs value={viewTab} onValueChange={(v) => setViewTab(v as 'pending' | 'collected')} className="w-full">
-        <TabsList className="w-full grid grid-cols-2">
-          <TabsTrigger value="pending" className="text-xs gap-1">
-            <Circle size={12} /> Pendentes ({clients.length - collectedCount})
-          </TabsTrigger>
-          <TabsTrigger value="collected" className="text-xs gap-1">
-            <CheckCircle2 size={12} /> Coletados ({collectedCount})
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
+      <div className="flex gap-2">
+        <Button
+          variant={viewTab === 'pending' ? 'default' : 'outline'}
+          size="sm"
+          className="flex-1 gap-1 text-xs"
+          onClick={() => setViewTab('pending')}
+        >
+          <Circle size={12} /> Pendentes ({clients.length - collectedCount})
+        </Button>
+        <Button
+          variant={viewTab === 'collected' ? 'default' : 'outline'}
+          size="sm"
+          className="flex-1 gap-1 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+          onClick={() => setViewTab('collected')}
+        >
+          <CheckCircle2 size={12} /> Coletados ({collectedCount})
+        </Button>
+      </div>
 
       {/* Search */}
       <div className="relative">
