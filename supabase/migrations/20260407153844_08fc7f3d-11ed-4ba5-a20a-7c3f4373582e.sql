@@ -1,1 +1,0 @@
-ALTER TABLE public.clients ADD COLUMN health_restrictions text DEFAULT '';

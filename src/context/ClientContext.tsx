@@ -68,7 +68,6 @@ const dbRowToClient = (row: any, vaccineRecords: any[] = [], fleaRecords: any[] 
   fleaHistory: fleaRecords
     .filter(r => r.client_id === row.id)
     .map(r => ({ id: r.id, date: r.date, brand: r.brand, durationMonths: r.duration_months as 1 | 2 | 3 | 6, notes: r.notes || undefined })),
-  healthRestrictions: row.health_restrictions || '',
   createdAt: new Date(row.created_at),
   updatedAt: new Date(row.updated_at),
 });
@@ -216,7 +215,6 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     if (updates.castrated !== undefined) dbUpdates.castrated = updates.castrated;
     if (updates.entryDate !== undefined) dbUpdates.entry_date = new Date(updates.entryDate).toISOString();
     if (updates.vaccines !== undefined) dbUpdates.vaccines = updates.vaccines as any;
-    if (updates.healthRestrictions !== undefined) dbUpdates.health_restrictions = updates.healthRestrictions;
 
     const client = clients.find(c => c.id === id);
     const { error } = await supabase.from('clients').update(dbUpdates).eq('id', id);
