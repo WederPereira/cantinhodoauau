@@ -112,7 +112,7 @@ const openWhatsApp = (phone: string, message: string) => {
 };
 
 export const HealthControlTab: React.FC = () => {
-  const { clients, addVaccineRecord, addFleaRecord } = useClients();
+  const { clients, addVaccineRecord, addFleaRecord, updateClient } = useClients();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'expired' | 'expiring' | 'ok'>('all');
   const [category, setCategory] = useState<HealthCategory>('vaccines');
