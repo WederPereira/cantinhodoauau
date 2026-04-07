@@ -13,8 +13,9 @@ import { ptBR } from 'date-fns/locale';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import FecesCollectionTab from './FecesCollectionTab';
+import { Textarea } from '@/components/ui/textarea';
 
-type HealthCategory = 'vaccines' | 'flea' | 'feces';
+type HealthCategory = 'vaccines' | 'flea' | 'feces' | 'restrictions';
 type HealthStatus = 'ok' | 'expiring' | 'expired' | 'none';
 
 interface VaccineStatus {
