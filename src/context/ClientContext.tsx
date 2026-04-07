@@ -216,6 +216,7 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     if (updates.castrated !== undefined) dbUpdates.castrated = updates.castrated;
     if (updates.entryDate !== undefined) dbUpdates.entry_date = new Date(updates.entryDate).toISOString();
     if (updates.vaccines !== undefined) dbUpdates.vaccines = updates.vaccines as any;
+    if (updates.healthRestrictions !== undefined) dbUpdates.health_restrictions = updates.healthRestrictions;
 
     const client = clients.find(c => c.id === id);
     const { error } = await supabase.from('clients').update(dbUpdates).eq('id', id);
