@@ -36,7 +36,7 @@ const ClientsPage: React.FC = () => {
   const breedStats = useMemo(() => {
     const map = new Map<string, number>();
     clients.forEach(c => {
-      const breed = c.breed || 'Sem raça';
+      const breed = normalizeBreedName(c.breed) || 'Sem raça';
       map.set(breed, (map.get(breed) || 0) + 1);
     });
     return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
