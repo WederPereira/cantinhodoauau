@@ -7,12 +7,10 @@ import { toast } from 'sonner';
 
 interface PhotoUploadProps {
   photo?: string;
-  onPhotoChange: (photo: string | undefined) => void;
+  onPhotoChange: (photo: string | undefined) => void | Promise<void>;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
-  /** Max dimension (width or height) for compression. Default 1200px */
   maxDimension?: number;
-  /** JPEG quality 0-1. Default 0.85 */
   quality?: number;
 }
 
@@ -20,9 +18,11 @@ const compressImage = (file: File, maxDim: number, quality: number): Promise<Blo
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
+
     img.onload = () => {
       URL.revokeObjectURL(url);
       let { width, height } = img;
+
       if (width > maxDim || height > maxDim) {
         if (width > height) {
           height = Math.round((height * maxDim) / width);
@@ -32,10 +32,17 @@ const compressImage = (file: File, maxDim: number, quality: number): Promise<Blo
           height = maxDim;
         }
       }
+
       const canvas = document.createElement('canvas');
       canvas.width = width;
       canvas.height = height;
-      const ctx = canvas.getContext('2d')!;
+      const ctx = canvas.getContext('2d');
+
+      if (!ctx) {
+        reject(new Error('Canvas context unavailable'));
+        return;
+      }
+
       ctx.drawImage(img, 0, 0, width, height);
       canvas.toBlob(
         (blob) => (blob ? resolve(blob) : reject(new Error('Compression failed'))),
@@ -43,7 +50,12 @@ const compressImage = (file: File, maxDim: number, quality: number): Promise<Blo
         quality
       );
     };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Failed to load image')); };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Failed to load image'));
+    };
+
     img.src = url;
   });
 };
@@ -71,6 +83,7 @@ export const PhotoUpload: React.FC<PhotoUploadProps> = ({
     if (!file.type.startsWith('image/')) return;
 
     setUploading(true);
+
     try {
       const compressed = await compressImage(file, maxDimension, quality);
       const path = `pets/${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
@@ -78,30 +91,42 @@ export const PhotoUpload: React.FC<PhotoUploadProps> = ({
         contentType: 'image/jpeg',
         upsert: false,
       });
+
       if (upErr) throw upErr;
+
       const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
-      onPhotoChange(urlData.publicUrl);
-    } catch (err: any) {
+      await onPhotoChange(urlData.publicUrl);
+    } catch (err) {
       console.error('Upload error:', err);
       toast.error('Erro ao enviar foto');
     } finally {
       setUploading(false);
+      if (inputRef.current) inputRef.current.value = '';
     }
   };
 
   const handleRemove = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (photo && photo.includes('/avatars/')) {
-      try {
+    setUploading(true);
+
+    try {
+      if (photo && photo.includes('/avatars/')) {
         const parts = photo.split('/avatars/');
         const filePath = parts[parts.length - 1];
-        await supabase.storage.from('avatars').remove([filePath]);
-      } catch (err) {
-        console.error('Error removing photo:', err);
+        const { error } = await supabase.storage.from('avatars').remove([filePath]);
+        if (error) {
+          console.error('Error removing photo from storage:', error);
+        }
       }
+
+      await onPhotoChange(undefined);
+    } catch (err) {
+      console.error('Error removing photo:', err);
+      toast.error('Erro ao apagar foto');
+    } finally {
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = '';
     }
-    onPhotoChange(null as unknown as string | undefined);
-    if (inputRef.current) inputRef.current.value = '';
   };
 
   return (
