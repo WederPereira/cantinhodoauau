@@ -11,6 +11,7 @@ import { Search, X, Dog, Filter } from 'lucide-react';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select';
+import { normalizeBreedName } from '@/utils/breedNormalizer';
 
 const ClientsPage: React.FC = () => {
   const { clients } = useClients();
