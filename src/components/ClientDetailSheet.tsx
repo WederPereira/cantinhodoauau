@@ -127,8 +127,8 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
         {/* Profile Header */}
         <SheetHeader className="p-4 pb-3 border-b border-border bg-gradient-to-br from-primary/5 via-transparent to-accent/5">
           <div className="flex items-start gap-3">
-            <div className="relative flex-shrink-0">
-              <div className="w-[68px] h-[68px] p-[6px]">
+            <div className="relative flex-shrink-0 overflow-visible">
+              <div className="w-[72px] h-[72px] p-[4px]">
                 <PhotoUpload
                   photo={client.photo}
                   onPhotoChange={(photo) => inlineUpdate('photo', photo)}
