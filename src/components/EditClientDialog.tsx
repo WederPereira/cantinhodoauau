@@ -240,7 +240,9 @@ export const EditClientDialog: React.FC<EditClientDialogProps> = ({ client, open
 
         <div className="flex gap-3 pt-4 border-t border-border">
           <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button className="flex-1" onClick={handleSave}>Salvar Alterações</Button>
+          <Button className="flex-1" onClick={handleSave} disabled={photoUploading}>
+            {photoUploading ? 'Enviando foto...' : 'Salvar Alterações'}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

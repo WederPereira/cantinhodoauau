@@ -132,6 +132,7 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
                 <PhotoUpload
                   photo={client.photo}
                   onPhotoChange={(photo) => inlineUpdate('photo', photo)}
+                  onRemovePhoto={() => inlineUpdate('photo', null)}
                   size="sm"
                 />
               </div>

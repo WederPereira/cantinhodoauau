@@ -270,7 +270,9 @@ export const AddClientDialog: React.FC<AddClientDialogProps> = ({ trigger }) => 
 
           <div className="flex gap-3 pt-4 border-t border-border mt-4">
             <Button type="button" variant="outline" className="flex-1" onClick={() => { resetForm(); setOpen(false); }}>Cancelar</Button>
-            <Button type="submit" className="flex-1">Adicionar</Button>
+            <Button type="submit" className="flex-1" disabled={photoUploading}>
+              {photoUploading ? 'Enviando foto...' : 'Adicionar'}
+            </Button>
           </div>
         </form>
       </DialogContent>

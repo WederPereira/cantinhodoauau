@@ -43,6 +43,28 @@ interface ClientContextType {
 
 const ClientContext = createContext<ClientContextType | undefined>(undefined);
 
+const CLIENT_LIST_COLUMNS = `
+  id,
+  tutor_name,
+  tutor_phone,
+  tutor_email,
+  tutor_address,
+  tutor_neighborhood,
+  tutor_cpf,
+  name,
+  breed,
+  pet_size,
+  weight,
+  birth_date,
+  gender,
+  castrated,
+  health_restrictions,
+  entry_date,
+  vaccines,
+  created_at,
+  updated_at
+`;
+
 // Convert DB row to Client type
 const dbRowToClient = (row: any, vaccineRecords: any[] = [], fleaRecords: any[] = []): Client => ({
   id: row.id,
@@ -79,18 +101,24 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   const fetchClients = useCallback(async () => {
     try {
-      const [clientsRes, vaccinesRes, fleasRes] = await Promise.all([
-        supabase.from('clients').select('*').order('name'),
+      const [clientsRes, photosRes, vaccinesRes, fleasRes] = await Promise.all([
+        supabase.from('clients').select(CLIENT_LIST_COLUMNS).order('name'),
+        supabase.from('clients').select('id, photo').not('photo', 'like', 'data:image/%'),
         supabase.from('vaccine_records').select('*').order('created_at', { ascending: false }),
         supabase.from('flea_records').select('*').order('created_at', { ascending: false }),
       ]);
 
       if (clientsRes.error) throw clientsRes.error;
+      if (photosRes.error) throw photosRes.error;
 
       const vaccineRecords = vaccinesRes.data || [];
       const fleaRecords = fleasRes.data || [];
+      const safePhotosByClientId = new Map((photosRes.data || []).map(row => [row.id, row.photo]));
 
-      const mapped = (clientsRes.data || []).map(row => dbRowToClient(row, vaccineRecords, fleaRecords));
+      const mapped = (clientsRes.data || []).map(row => dbRowToClient({
+        ...row,
+        photo: safePhotosByClientId.get(row.id) || null,
+      }, vaccineRecords, fleaRecords));
       setClients(mapped);
     } catch (error) {
       console.error('Error fetching clients:', error);
