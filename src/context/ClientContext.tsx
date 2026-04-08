@@ -282,7 +282,6 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     logAction('add_vaccine', 'vaccine', clientId, { dog_name: client?.name, tutor_name: client?.tutorName, vaccine_type: type, date, notes });
 
     // Update client vaccines JSON
-    const client = clients.find(c => c.id === clientId);
     if (client) {
       const updatedVaccines = { ...client.vaccines, [type]: date };
       await supabase.from('clients').update({ vaccines: updatedVaccines as any, updated_at: new Date().toISOString() }).eq('id', clientId);
