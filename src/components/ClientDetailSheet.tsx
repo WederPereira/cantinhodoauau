@@ -77,8 +77,8 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
 
   if (!client) return null;
 
-  const inlineUpdate = (field: string, value: any) => {
-    updateClient(client.id, { [field]: value });
+  const inlineUpdate = async (field: string, value: any) => {
+    await updateClient(client.id, { [field]: value });
     toast.success('Atualizado!');
     setFillingField(null);
   };
