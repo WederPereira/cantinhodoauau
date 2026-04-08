@@ -35,6 +35,7 @@ export const AddClientDialog: React.FC<AddClientDialogProps> = ({ trigger }) => 
   const [petSize, setPetSize] = useState<PetSize | undefined>(undefined);
   const [birthDate, setBirthDate] = useState<Date | undefined>(undefined);
   const [photo, setPhoto] = useState<string | undefined>(undefined);
+  const [photoUploading, setPhotoUploading] = useState(false);
   const [gender, setGender] = useState<PetGender | undefined>(undefined);
   const [castrated, setCastrated] = useState(false);
   const [vaccines, setVaccines] = useState<Vaccines>({ ...DEFAULT_VACCINES });
@@ -76,6 +77,11 @@ export const AddClientDialog: React.FC<AddClientDialogProps> = ({ trigger }) => 
       return;
     }
 
+    if (photoUploading) {
+      toast.error('Aguarde o envio da foto terminar');
+      return;
+    }
+
     addClient({
       tutorName: tutorName.trim(),
       tutorPhone: tutorPhone.trim(),
@@ -101,7 +107,7 @@ export const AddClientDialog: React.FC<AddClientDialogProps> = ({ trigger }) => 
     setTutorName(''); setTutorPhone(''); setTutorEmail('');
     setTutorAddress(''); setTutorNeighborhood(''); setTutorCpf('');
     setName(''); setBreed(''); setPetSize(undefined); setBirthDate(undefined);
-    setPhoto(undefined); setVaccines({ ...DEFAULT_VACCINES });
+    setPhoto(undefined); setPhotoUploading(false); setVaccines({ ...DEFAULT_VACCINES });
     setGender(undefined); setCastrated(false);
   };
 
@@ -143,7 +149,7 @@ export const AddClientDialog: React.FC<AddClientDialogProps> = ({ trigger }) => 
 
             <TabsContent value="pet" className="space-y-4 mt-0">
               <div className="flex justify-center">
-                <PhotoUpload photo={photo} onPhotoChange={setPhoto} size="lg" />
+                <PhotoUpload photo={photo} onPhotoChange={setPhoto} onUploadingChange={setPhotoUploading} size="lg" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="name">Nome do Dog *</Label>
@@ -270,7 +276,9 @@ export const AddClientDialog: React.FC<AddClientDialogProps> = ({ trigger }) => 
 
           <div className="flex gap-3 pt-4 border-t border-border mt-4">
             <Button type="button" variant="outline" className="flex-1" onClick={() => { resetForm(); setOpen(false); }}>Cancelar</Button>
-            <Button type="submit" className="flex-1">Adicionar</Button>
+            <Button type="submit" className="flex-1" disabled={photoUploading}>
+              {photoUploading ? 'Enviando foto...' : 'Adicionar'}
+            </Button>
           </div>
         </form>
       </DialogContent>
