@@ -278,6 +278,8 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       notes: notes || null,
     });
     if (recError) { console.error('Error adding vaccine record:', recError); return; }
+    const client = clients.find(c => c.id === clientId);
+    logAction('add_vaccine', 'vaccine', clientId, { dog_name: client?.name, tutor_name: client?.tutorName, vaccine_type: type, date, notes });
 
     // Update client vaccines JSON
     const client = clients.find(c => c.id === clientId);
