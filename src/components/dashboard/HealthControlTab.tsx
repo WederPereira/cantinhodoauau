@@ -236,7 +236,11 @@ const AddRestrictionDialog: React.FC<{ client: Client; onSave: (client: Client, 
 const RestrictionsSection: React.FC<{ clients: Client[] }> = ({ clients }) => {
   const [search, setSearch] = useState('');
   const { updateClient } = useClients();
-  const [addDialogClient, setAddDialogClient] = useState<string | null>(null);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [newType, setNewType] = useState<RestrictionType>('alimentar');
+  const [newDesc, setNewDesc] = useState('');
+  const [addSearch, setAddSearch] = useState('');
 
   const handleSaveRestrictions = async (client: Client, restrictions: ParsedRestriction[]) => {
     const serialized = serializeRestrictions(restrictions);
@@ -251,6 +255,16 @@ const RestrictionsSection: React.FC<{ clients: Client[] }> = ({ clients }) => {
     toast.success('Restrição removida');
   };
 
+  const handleAddRestriction = async () => {
+    if (!selectedClient || !newDesc.trim()) { toast.error('Selecione um dog e preencha a descrição'); return; }
+    const existing = parseRestrictions(selectedClient.healthRestrictions);
+    const updated = [...existing, { type: newType, description: newDesc.trim() }];
+    await handleSaveRestrictions(selectedClient, updated);
+    setNewDesc('');
+    setSelectedClient(null);
+    setAddDialogOpen(false);
+  };
+
   const restrictedClients = useMemo(() => {
     return clients
       .filter(c => c.healthRestrictions && c.healthRestrictions.trim().length > 0)
@@ -262,10 +276,12 @@ const RestrictionsSection: React.FC<{ clients: Client[] }> = ({ clients }) => {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [clients, search]);
 
-  // Clients without restrictions for "add" dialog
-  const availableClients = useMemo(() => {
-    return clients.filter(c => !c.healthRestrictions || !c.healthRestrictions.trim()).sort((a, b) => a.name.localeCompare(b.name));
-  }, [clients]);
+  const filteredAddClients = useMemo(() => {
+    const s = addSearch.toLowerCase();
+    return clients
+      .filter(c => !s || c.name.toLowerCase().includes(s) || c.tutorName.toLowerCase().includes(s))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [clients, addSearch]);
 
   return (
     <div className="space-y-3">
@@ -285,8 +301,7 @@ const RestrictionsSection: React.FC<{ clients: Client[] }> = ({ clients }) => {
             className="pl-9 h-10 text-sm"
           />
         </div>
-        {/* Add restriction to any client */}
-        <Dialog open={!!addDialogClient} onOpenChange={o => !o && setAddDialogClient(null)}>
+        <Dialog open={addDialogOpen} onOpenChange={o => { setAddDialogOpen(o); if (!o) { setSelectedClient(null); setNewDesc(''); setAddSearch(''); } }}>
           <DialogTrigger asChild>
             <Button size="sm" variant="outline" className="gap-1 h-10 px-3">
               <Plus size={14} /> Dog
@@ -294,32 +309,93 @@ const RestrictionsSection: React.FC<{ clients: Client[] }> = ({ clients }) => {
           </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle className="text-base">Adicionar dog com restrição</DialogTitle>
+              <DialogTitle className="text-base">Adicionar restrição</DialogTitle>
             </DialogHeader>
-            <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-              {clients.sort((a, b) => a.name.localeCompare(b.name)).map(c => {
-                const existing = parseRestrictions(c.healthRestrictions);
-                return (
-                  <div key={c.id} className="flex items-center gap-2 p-2 rounded-lg border border-border hover:bg-muted/30">
-                    {c.photo ? (
-                      <img src={c.photo} alt={c.name} className="w-8 h-8 rounded-full object-cover" />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground text-xs font-medium">
-                        {c.name.charAt(0)}
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{c.name}</p>
-                      <p className="text-[10px] text-muted-foreground">{c.tutorName}</p>
+
+            {!selectedClient ? (
+              <div className="space-y-2">
+                <div className="relative">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar dog..."
+                    value={addSearch}
+                    onChange={e => setAddSearch(e.target.value)}
+                    className="pl-8 h-9 text-sm"
+                    autoFocus
+                  />
+                </div>
+                <div className="max-h-[50vh] overflow-y-auto space-y-1">
+                  {filteredAddClients.map(c => {
+                    const existing = parseRestrictions(c.healthRestrictions);
+                    return (
+                      <button
+                        key={c.id}
+                        onClick={() => setSelectedClient(c)}
+                        className="flex items-center gap-2 p-2 rounded-lg border border-border hover:bg-muted/50 w-full text-left transition-colors"
+                      >
+                        {c.photo ? (
+                          <img src={c.photo} alt={c.name} className="w-9 h-9 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground text-xs font-medium">
+                            {c.name.charAt(0)}
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{c.name}</p>
+                          <p className="text-[10px] text-muted-foreground">{c.tutorName} • {c.breed || 'SRD'}</p>
+                        </div>
+                        {existing.length > 0 && (
+                          <Badge variant="outline" className="text-[10px] shrink-0">{existing.length}</Badge>
+                        )}
+                      </button>
+                    );
+                  })}
+                  {filteredAddClients.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-4">Nenhum dog encontrado</p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
+                  {selectedClient.photo ? (
+                    <img src={selectedClient.photo} alt={selectedClient.name} className="w-10 h-10 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground text-sm font-medium">
+                      {selectedClient.name.charAt(0)}
                     </div>
-                    {existing.length > 0 && (
-                      <Badge variant="outline" className="text-[10px]">{existing.length} restrição(ões)</Badge>
-                    )}
-                    <AddRestrictionDialog client={c} onSave={handleSaveRestrictions} />
+                  )}
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold">{selectedClient.name}</p>
+                    <p className="text-[10px] text-muted-foreground">{selectedClient.tutorName}</p>
                   </div>
-                );
-              })}
-            </div>
+                  <Button size="sm" variant="ghost" className="text-xs h-7" onClick={() => setSelectedClient(null)}>Trocar</Button>
+                </div>
+
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Tipo</label>
+                  <Select value={newType} onValueChange={v => setNewType(v as RestrictionType)}>
+                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(RESTRICTION_TYPE_LABELS).map(([k, v]) => (
+                        <SelectItem key={k} value={k}>{v}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Descrição</label>
+                  <Textarea
+                    value={newDesc}
+                    onChange={e => setNewDesc(e.target.value)}
+                    placeholder={newType === 'alimentar' ? 'Ex: Não pode comer uva, chocolate' : newType === 'vacina' ? 'Ex: Alergia à vacina V10' : 'Descreva a restrição...'}
+                    className="text-sm min-h-[80px]"
+                    autoFocus
+                  />
+                </div>
+                <Button onClick={handleAddRestriction} className="w-full" size="sm">Salvar restrição</Button>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       </div>
