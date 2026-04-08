@@ -206,6 +206,7 @@ export type Database = {
           created_at: string
           date: string
           duration_months: number
+          flea_type: string
           id: string
           notes: string | null
         }
@@ -215,6 +216,7 @@ export type Database = {
           created_at?: string
           date: string
           duration_months?: number
+          flea_type?: string
           id?: string
           notes?: string | null
         }
@@ -224,6 +226,7 @@ export type Database = {
           created_at?: string
           date?: string
           duration_months?: number
+          flea_type?: string
           id?: string
           notes?: string | null
         }
