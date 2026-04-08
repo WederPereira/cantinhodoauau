@@ -211,7 +211,7 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     if (updates.petSize !== undefined) dbUpdates.pet_size = updates.petSize;
     if (updates.weight !== undefined) dbUpdates.weight = updates.weight;
     if (updates.birthDate !== undefined) dbUpdates.birth_date = updates.birthDate ? new Date(updates.birthDate).toISOString() : null;
-    if (updates.photo !== undefined) dbUpdates.photo = updates.photo;
+    if (updates.photo !== undefined) dbUpdates.photo = updates.photo || null;
     if (updates.gender !== undefined) dbUpdates.gender = updates.gender;
     if (updates.castrated !== undefined) dbUpdates.castrated = updates.castrated;
     if (updates.entryDate !== undefined) dbUpdates.entry_date = new Date(updates.entryDate).toISOString();
