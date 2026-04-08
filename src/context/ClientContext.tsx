@@ -248,7 +248,22 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   const deleteClient = useCallback(async (id: string) => {
     const client = clients.find(c => c.id === id);
-    if (client) logAction('delete_client', 'client', id, { dog_name: client.name, tutor_name: client.tutorName });
+    if (client) {
+      // Store full client data for undo
+      logAction('delete_client', 'client', id, {
+        dog_name: client.name, tutor_name: client.tutorName,
+        full_client: {
+          name: client.name, breed: client.breed, tutor_name: client.tutorName,
+          tutor_phone: client.tutorPhone, tutor_email: client.tutorEmail,
+          tutor_address: client.tutorAddress, tutor_neighborhood: client.tutorNeighborhood,
+          tutor_cpf: client.tutorCpf, pet_size: client.petSize, weight: client.weight,
+          birth_date: client.birthDate ? new Date(client.birthDate).toISOString() : null,
+          photo: client.photo, gender: client.gender, castrated: client.castrated,
+          vaccines: client.vaccines, health_restrictions: client.healthRestrictions,
+          entry_date: client.entryDate ? new Date(client.entryDate).toISOString() : null,
+        }
+      });
+    }
     const { error } = await supabase.from('clients').delete().eq('id', id);
     if (error) { console.error('Error deleting client:', error); return; }
     await fetchClients();
