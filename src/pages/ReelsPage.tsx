@@ -164,7 +164,8 @@ const ReelsPage: React.FC = () => {
               </DialogHeader>
               <div className="space-y-4">
                 <input ref={fileRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleFileSelect} />
-                <input ref={cameraFileRef} type="file" accept="image/*,video/*" capture="environment" className="hidden" onChange={handleFileSelect} />
+                <input ref={cameraFileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileSelect} />
+                <input ref={cameraVideoRef} type="file" accept="video/*" capture="environment" className="hidden" onChange={handleFileSelect} />
                 {!previewUrl ? (
                   <div className="grid grid-cols-2 gap-3">
                     <div onClick={() => cameraFileRef.current?.click()} className="border border-dashed border-border rounded-xl p-6 text-center cursor-pointer hover:border-primary/40 hover:bg-primary/5 transition-all">
