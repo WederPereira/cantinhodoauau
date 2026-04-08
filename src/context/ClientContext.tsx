@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
-import { Client, VaccineType, DEFAULT_VACCINES, Vaccines, FleaRecord, VaccineRecord, PetGender } from '@/types/client';
+import { Client, VaccineType, DEFAULT_VACCINES, Vaccines, FleaRecord, VaccineRecord, PetGender, FleaType } from '@/types/client';
 import { logAction } from '@/hooks/useActionLog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -36,7 +36,7 @@ interface ClientContextType {
   getClientById: (id: string) => Client | undefined;
   addVaccineRecord: (clientId: string, type: VaccineType, date: string, notes?: string) => Promise<void>;
   deleteVaccineRecord: (clientId: string, recordId: string) => Promise<void>;
-  addFleaRecord: (clientId: string, date: string, brand: string, durationMonths: 1 | 2 | 3 | 6, notes?: string) => Promise<void>;
+  addFleaRecord: (clientId: string, date: string, brand: string, durationMonths: 1 | 2 | 3 | 6, notes?: string, fleaType?: FleaType) => Promise<void>;
   deleteFleaRecord: (clientId: string, recordId: string) => Promise<void>;
   refreshClients: () => Promise<void>;
 }
@@ -68,7 +68,7 @@ const dbRowToClient = (row: any, vaccineRecords: any[] = [], fleaRecords: any[] 
     .map(r => ({ id: r.id, type: r.type as VaccineType, date: r.date, notes: r.notes || undefined })),
   fleaHistory: fleaRecords
     .filter(r => r.client_id === row.id)
-    .map(r => ({ id: r.id, date: r.date, brand: r.brand, durationMonths: r.duration_months as 1 | 2 | 3 | 6, notes: r.notes || undefined })),
+    .map(r => ({ id: r.id, date: r.date, brand: r.brand, durationMonths: r.duration_months as 1 | 2 | 3 | 6, fleaType: (r.flea_type || 'fixo') as FleaType, notes: r.notes || undefined })),
   createdAt: new Date(row.created_at),
   updatedAt: new Date(row.updated_at),
 });
@@ -313,17 +313,18 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     await fetchClients();
   }, [clients, fetchClients]);
 
-  const addFleaRecord = useCallback(async (clientId: string, date: string, brand: string, durationMonths: 1 | 2 | 3 | 6, notes?: string) => {
+  const addFleaRecord = useCallback(async (clientId: string, date: string, brand: string, durationMonths: 1 | 2 | 3 | 6, notes?: string, fleaType?: FleaType) => {
     const { error } = await supabase.from('flea_records').insert({
       client_id: clientId,
       date,
       brand,
       duration_months: durationMonths,
       notes: notes || null,
-    });
+      flea_type: fleaType || 'fixo',
+    } as any);
     if (error) { console.error('Error adding flea record:', error); return; }
     const client = clients.find(c => c.id === clientId);
-    logAction('add_flea', 'flea', clientId, { dog_name: client?.name, tutor_name: client?.tutorName, date, brand, duration_months: durationMonths, notes });
+    logAction('add_flea', 'flea', clientId, { dog_name: client?.name, tutor_name: client?.tutorName, date, brand, duration_months: durationMonths, flea_type: fleaType || 'fixo', notes });
 
     // Update client vaccines.antipulgas
     if (client) {

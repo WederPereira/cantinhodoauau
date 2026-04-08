@@ -1,17 +1,17 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import { useClients } from '@/context/ClientContext';
-import { Client, VaccineType, VACCINE_TYPE_LABELS, getVaccineExpiryDate, getFleaExpiryDate, isExpiringSoon, isExpired, formatDate, ANTIPULGAS_BRANDS } from '@/types/client';
+import { Client, VaccineType, VACCINE_TYPE_LABELS, getVaccineExpiryDate, getFleaExpiryDate, isExpiringSoon, isExpired, formatDate, ANTIPULGAS_BRANDS, FleaType } from '@/types/client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Syringe, Bug, MessageCircle, Search, CheckCircle2, AlertTriangle, XCircle, Filter, FlaskConical, ShieldAlert, Plus, Trash2, Apple, Pill, Heart, Edit2 } from 'lucide-react';
+import { Syringe, Bug, MessageCircle, Search, CheckCircle2, AlertTriangle, XCircle, Filter, FlaskConical, ShieldAlert, Plus, Trash2, Apple, Pill, Heart, Edit2, Printer, CalendarDays, Building2, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { ptBR } from 'date-fns/locale';
-import { format } from 'date-fns';
+import { format, startOfMonth, endOfMonth, subMonths, addMonths, isWithinInterval } from 'date-fns';
 import { toast } from 'sonner';
 import FecesCollectionTab from './FecesCollectionTab';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -447,6 +447,179 @@ const RestrictionsSection: React.FC<{ clients: Client[] }> = ({ clients }) => {
   );
 };
 
+// ── Flea Form Popover ─────────────────────────────────────
+const FleaFormPopover: React.FC<{
+  client: Client;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSave: (date: string, brand: string, duration: 1 | 2 | 3 | 6, fleaType: FleaType) => void;
+  children: React.ReactNode;
+}> = ({ client, isOpen, onOpenChange, onSave, children }) => {
+  const lastFlea = client.fleaHistory?.[0];
+  const [date, setDate] = useState<Date | undefined>(lastFlea ? new Date(lastFlea.date) : undefined);
+  const [brand, setBrand] = useState(lastFlea?.brand || '');
+  const [duration, setDuration] = useState<string>(String(lastFlea?.durationMonths || 1));
+  const [fleaType, setFleaType] = useState<FleaType>(lastFlea?.fleaType || 'fixo');
+
+  return (
+    <Popover open={isOpen} onOpenChange={onOpenChange}>
+      <PopoverTrigger asChild>{children}</PopoverTrigger>
+      <PopoverContent className="w-72 p-3 space-y-3" align="start">
+        <p className="text-xs font-semibold text-foreground">Registrar Antipulgas</p>
+        
+        <div>
+          <label className="text-[10px] text-muted-foreground mb-1 block">Tipo</label>
+          <div className="flex gap-1">
+            <Button size="sm" variant={fleaType === 'fixo' ? 'default' : 'outline'} className="flex-1 h-7 text-xs gap-1" onClick={() => setFleaType('fixo')}>
+              <Building2 size={12} /> Fixo
+            </Button>
+            <Button size="sm" variant={fleaType === 'nao_fixo' ? 'default' : 'outline'} className="flex-1 h-7 text-xs gap-1" onClick={() => setFleaType('nao_fixo')}>
+              <User size={12} /> Não fixo
+            </Button>
+          </div>
+          <p className="text-[9px] text-muted-foreground mt-0.5">{fleaType === 'fixo' ? 'Creche aplica' : 'Cliente aplica'}</p>
+        </div>
+
+        <div>
+          <label className="text-[10px] text-muted-foreground mb-1 block">Marca</label>
+          <Select value={brand} onValueChange={setBrand}>
+            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+            <SelectContent>
+              {ANTIPULGAS_BRANDS.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <label className="text-[10px] text-muted-foreground mb-1 block">Duração</label>
+          <Select value={duration} onValueChange={setDuration}>
+            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1">1 mês</SelectItem>
+              <SelectItem value="2">2 meses</SelectItem>
+              <SelectItem value="3">3 meses</SelectItem>
+              <SelectItem value="6">6 meses</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <label className="text-[10px] text-muted-foreground mb-1 block">Data da aplicação</label>
+          <Calendar
+            mode="single"
+            selected={date}
+            onSelect={setDate}
+            className="pointer-events-auto p-1"
+            locale={ptBR}
+          />
+        </div>
+
+        <Button
+          size="sm"
+          className="w-full h-8 text-xs"
+          disabled={!date || !brand}
+          onClick={() => {
+            if (date && brand) {
+              onSave(date.toISOString(), brand, Number(duration) as 1 | 2 | 3 | 6, fleaType);
+              onOpenChange(false);
+            }
+          }}
+        >
+          Salvar
+        </Button>
+      </PopoverContent>
+    </Popover>
+  );
+};
+
+// ── Print List ────────────────────────────────────────────
+const PrintableList: React.FC<{ data: ClientHealthInfo[]; category: 'vaccines' | 'flea' }> = ({ data, category }) => {
+  const printRef = useRef<HTMLDivElement>(null);
+
+  const handlePrint = () => {
+    if (!printRef.current) return;
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+    printWindow.document.write(`
+      <html><head><title>Lista de Controle - ${category === 'vaccines' ? 'Vacinas' : 'Antipulgas'}</title>
+      <style>
+        body { font-family: Arial, sans-serif; font-size: 11px; margin: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
+        th { background: #f5f5f5; font-weight: bold; }
+        .header { text-align: center; margin-bottom: 15px; }
+        .expired { color: red; font-weight: bold; }
+        .expiring { color: orange; }
+        .ok { color: green; }
+        .badge { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 10px; }
+      </style></head><body>
+      <div class="header">
+        <h2>Controle de ${category === 'vaccines' ? 'Vacinas' : 'Antipulgas'}</h2>
+        <p>Data: ${format(new Date(), "dd/MM/yyyy", { locale: ptBR })}</p>
+      </div>
+      ${printRef.current.innerHTML}
+      </body></html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+  };
+
+  return (
+    <>
+      <Button size="sm" variant="outline" className="gap-1 text-xs h-8" onClick={handlePrint}>
+        <Printer size={14} /> Imprimir Lista
+      </Button>
+      <div ref={printRef} className="hidden">
+        <table>
+          <thead>
+            <tr>
+              <th>Dog</th>
+              <th>Tutor</th>
+              <th>Raça</th>
+              {category === 'vaccines' ? (
+                <>
+                  <th>Gripe</th><th>V10</th><th>Raiva</th><th>Giárdia</th>
+                </>
+              ) : (
+                <>
+                  <th>Marca</th><th>Tipo</th><th>Última Aplicação</th><th>Vencimento</th><th>Status</th>
+                </>
+              )}
+            </tr>
+          </thead>
+          <tbody>
+            {data.map(info => (
+              <tr key={info.client.id}>
+                <td>{info.client.name}</td>
+                <td>{info.client.tutorName}</td>
+                <td>{info.client.breed || 'SRD'}</td>
+                {category === 'vaccines' ? (
+                  info.vaccines.map(v => (
+                    <td key={v.type} className={v.status === 'expired' ? 'expired' : v.status === 'expiring' ? 'expiring' : v.status === 'ok' ? 'ok' : ''}>
+                      {v.lastDate ? format(new Date(v.lastDate), "dd/MM/yy") : '—'}
+                      {v.expiryDate ? ` (venc: ${format(v.expiryDate, "dd/MM/yy")})` : ''}
+                    </td>
+                  ))
+                ) : (
+                  <>
+                    <td>{info.client.fleaHistory?.[0]?.brand || '—'}</td>
+                    <td>{info.client.fleaHistory?.[0]?.fleaType === 'nao_fixo' ? 'Cliente' : 'Creche'}</td>
+                    <td>{info.flea.lastDate ? format(new Date(info.flea.lastDate), "dd/MM/yy") : '—'}</td>
+                    <td>{info.flea.expiryDate ? format(info.flea.expiryDate, "dd/MM/yy") : '—'}</td>
+                    <td className={info.flea.status === 'expired' ? 'expired' : info.flea.status === 'expiring' ? 'expiring' : 'ok'}>
+                      {info.flea.status === 'expired' ? 'Vencido' : info.flea.status === 'expiring' ? 'Vencendo' : info.flea.status === 'ok' ? 'Em dia' : 'Sem registro'}
+                    </td>
+                  </>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+};
+
 // ── Main Component ────────────────────────────────────────
 
 export const HealthControlTab: React.FC = () => {
@@ -456,6 +629,9 @@ export const HealthControlTab: React.FC = () => {
   const [filter, setFilter] = useState<'all' | 'expired' | 'expiring' | 'ok'>('all');
   const [category, setCategory] = useState<HealthCategory>('vaccines');
   const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [dateFilterFrom, setDateFilterFrom] = useState<Date | undefined>(undefined);
+  const [dateFilterTo, setDateFilterTo] = useState<Date | undefined>(undefined);
+  const [fleaTypeFilter, setFleaTypeFilter] = useState<'all' | 'fixo' | 'nao_fixo'>('all');
 
   const clientHealthData = useMemo((): ClientHealthInfo[] => {
     return clients.map(client => {
@@ -531,6 +707,36 @@ export const HealthControlTab: React.FC = () => {
       data = data.filter(d => d.client.name.toLowerCase().includes(s) || d.client.tutorName.toLowerCase().includes(s));
     }
 
+    // Date filter
+    if (dateFilterFrom || dateFilterTo) {
+      data = data.filter(d => {
+        if (category === 'vaccines') {
+          return d.vaccines.some(v => {
+            if (!v.lastDate) return false;
+            const vDate = new Date(v.lastDate);
+            if (dateFilterFrom && vDate < dateFilterFrom) return false;
+            if (dateFilterTo && vDate > dateFilterTo) return false;
+            return true;
+          });
+        } else {
+          if (!d.flea.lastDate) return false;
+          const fDate = new Date(d.flea.lastDate);
+          if (dateFilterFrom && fDate < dateFilterFrom) return false;
+          if (dateFilterTo && fDate > dateFilterTo) return false;
+          return true;
+        }
+      });
+    }
+
+    // Flea type filter
+    if (category === 'flea' && fleaTypeFilter !== 'all') {
+      data = data.filter(d => {
+        const lastFlea = d.client.fleaHistory?.[0];
+        if (!lastFlea) return false;
+        return lastFlea.fleaType === fleaTypeFilter;
+      });
+    }
+
     if (category === 'vaccines') {
       if (filter === 'expired') data = data.filter(d => d.vaccines.some(v => v.status === 'expired'));
       else if (filter === 'expiring') data = data.filter(d => d.vaccines.some(v => v.status === 'expiring'));
@@ -551,19 +757,22 @@ export const HealthControlTab: React.FC = () => {
       return getStatusPriority(aStatus as HealthStatus) - getStatusPriority(bStatus as HealthStatus);
     });
     return data;
-  }, [clientHealthData, search, filter, category]);
+  }, [clientHealthData, search, filter, category, dateFilterFrom, dateFilterTo, fleaTypeFilter]);
 
   const hasIssues = (info: ClientHealthInfo) => {
     if (category === 'vaccines') return info.vaccines.some(v => v.status === 'expired' || v.status === 'expiring');
     return info.flea.status === 'expired' || info.flea.status === 'expiring';
   };
 
+  const clearDateFilter = () => { setDateFilterFrom(undefined); setDateFilterTo(undefined); };
+  const hasDateFilter = !!dateFilterFrom || !!dateFilterTo;
+
   return (
     <div className="space-y-3 sm:space-y-4">
       {/* Category Toggle */}
       <div className="flex rounded-xl bg-muted/50 p-1 gap-1">
         <button
-          onClick={() => { setCategory('vaccines'); setFilter('all'); }}
+          onClick={() => { setCategory('vaccines'); setFilter('all'); clearDateFilter(); setFleaTypeFilter('all'); }}
           className={cn(
             'flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs sm:text-sm font-medium transition-all',
             category === 'vaccines'
@@ -575,7 +784,7 @@ export const HealthControlTab: React.FC = () => {
           Vacinas
         </button>
         <button
-          onClick={() => { setCategory('flea'); setFilter('all'); }}
+          onClick={() => { setCategory('flea'); setFilter('all'); clearDateFilter(); }}
           className={cn(
             'flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs sm:text-sm font-medium transition-all',
             category === 'flea'
@@ -587,7 +796,7 @@ export const HealthControlTab: React.FC = () => {
           Antipulgas
         </button>
         <button
-          onClick={() => { setCategory('feces'); setFilter('all'); }}
+          onClick={() => { setCategory('feces'); setFilter('all'); clearDateFilter(); }}
           className={cn(
             'flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs sm:text-sm font-medium transition-all',
             category === 'feces'
@@ -599,7 +808,7 @@ export const HealthControlTab: React.FC = () => {
           Coleta
         </button>
         <button
-          onClick={() => { setCategory('restrictions'); setFilter('all'); }}
+          onClick={() => { setCategory('restrictions'); setFilter('all'); clearDateFilter(); }}
           className={cn(
             'flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs sm:text-sm font-medium transition-all',
             category === 'restrictions'
@@ -640,22 +849,67 @@ export const HealthControlTab: React.FC = () => {
         </div>
       </div>
 
-      {/* Search & Filter */}
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Buscar pet ou tutor..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="pl-9 h-10 text-sm"
-          />
+      {/* Search, Date Filter & Print */}
+      <div className="space-y-2">
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Buscar pet ou tutor..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-9 h-10 text-sm"
+            />
+          </div>
+          {(filter !== 'all' || hasDateFilter || fleaTypeFilter !== 'all') && (
+            <Button variant="outline" size="sm" onClick={() => { setFilter('all'); clearDateFilter(); setFleaTypeFilter('all'); }} className="shrink-0 h-10">
+              <Filter size={14} className="mr-1" /> Limpar
+            </Button>
+          )}
+          <PrintableList data={filtered} category={category as 'vaccines' | 'flea'} />
         </div>
-        {filter !== 'all' && (
-          <Button variant="outline" size="sm" onClick={() => setFilter('all')} className="shrink-0 h-10">
-            <Filter size={14} className="mr-1" /> Limpar
-          </Button>
-        )}
+
+        {/* Date range filter */}
+        <div className="flex gap-2 items-center flex-wrap">
+          <CalendarDays size={14} className="text-muted-foreground" />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 text-xs gap-1">
+                {dateFilterFrom ? format(dateFilterFrom, "dd/MM/yy") : 'De'}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar mode="single" selected={dateFilterFrom} onSelect={setDateFilterFrom} locale={ptBR} className="pointer-events-auto" />
+            </PopoverContent>
+          </Popover>
+          <span className="text-xs text-muted-foreground">até</span>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 text-xs gap-1">
+                {dateFilterTo ? format(dateFilterTo, "dd/MM/yy") : 'Até'}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar mode="single" selected={dateFilterTo} onSelect={setDateFilterTo} locale={ptBR} className="pointer-events-auto" />
+            </PopoverContent>
+          </Popover>
+          {hasDateFilter && (
+            <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={clearDateFilter}>✕</Button>
+          )}
+
+          {/* Flea type filter */}
+          {category === 'flea' && (
+            <div className="flex gap-1 ml-auto">
+              <Button size="sm" variant={fleaTypeFilter === 'all' ? 'default' : 'outline'} className="h-7 text-[10px] px-2" onClick={() => setFleaTypeFilter('all')}>Todos</Button>
+              <Button size="sm" variant={fleaTypeFilter === 'fixo' ? 'default' : 'outline'} className="h-7 text-[10px] px-2 gap-0.5" onClick={() => setFleaTypeFilter('fixo')}>
+                <Building2 size={10} /> Fixo
+              </Button>
+              <Button size="sm" variant={fleaTypeFilter === 'nao_fixo' ? 'default' : 'outline'} className="h-7 text-[10px] px-2 gap-0.5" onClick={() => setFleaTypeFilter('nao_fixo')}>
+                <User size={10} /> Não fixo
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* List */}
@@ -734,37 +988,40 @@ export const HealthControlTab: React.FC = () => {
                 })}
               </div>
             ) : (
-              <div className="space-y-0.5 sm:space-y-1">
-                <div className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground">
-                  <Bug size={10} />
-                  {info.flea.label}
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground">
+                    <Bug size={10} />
+                    {info.flea.label}
+                  </div>
+                  {info.client.fleaHistory?.[0] && (
+                    <Badge variant="outline" className={cn("text-[10px]", info.client.fleaHistory[0].fleaType === 'fixo' ? 'bg-primary/10 text-primary border-primary/20' : 'bg-muted text-muted-foreground border-border')}>
+                      {info.client.fleaHistory[0].fleaType === 'fixo' ? (
+                        <><Building2 size={10} className="mr-0.5" /> Fixo</>
+                      ) : (
+                        <><User size={10} className="mr-0.5" /> Não fixo</>
+                      )}
+                    </Badge>
+                  )}
                 </div>
-                <Popover open={editingKey === `${info.client.id}-flea`} onOpenChange={(open) => setEditingKey(open ? `${info.client.id}-flea` : null)}>
-                  <PopoverTrigger asChild>
-                    <button className="text-left">
-                      <StatusBadge status={info.flea.status} expiryDate={info.flea.expiryDate} lastDate={info.flea.lastDate} />
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={info.flea.lastDate ? new Date(info.flea.lastDate) : undefined}
-                      onSelect={(d) => {
-                        if (d) {
-                          const lastFlea = info.client.fleaHistory?.[0];
-                          addFleaRecord(info.client.id, d.toISOString(), lastFlea?.brand || 'Antipulgas', (lastFlea?.durationMonths || 1) as 1 | 2 | 3 | 6);
-                          toast.success(`Antipulgas atualizado: ${format(d, "dd/MM/yyyy", { locale: ptBR })}`);
-                          setEditingKey(null);
-                        }
-                      }}
-                      initialFocus
-                      className="pointer-events-auto"
-                      locale={ptBR}
-                    />
-                  </PopoverContent>
-                </Popover>
+                <FleaFormPopover
+                  client={info.client}
+                  isOpen={editingKey === `${info.client.id}-flea`}
+                  onOpenChange={(open) => setEditingKey(open ? `${info.client.id}-flea` : null)}
+                  onSave={(date, brand, duration, fleaType) => {
+                    addFleaRecord(info.client.id, date, brand, duration, undefined, fleaType);
+                    toast.success(`Antipulgas atualizado: ${brand} - ${format(new Date(date), "dd/MM/yyyy", { locale: ptBR })}`);
+                  }}
+                >
+                  <button className="text-left">
+                    <StatusBadge status={info.flea.status} expiryDate={info.flea.expiryDate} lastDate={info.flea.lastDate} />
+                  </button>
+                </FleaFormPopover>
                 {info.flea.lastDate && (
-                  <p className="text-[10px] text-muted-foreground">Última aplicação: {formatDate(new Date(info.flea.lastDate))}</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    Última aplicação: {formatDate(new Date(info.flea.lastDate))}
+                    {info.client.fleaHistory?.[0] && ` • ${info.client.fleaHistory[0].durationMonths} ${info.client.fleaHistory[0].durationMonths === 1 ? 'mês' : 'meses'}`}
+                  </p>
                 )}
               </div>
             )}

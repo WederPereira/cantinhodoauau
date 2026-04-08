@@ -1,0 +1,1 @@
+ALTER TABLE public.flea_records ADD COLUMN flea_type text NOT NULL DEFAULT 'fixo';

@@ -17,11 +17,14 @@ export interface VaccineRecord {
   notes?: string;
 }
 
+export type FleaType = 'fixo' | 'nao_fixo';
+
 export interface FleaRecord {
   id: string;
   date: string; // ISO
   brand: string;
   durationMonths: 1 | 2 | 3 | 6;
+  fleaType: FleaType;
   notes?: string;
 }
 
