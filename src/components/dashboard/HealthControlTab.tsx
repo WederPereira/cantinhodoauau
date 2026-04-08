@@ -4,7 +4,8 @@ import { Client, VaccineType, VACCINE_TYPE_LABELS, getVaccineExpiryDate, getFlea
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Syringe, Bug, MessageCircle, Search, CheckCircle2, AlertTriangle, XCircle, Filter, FlaskConical, ShieldAlert } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Syringe, Bug, MessageCircle, Search, CheckCircle2, AlertTriangle, XCircle, Filter, FlaskConical, ShieldAlert, Plus, Trash2, Apple, Pill, Heart, Edit2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -13,9 +14,70 @@ import { ptBR } from 'date-fns/locale';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import FecesCollectionTab from './FecesCollectionTab';
+import { useUserRole } from '@/hooks/useUserRole';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 
 type HealthCategory = 'vaccines' | 'flea' | 'feces' | 'restrictions';
 type HealthStatus = 'ok' | 'expiring' | 'expired' | 'none';
+
+type RestrictionType = 'alimentar' | 'alergia' | 'vacina' | 'medicamento' | 'outra';
+
+interface ParsedRestriction {
+  type: RestrictionType;
+  description: string;
+}
+
+const RESTRICTION_TYPE_LABELS: Record<RestrictionType, string> = {
+  alimentar: 'Alimentar',
+  alergia: 'Alergia',
+  vacina: 'Vacina',
+  medicamento: 'Medicamento',
+  outra: 'Outra',
+};
+
+const RESTRICTION_TYPE_ICONS: Record<RestrictionType, React.ReactNode> = {
+  alimentar: <Apple size={12} />,
+  alergia: <ShieldAlert size={12} />,
+  vacina: <Syringe size={12} />,
+  medicamento: <Pill size={12} />,
+  outra: <Heart size={12} />,
+};
+
+const RESTRICTION_TYPE_COLORS: Record<RestrictionType, string> = {
+  alimentar: 'bg-orange-500/10 text-orange-600 border-orange-500/20',
+  alergia: 'bg-red-500/10 text-red-600 border-red-500/20',
+  vacina: 'bg-purple-500/10 text-purple-600 border-purple-500/20',
+  medicamento: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+  outra: 'bg-muted text-muted-foreground border-border',
+};
+
+// Parse restrictions string: "tipo:descrição|tipo:descrição"
+const parseRestrictions = (raw: string | undefined): ParsedRestriction[] => {
+  if (!raw || !raw.trim()) return [];
+  return raw.split('|').filter(Boolean).map(entry => {
+    const colonIdx = entry.indexOf(':');
+    if (colonIdx > 0) {
+      const type = entry.slice(0, colonIdx).trim() as RestrictionType;
+      const desc = entry.slice(colonIdx + 1).trim();
+      if (Object.keys(RESTRICTION_TYPE_LABELS).includes(type)) {
+        return { type, description: desc };
+      }
+    }
+    return { type: 'outra' as RestrictionType, description: entry.trim() };
+  });
+};
+
+const serializeRestrictions = (restrictions: ParsedRestriction[]): string => {
+  return restrictions.map(r => `${r.type}:${r.description}`).join('|');
+};
+
+// Check if a client has a vaccine restriction
+export const getVaccineRestrictions = (client: Client): string[] => {
+  const restrictions = parseRestrictions(client.healthRestrictions);
+  return restrictions
+    .filter(r => r.type === 'vacina')
+    .map(r => r.description);
+};
 
 interface VaccineStatus {
   type: string;
@@ -71,7 +133,13 @@ const buildWhatsAppMessage = (client: Client, info: ClientHealthInfo): string =>
   lines.push(`Passando para informar sobre a saúde do(a) *${client.name}*:`);
   lines.push('');
 
+  const vaccineRestrictions = getVaccineRestrictions(client);
+
   info.vaccines.forEach(v => {
+    if (vaccineRestrictions.some(r => r.toLowerCase().includes(v.label.toLowerCase()))) {
+      lines.push(`⛔ A vacina *${v.label}* não pode ser aplicada (restrição registrada).`);
+      return;
+    }
     if (v.status === 'expired') {
       lines.push(`❌ A vacina *${v.label}* está *vencida* desde ${v.expiryDate ? formatDate(v.expiryDate) : ''}. É importante atualizar o quanto antes! 💉`);
     } else if (v.status === 'expiring') {
@@ -110,9 +178,93 @@ const openWhatsApp = (phone: string, message: string) => {
   window.open(url, '_blank');
 };
 
+// ── Restrictions Section ──────────────────────────────────
+
+const AddRestrictionDialog: React.FC<{ client: Client; onSave: (client: Client, restrictions: ParsedRestriction[]) => void }> = ({ client, onSave }) => {
+  const existing = parseRestrictions(client.healthRestrictions);
+  const [type, setType] = useState<RestrictionType>('alimentar');
+  const [description, setDescription] = useState('');
+
+  const handleAdd = () => {
+    if (!description.trim()) { toast.error('Preencha a descrição'); return; }
+    const updated = [...existing, { type, description: description.trim() }];
+    onSave(client, updated);
+    setDescription('');
+  };
+
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline" className="gap-1 text-xs h-7 px-2">
+          <Plus size={12} /> Adicionar
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-base">Adicionar restrição — {client.name}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">Tipo</label>
+            <Select value={type} onValueChange={v => setType(v as RestrictionType)}>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {Object.entries(RESTRICTION_TYPE_LABELS).map(([k, v]) => (
+                  <SelectItem key={k} value={k}>{v}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">Descrição</label>
+            <Textarea
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              placeholder={type === 'alimentar' ? 'Ex: Não pode comer uva, chocolate' : type === 'vacina' ? 'Ex: Alergia à vacina V10' : 'Descreva a restrição...'}
+              className="text-sm min-h-[80px]"
+            />
+          </div>
+          <DialogClose asChild>
+            <Button onClick={handleAdd} className="w-full" size="sm">Salvar restrição</Button>
+          </DialogClose>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 const RestrictionsSection: React.FC<{ clients: Client[] }> = ({ clients }) => {
   const [search, setSearch] = useState('');
-  
+  const { updateClient } = useClients();
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [newType, setNewType] = useState<RestrictionType>('alimentar');
+  const [newDesc, setNewDesc] = useState('');
+  const [addSearch, setAddSearch] = useState('');
+
+  const handleSaveRestrictions = async (client: Client, restrictions: ParsedRestriction[]) => {
+    const serialized = serializeRestrictions(restrictions);
+    await updateClient(client.id, { healthRestrictions: serialized } as Partial<Client>);
+    toast.success('Restrição salva');
+  };
+
+  const handleDeleteRestriction = async (client: Client, index: number) => {
+    const existing = parseRestrictions(client.healthRestrictions);
+    existing.splice(index, 1);
+    await updateClient(client.id, { healthRestrictions: serializeRestrictions(existing) } as Partial<Client>);
+    toast.success('Restrição removida');
+  };
+
+  const handleAddRestriction = async () => {
+    if (!selectedClient || !newDesc.trim()) { toast.error('Selecione um dog e preencha a descrição'); return; }
+    const existing = parseRestrictions(selectedClient.healthRestrictions);
+    const updated = [...existing, { type: newType, description: newDesc.trim() }];
+    await handleSaveRestrictions(selectedClient, updated);
+    setNewDesc('');
+    setSelectedClient(null);
+    setAddDialogOpen(false);
+  };
+
   const restrictedClients = useMemo(() => {
     return clients
       .filter(c => c.healthRestrictions && c.healthRestrictions.trim().length > 0)
@@ -124,60 +276,182 @@ const RestrictionsSection: React.FC<{ clients: Client[] }> = ({ clients }) => {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [clients, search]);
 
+  const filteredAddClients = useMemo(() => {
+    const s = addSearch.toLowerCase();
+    return clients
+      .filter(c => !s || c.name.toLowerCase().includes(s) || c.tutorName.toLowerCase().includes(s))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [clients, addSearch]);
+
   return (
     <div className="space-y-3">
       <div className="bg-[hsl(var(--status-warning-bg))] border border-[hsl(var(--status-warning)/0.2)] rounded-xl p-3 text-center">
         <ShieldAlert size={20} className="text-[hsl(var(--status-warning))] mx-auto mb-1" />
-        <p className="text-xl font-bold text-[hsl(var(--status-warning))]">{clients.filter(c => c.healthRestrictions && c.healthRestrictions.trim().length > 0).length}</p>
+        <p className="text-xl font-bold text-[hsl(var(--status-warning))]">{restrictedClients.length}</p>
         <p className="text-xs text-muted-foreground">Dogs com restrições</p>
       </div>
 
-      <div className="relative">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="Buscar por pet, tutor ou restrição..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="pl-9 h-10 text-sm"
-        />
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por pet, tutor ou restrição..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="pl-9 h-10 text-sm"
+          />
+        </div>
+        <Dialog open={addDialogOpen} onOpenChange={o => { setAddDialogOpen(o); if (!o) { setSelectedClient(null); setNewDesc(''); setAddSearch(''); } }}>
+          <DialogTrigger asChild>
+            <Button size="sm" variant="outline" className="gap-1 h-10 px-3">
+              <Plus size={14} /> Dog
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-base">Adicionar restrição</DialogTitle>
+            </DialogHeader>
+
+            {!selectedClient ? (
+              <div className="space-y-2">
+                <div className="relative">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar dog..."
+                    value={addSearch}
+                    onChange={e => setAddSearch(e.target.value)}
+                    className="pl-8 h-9 text-sm"
+                    autoFocus
+                  />
+                </div>
+                <div className="max-h-[50vh] overflow-y-auto space-y-1">
+                  {filteredAddClients.map(c => {
+                    const existing = parseRestrictions(c.healthRestrictions);
+                    return (
+                      <button
+                        key={c.id}
+                        onClick={() => setSelectedClient(c)}
+                        className="flex items-center gap-2 p-2 rounded-lg border border-border hover:bg-muted/50 w-full text-left transition-colors"
+                      >
+                        {c.photo ? (
+                          <img src={c.photo} alt={c.name} className="w-9 h-9 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground text-xs font-medium">
+                            {c.name.charAt(0)}
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{c.name}</p>
+                          <p className="text-[10px] text-muted-foreground">{c.tutorName} • {c.breed || 'SRD'}</p>
+                        </div>
+                        {existing.length > 0 && (
+                          <Badge variant="outline" className="text-[10px] shrink-0">{existing.length}</Badge>
+                        )}
+                      </button>
+                    );
+                  })}
+                  {filteredAddClients.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-4">Nenhum dog encontrado</p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
+                  {selectedClient.photo ? (
+                    <img src={selectedClient.photo} alt={selectedClient.name} className="w-10 h-10 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground text-sm font-medium">
+                      {selectedClient.name.charAt(0)}
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold">{selectedClient.name}</p>
+                    <p className="text-[10px] text-muted-foreground">{selectedClient.tutorName}</p>
+                  </div>
+                  <Button size="sm" variant="ghost" className="text-xs h-7" onClick={() => setSelectedClient(null)}>Trocar</Button>
+                </div>
+
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Tipo</label>
+                  <Select value={newType} onValueChange={v => setNewType(v as RestrictionType)}>
+                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(RESTRICTION_TYPE_LABELS).map(([k, v]) => (
+                        <SelectItem key={k} value={k}>{v}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Descrição</label>
+                  <Textarea
+                    value={newDesc}
+                    onChange={e => setNewDesc(e.target.value)}
+                    placeholder={newType === 'alimentar' ? 'Ex: Não pode comer uva, chocolate' : newType === 'vacina' ? 'Ex: Alergia à vacina V10' : 'Descreva a restrição...'}
+                    className="text-sm min-h-[80px]"
+                    autoFocus
+                  />
+                </div>
+                <Button onClick={handleAddRestriction} className="w-full" size="sm">Salvar restrição</Button>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="space-y-3 max-h-[55vh] overflow-y-auto pr-0.5">
         {restrictedClients.length === 0 && (
           <p className="text-sm text-muted-foreground text-center py-8">
-            {search ? 'Nenhum resultado encontrado.' : 'Nenhum dog com restrições registradas.'}
+            {search ? 'Nenhum resultado encontrado.' : 'Nenhum dog com restrições registradas. Clique em "+ Dog" para adicionar.'}
           </p>
         )}
-        {restrictedClients.map(client => (
-          <div key={client.id} className="bg-card border border-border rounded-xl p-3 sm:p-4 space-y-2 shadow-soft">
-            <div className="flex items-center gap-3">
-              {client.photo ? (
-                <img src={client.photo} alt={client.name} className="w-10 h-10 rounded-full object-cover" />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground text-sm font-medium">
-                  {client.name.charAt(0)}
+        {restrictedClients.map(client => {
+          const restrictions = parseRestrictions(client.healthRestrictions);
+          return (
+            <div key={client.id} className="bg-card border border-border rounded-xl p-3 sm:p-4 space-y-2 shadow-soft">
+              <div className="flex items-center gap-3">
+                {client.photo ? (
+                  <img src={client.photo} alt={client.name} className="w-12 h-12 rounded-full object-cover" />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground text-sm font-medium">
+                    {client.name.charAt(0)}
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-sm text-foreground truncate">{client.name}</p>
+                  <p className="text-[11px] text-muted-foreground truncate">{client.tutorName} • {client.breed || 'SRD'}</p>
                 </div>
-              )}
-              <div className="min-w-0">
-                <p className="font-semibold text-sm text-foreground truncate">{client.name}</p>
-                <p className="text-[11px] text-muted-foreground truncate">{client.tutorName} • {client.breed || 'SRD'}</p>
+                <AddRestrictionDialog client={client} onSave={handleSaveRestrictions} />
+              </div>
+
+              <div className="space-y-1.5">
+                {restrictions.map((r, i) => (
+                  <div key={i} className={cn('flex items-start gap-2 rounded-lg p-2 border', RESTRICTION_TYPE_COLORS[r.type])}>
+                    <span className="mt-0.5">{RESTRICTION_TYPE_ICONS[r.type]}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide">{RESTRICTION_TYPE_LABELS[r.type]}</p>
+                      <p className="text-sm">{r.description}</p>
+                    </div>
+                    <button onClick={() => handleDeleteRestriction(client, i)} className="text-muted-foreground hover:text-destructive transition-colors p-0.5">
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
-            <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-2.5">
-              <p className="text-xs font-medium text-destructive mb-0.5 flex items-center gap-1">
-                <ShieldAlert size={12} /> Restrições
-              </p>
-              <p className="text-sm text-foreground">{client.healthRestrictions}</p>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
 };
 
+// ── Main Component ────────────────────────────────────────
+
 export const HealthControlTab: React.FC = () => {
   const { clients, addVaccineRecord, addFleaRecord } = useClients();
+  const { isAdmin } = useUserRole();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'expired' | 'expiring' | 'ok'>('all');
   const [category, setCategory] = useState<HealthCategory>('vaccines');
@@ -221,7 +495,6 @@ export const HealthControlTab: React.FC = () => {
     });
   }, [clients]);
 
-  // Compute separate stats for vaccines and flea
   const vaccineStats = useMemo(() => {
     let expired = 0, expiring = 0, ok = 0;
     clientHealthData.forEach(d => {
@@ -390,7 +663,9 @@ export const HealthControlTab: React.FC = () => {
         {filtered.length === 0 && (
           <p className="text-sm text-muted-foreground text-center py-8">Nenhum resultado encontrado.</p>
         )}
-        {filtered.map(info => (
+        {filtered.map(info => {
+          const vaccineRestrictions = getVaccineRestrictions(info.client);
+          return (
           <div key={info.client.id} className="bg-card border border-border rounded-xl p-3 sm:p-4 space-y-2.5 sm:space-y-3 shadow-soft">
             {/* Header */}
             <div className="flex items-start sm:items-center justify-between gap-2">
@@ -398,7 +673,8 @@ export const HealthControlTab: React.FC = () => {
                 <p className="font-semibold text-sm sm:text-base text-foreground truncate">{info.client.name}</p>
                 <p className="text-[11px] sm:text-xs text-muted-foreground truncate">{info.client.tutorName} • {info.client.breed || 'SRD'}</p>
               </div>
-              {hasIssues(info) && info.client.tutorPhone && (
+              {/* Only admin can send WhatsApp (contains sensitive phone data) */}
+              {isAdmin && hasIssues(info) && info.client.tutorPhone && (
                 <Button
                   size="sm"
                   variant="outline"
@@ -416,12 +692,19 @@ export const HealthControlTab: React.FC = () => {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
                 {info.vaccines.map(v => {
                   const popKey = `${info.client.id}-${v.type}`;
+                  const hasVaccineRestriction = vaccineRestrictions.some(r => r.toLowerCase().includes(v.label.toLowerCase()));
                   return (
                     <div key={v.type} className="space-y-0.5 sm:space-y-1">
                       <div className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground">
                         <Syringe size={10} />
                         {v.label}
                       </div>
+                      {hasVaccineRestriction ? (
+                        <Badge variant="outline" className="text-xs bg-purple-500/10 text-purple-600 border-purple-500/20">
+                          <ShieldAlert size={12} className="mr-1" />
+                          Restrição
+                        </Badge>
+                      ) : (
                       <Popover open={editingKey === popKey} onOpenChange={(open) => setEditingKey(open ? popKey : null)}>
                         <PopoverTrigger asChild>
                           <button className="text-left">
@@ -445,6 +728,7 @@ export const HealthControlTab: React.FC = () => {
                           />
                         </PopoverContent>
                       </Popover>
+                      )}
                     </div>
                   );
                 })}
@@ -485,11 +769,12 @@ export const HealthControlTab: React.FC = () => {
               </div>
             )}
 
-            {hasIssues(info) && !info.client.tutorPhone && (
+            {isAdmin && hasIssues(info) && !info.client.tutorPhone && (
               <p className="text-[11px] text-muted-foreground italic">⚠️ Sem telefone cadastrado.</p>
             )}
           </div>
-        ))}
+          );
+        })}
       </div>
       </>
       )}
