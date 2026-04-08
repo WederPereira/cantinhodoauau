@@ -37,7 +37,6 @@ export const EditClientDialog: React.FC<EditClientDialogProps> = ({ client, open
   const [breed, setBreed] = useState(client.breed);
   const [petSize, setPetSize] = useState<PetSize | undefined>(client.petSize);
   const [photo, setPhoto] = useState<string | undefined>(client.photo);
-  const [photoUploading, setPhotoUploading] = useState(false);
   const [entryDate, setEntryDate] = useState<Date>(new Date(client.entryDate));
   const [birthDate, setBirthDate] = useState<Date | undefined>(client.birthDate ? new Date(client.birthDate) : undefined);
   const [vaccines, setVaccines] = useState<Vaccines>(client.vaccines || { ...DEFAULT_VACCINES });
@@ -55,7 +54,6 @@ export const EditClientDialog: React.FC<EditClientDialogProps> = ({ client, open
     setBreed(client.breed || '');
     setPetSize(client.petSize);
     setPhoto(client.photo);
-    setPhotoUploading(false);
     setEntryDate(new Date(client.entryDate || new Date()));
     setBirthDate(client.birthDate ? new Date(client.birthDate) : undefined);
     setVaccines(client.vaccines || { ...DEFAULT_VACCINES });
@@ -76,12 +74,6 @@ export const EditClientDialog: React.FC<EditClientDialogProps> = ({ client, open
       toast.error('Nome não pode estar vazio');
       return;
     }
-
-    if (photoUploading) {
-      toast.error('Aguarde o envio da foto terminar');
-      return;
-    }
-
     updateClient(client.id, {
       tutorName: tutorName.trim(),
       tutorPhone: tutorPhone.trim(),
@@ -121,7 +113,7 @@ export const EditClientDialog: React.FC<EditClientDialogProps> = ({ client, open
 
           <TabsContent value="pet" className="space-y-4 mt-0">
             <div className="flex justify-center">
-              <PhotoUpload photo={photo} onPhotoChange={setPhoto} onUploadingChange={setPhotoUploading} size="lg" />
+              <PhotoUpload photo={photo} onPhotoChange={setPhoto} size="lg" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-name">Nome do Dog</Label>
@@ -248,9 +240,7 @@ export const EditClientDialog: React.FC<EditClientDialogProps> = ({ client, open
 
         <div className="flex gap-3 pt-4 border-t border-border">
           <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button className="flex-1" onClick={handleSave} disabled={photoUploading}>
-            {photoUploading ? 'Enviando foto...' : 'Salvar Alterações'}
-          </Button>
+          <Button className="flex-1" onClick={handleSave}>Salvar Alterações</Button>
         </div>
       </DialogContent>
     </Dialog>
