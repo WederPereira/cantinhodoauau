@@ -347,7 +347,6 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     if (error) { console.error('Error deleting flea record:', error); return; }
 
     // Update client vaccines.antipulgas to latest remaining
-    const client = clients.find(c => c.id === clientId);
     if (client) {
       const remaining = (client.fleaHistory || []).filter(r => r.id !== recordId);
       const latestFlea = remaining.length > 0 ? remaining[0] : null;
