@@ -323,6 +323,8 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       notes: notes || null,
     });
     if (error) { console.error('Error adding flea record:', error); return; }
+    const client = clients.find(c => c.id === clientId);
+    logAction('add_flea', 'flea', clientId, { dog_name: client?.name, tutor_name: client?.tutorName, date, brand, duration_months: durationMonths, notes });
 
     // Update client vaccines.antipulgas
     const client = clients.find(c => c.id === clientId);
