@@ -107,7 +107,7 @@ export const AddClientDialog: React.FC<AddClientDialogProps> = ({ trigger }) => 
     setTutorName(''); setTutorPhone(''); setTutorEmail('');
     setTutorAddress(''); setTutorNeighborhood(''); setTutorCpf('');
     setName(''); setBreed(''); setPetSize(undefined); setBirthDate(undefined);
-    setPhoto(undefined); setVaccines({ ...DEFAULT_VACCINES });
+    setPhoto(undefined); setPhotoUploading(false); setVaccines({ ...DEFAULT_VACCINES });
     setGender(undefined); setCastrated(false);
   };
 
