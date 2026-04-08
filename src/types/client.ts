@@ -44,6 +44,7 @@ export interface Client {
   photo?: string;
   gender?: PetGender;
   castrated?: boolean;
+  healthRestrictions?: string;
   entryDate: Date;
   vaccines: Vaccines;
   vaccineHistory: VaccineRecord[];
