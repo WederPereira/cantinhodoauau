@@ -221,13 +221,49 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     const client = clients.find(c => c.id === id);
     const { error } = await supabase.from('clients').update(dbUpdates).eq('id', id);
     if (error) { console.error('Error updating client:', error); return; }
-    if (client) logAction('edit_client', 'client', id, { dog_name: client.name, tutor_name: client.tutorName });
+    if (client) {
+      // Store previous values for undo
+      const prevData: Record<string, any> = { dog_name: client.name, tutor_name: client.tutorName };
+      if (updates.name !== undefined) prevData.prev_name = client.name;
+      if (updates.breed !== undefined) prevData.prev_breed = client.breed;
+      if (updates.tutorName !== undefined) prevData.prev_tutor_name = client.tutorName;
+      if (updates.tutorPhone !== undefined) prevData.prev_tutor_phone = client.tutorPhone;
+      if (updates.tutorEmail !== undefined) prevData.prev_tutor_email = client.tutorEmail;
+      if (updates.tutorAddress !== undefined) prevData.prev_tutor_address = client.tutorAddress;
+      if (updates.tutorNeighborhood !== undefined) prevData.prev_tutor_neighborhood = client.tutorNeighborhood;
+      if (updates.tutorCpf !== undefined) prevData.prev_tutor_cpf = client.tutorCpf;
+      if (updates.petSize !== undefined) prevData.prev_pet_size = client.petSize;
+      if (updates.weight !== undefined) prevData.prev_weight = client.weight;
+      if (updates.birthDate !== undefined) prevData.prev_birth_date = client.birthDate;
+      if (updates.photo !== undefined) prevData.prev_photo = client.photo;
+      if (updates.gender !== undefined) prevData.prev_gender = client.gender;
+      if (updates.castrated !== undefined) prevData.prev_castrated = client.castrated;
+      if (updates.vaccines !== undefined) prevData.prev_vaccines = client.vaccines;
+      if (updates.healthRestrictions !== undefined) prevData.prev_health_restrictions = client.healthRestrictions;
+      prevData.updated_fields = Object.keys(updates);
+      logAction('edit_client', 'client', id, prevData);
+    }
     await fetchClients();
   }, [clients, fetchClients]);
 
   const deleteClient = useCallback(async (id: string) => {
     const client = clients.find(c => c.id === id);
-    if (client) logAction('delete_client', 'client', id, { dog_name: client.name, tutor_name: client.tutorName });
+    if (client) {
+      // Store full client data for undo
+      logAction('delete_client', 'client', id, {
+        dog_name: client.name, tutor_name: client.tutorName,
+        full_client: {
+          name: client.name, breed: client.breed, tutor_name: client.tutorName,
+          tutor_phone: client.tutorPhone, tutor_email: client.tutorEmail,
+          tutor_address: client.tutorAddress, tutor_neighborhood: client.tutorNeighborhood,
+          tutor_cpf: client.tutorCpf, pet_size: client.petSize, weight: client.weight,
+          birth_date: client.birthDate ? new Date(client.birthDate).toISOString() : null,
+          photo: client.photo, gender: client.gender, castrated: client.castrated,
+          vaccines: client.vaccines, health_restrictions: client.healthRestrictions,
+          entry_date: client.entryDate ? new Date(client.entryDate).toISOString() : null,
+        }
+      });
+    }
     const { error } = await supabase.from('clients').delete().eq('id', id);
     if (error) { console.error('Error deleting client:', error); return; }
     await fetchClients();
@@ -242,9 +278,10 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       notes: notes || null,
     });
     if (recError) { console.error('Error adding vaccine record:', recError); return; }
+    const client = clients.find(c => c.id === clientId);
+    logAction('add_vaccine', 'vaccine', clientId, { dog_name: client?.name, tutor_name: client?.tutorName, vaccine_type: type, date, notes });
 
     // Update client vaccines JSON
-    const client = clients.find(c => c.id === clientId);
     if (client) {
       const updatedVaccines = { ...client.vaccines, [type]: date };
       await supabase.from('clients').update({ vaccines: updatedVaccines as any, updated_at: new Date().toISOString() }).eq('id', clientId);
@@ -255,6 +292,13 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const deleteVaccineRecord = useCallback(async (clientId: string, recordId: string) => {
     const client = clients.find(c => c.id === clientId);
     const deleted = client?.vaccineHistory?.find(r => r.id === recordId);
+
+    if (deleted) {
+      logAction('delete_vaccine', 'vaccine', recordId, {
+        dog_name: client?.name, tutor_name: client?.tutorName, client_id: clientId,
+        vaccine_type: deleted.type, date: deleted.date, notes: deleted.notes
+      });
+    }
 
     const { error } = await supabase.from('vaccine_records').delete().eq('id', recordId);
     if (error) { console.error('Error deleting vaccine record:', error); return; }
@@ -278,9 +322,10 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       notes: notes || null,
     });
     if (error) { console.error('Error adding flea record:', error); return; }
+    const client = clients.find(c => c.id === clientId);
+    logAction('add_flea', 'flea', clientId, { dog_name: client?.name, tutor_name: client?.tutorName, date, brand, duration_months: durationMonths, notes });
 
     // Update client vaccines.antipulgas
-    const client = clients.find(c => c.id === clientId);
     if (client) {
       const updatedVaccines = { ...client.vaccines, antipulgas: date };
       await supabase.from('clients').update({ vaccines: updatedVaccines as any, updated_at: new Date().toISOString() }).eq('id', clientId);
@@ -289,11 +334,19 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   }, [clients, fetchClients]);
 
   const deleteFleaRecord = useCallback(async (clientId: string, recordId: string) => {
+    const client = clients.find(c => c.id === clientId);
+    const deleted = client?.fleaHistory?.find(r => r.id === recordId);
+    if (deleted) {
+      logAction('delete_flea', 'flea', recordId, {
+        dog_name: client?.name, tutor_name: client?.tutorName, client_id: clientId,
+        date: deleted.date, brand: deleted.brand, duration_months: deleted.durationMonths, notes: deleted.notes
+      });
+    }
+
     const { error } = await supabase.from('flea_records').delete().eq('id', recordId);
     if (error) { console.error('Error deleting flea record:', error); return; }
 
     // Update client vaccines.antipulgas to latest remaining
-    const client = clients.find(c => c.id === clientId);
     if (client) {
       const remaining = (client.fleaHistory || []).filter(r => r.id !== recordId);
       const latestFlea = remaining.length > 0 ? remaining[0] : null;
