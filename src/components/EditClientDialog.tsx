@@ -76,6 +76,12 @@ export const EditClientDialog: React.FC<EditClientDialogProps> = ({ client, open
       toast.error('Nome não pode estar vazio');
       return;
     }
+
+    if (photoUploading) {
+      toast.error('Aguarde o envio da foto terminar');
+      return;
+    }
+
     updateClient(client.id, {
       tutorName: tutorName.trim(),
       tutorPhone: tutorPhone.trim(),
