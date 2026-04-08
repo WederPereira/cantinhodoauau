@@ -51,7 +51,7 @@ const ClientsPage: React.FC = () => {
         }
       }
       if (breedFilter !== 'all') {
-        const clientBreed = client.breed || 'Sem raça';
+        const clientBreed = normalizeBreedName(client.breed) || 'Sem raça';
         if (clientBreed !== breedFilter) return false;
       }
       return true;
