@@ -35,6 +35,7 @@ export const AddClientDialog: React.FC<AddClientDialogProps> = ({ trigger }) => 
   const [petSize, setPetSize] = useState<PetSize | undefined>(undefined);
   const [birthDate, setBirthDate] = useState<Date | undefined>(undefined);
   const [photo, setPhoto] = useState<string | undefined>(undefined);
+  const [photoUploading, setPhotoUploading] = useState(false);
   const [gender, setGender] = useState<PetGender | undefined>(undefined);
   const [castrated, setCastrated] = useState(false);
   const [vaccines, setVaccines] = useState<Vaccines>({ ...DEFAULT_VACCINES });

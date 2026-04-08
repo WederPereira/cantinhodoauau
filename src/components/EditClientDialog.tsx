@@ -37,6 +37,7 @@ export const EditClientDialog: React.FC<EditClientDialogProps> = ({ client, open
   const [breed, setBreed] = useState(client.breed);
   const [petSize, setPetSize] = useState<PetSize | undefined>(client.petSize);
   const [photo, setPhoto] = useState<string | undefined>(client.photo);
+  const [photoUploading, setPhotoUploading] = useState(false);
   const [entryDate, setEntryDate] = useState<Date>(new Date(client.entryDate));
   const [birthDate, setBirthDate] = useState<Date | undefined>(client.birthDate ? new Date(client.birthDate) : undefined);
   const [vaccines, setVaccines] = useState<Vaccines>(client.vaccines || { ...DEFAULT_VACCINES });
