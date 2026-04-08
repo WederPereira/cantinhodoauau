@@ -77,8 +77,8 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
 
   if (!client) return null;
 
-  const inlineUpdate = (field: string, value: any) => {
-    updateClient(client.id, { [field]: value });
+  const inlineUpdate = async (field: string, value: any) => {
+    await updateClient(client.id, { [field]: value });
     toast.success('Atualizado!');
     setFillingField(null);
   };
@@ -131,7 +131,7 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
               <div className="w-[72px] h-[72px] p-[4px]">
                 <PhotoUpload
                   photo={client.photo}
-                  onPhotoChange={(photo) => inlineUpdate('photo', photo)}
+                  onPhotoChange={(photo) => inlineUpdate('photo', photo ?? null)}
                   size="sm"
                 />
               </div>
