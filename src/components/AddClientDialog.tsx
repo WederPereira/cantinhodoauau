@@ -149,7 +149,7 @@ export const AddClientDialog: React.FC<AddClientDialogProps> = ({ trigger }) => 
 
             <TabsContent value="pet" className="space-y-4 mt-0">
               <div className="flex justify-center">
-                <PhotoUpload photo={photo} onPhotoChange={setPhoto} size="lg" />
+                <PhotoUpload photo={photo} onPhotoChange={setPhoto} onUploadingChange={setPhotoUploading} size="lg" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="name">Nome do Dog *</Label>
