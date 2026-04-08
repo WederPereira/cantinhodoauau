@@ -68,7 +68,7 @@ const dbRowToClient = (row: any, vaccineRecords: any[] = [], fleaRecords: any[] 
     .map(r => ({ id: r.id, type: r.type as VaccineType, date: r.date, notes: r.notes || undefined })),
   fleaHistory: fleaRecords
     .filter(r => r.client_id === row.id)
-    .map(r => ({ id: r.id, date: r.date, brand: r.brand, durationMonths: r.duration_months as 1 | 2 | 3 | 6, notes: r.notes || undefined })),
+    .map(r => ({ id: r.id, date: r.date, brand: r.brand, durationMonths: r.duration_months as 1 | 2 | 3 | 6, fleaType: (r.flea_type || 'fixo') as FleaType, notes: r.notes || undefined })),
   createdAt: new Date(row.created_at),
   updatedAt: new Date(row.updated_at),
 });
