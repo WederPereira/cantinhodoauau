@@ -165,17 +165,18 @@ const ReelsPage: React.FC = () => {
                 <input ref={fileRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleFileSelect} />
                 <input ref={cameraFileRef} type="file" accept="image/*,video/*" capture="environment" className="hidden" onChange={handleFileSelect} />
                 {!previewUrl ? (
-                  <div className="flex gap-3">
-                    <div onClick={() => cameraFileRef.current?.click()} className="flex-1 border border-dashed border-border rounded-xl p-8 text-center cursor-pointer hover:border-primary/40 transition-colors">
-                      <CameraIcon size={22} className="mx-auto mb-1.5 text-muted-foreground" />
-                      <p className="text-xs text-muted-foreground">Câmera</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div onClick={() => cameraFileRef.current?.click()} className="border border-dashed border-border rounded-xl p-6 text-center cursor-pointer hover:border-primary/40 hover:bg-primary/5 transition-all">
+                      <CameraIcon size={24} className="mx-auto mb-2 text-primary" />
+                      <p className="text-xs font-medium text-muted-foreground">Tirar Foto</p>
                     </div>
-                    <div onClick={() => fileRef.current?.click()} className="flex-1 border border-dashed border-border rounded-xl p-8 text-center cursor-pointer hover:border-primary/40 transition-colors">
-                      <div className="flex justify-center gap-2 mb-1.5">
-                        <Image size={18} className="text-muted-foreground" />
-                        <Video size={18} className="text-muted-foreground" />
-                      </div>
-                      <p className="text-xs text-muted-foreground">Galeria</p>
+                    <div onClick={() => cameraVideoRef.current?.click()} className="border border-dashed border-border rounded-xl p-6 text-center cursor-pointer hover:border-primary/40 hover:bg-primary/5 transition-all">
+                      <Video size={24} className="mx-auto mb-2 text-primary" />
+                      <p className="text-xs font-medium text-muted-foreground">Gravar Vídeo</p>
+                    </div>
+                    <div onClick={() => fileRef.current?.click()} className="col-span-2 border border-dashed border-border rounded-xl p-4 text-center cursor-pointer hover:border-primary/40 hover:bg-primary/5 transition-all">
+                      <Image size={20} className="mx-auto mb-1.5 text-muted-foreground" />
+                      <p className="text-xs font-medium text-muted-foreground">Escolher da Galeria</p>
                     </div>
                   </div>
                 ) : (
