@@ -100,7 +100,7 @@ export const PhotoUpload: React.FC<PhotoUploadProps> = ({
         console.error('Error removing photo:', err);
       }
     }
-    onPhotoChange(undefined);
+    onPhotoChange(null as unknown as string | undefined);
     if (inputRef.current) inputRef.current.value = '';
   };
 
