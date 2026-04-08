@@ -11,7 +11,6 @@ import { Search, X, Dog, Filter } from 'lucide-react';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select';
-import { normalizeBreedName } from '@/utils/breedNormalizer';
 
 const ClientsPage: React.FC = () => {
   const { clients } = useClients();
@@ -36,7 +35,7 @@ const ClientsPage: React.FC = () => {
   const breedStats = useMemo(() => {
     const map = new Map<string, number>();
     clients.forEach(c => {
-      const breed = normalizeBreedName(c.breed) || 'Sem raça';
+      const breed = c.breed || 'Sem raça';
       map.set(breed, (map.get(breed) || 0) + 1);
     });
     return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
@@ -51,7 +50,7 @@ const ClientsPage: React.FC = () => {
         }
       }
       if (breedFilter !== 'all') {
-        const clientBreed = normalizeBreedName(client.breed) || 'Sem raça';
+        const clientBreed = client.breed || 'Sem raça';
         if (clientBreed !== breedFilter) return false;
       }
       return true;
