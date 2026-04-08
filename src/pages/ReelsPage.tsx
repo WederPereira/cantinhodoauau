@@ -46,6 +46,7 @@ const ReelsPage: React.FC = () => {
   const [sendingComment, setSendingComment] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraFileRef = useRef<HTMLInputElement>(null);
+  const cameraVideoRef = useRef<HTMLInputElement>(null);
 
   const fetchPosts = useCallback(async () => {
     const { data } = await supabase
@@ -163,19 +164,21 @@ const ReelsPage: React.FC = () => {
               </DialogHeader>
               <div className="space-y-4">
                 <input ref={fileRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleFileSelect} />
-                <input ref={cameraFileRef} type="file" accept="image/*,video/*" capture="environment" className="hidden" onChange={handleFileSelect} />
+                <input ref={cameraFileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileSelect} />
+                <input ref={cameraVideoRef} type="file" accept="video/*" capture="environment" className="hidden" onChange={handleFileSelect} />
                 {!previewUrl ? (
-                  <div className="flex gap-3">
-                    <div onClick={() => cameraFileRef.current?.click()} className="flex-1 border border-dashed border-border rounded-xl p-8 text-center cursor-pointer hover:border-primary/40 transition-colors">
-                      <CameraIcon size={22} className="mx-auto mb-1.5 text-muted-foreground" />
-                      <p className="text-xs text-muted-foreground">Câmera</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div onClick={() => cameraFileRef.current?.click()} className="border border-dashed border-border rounded-xl p-6 text-center cursor-pointer hover:border-primary/40 hover:bg-primary/5 transition-all">
+                      <CameraIcon size={24} className="mx-auto mb-2 text-primary" />
+                      <p className="text-xs font-medium text-muted-foreground">Tirar Foto</p>
                     </div>
-                    <div onClick={() => fileRef.current?.click()} className="flex-1 border border-dashed border-border rounded-xl p-8 text-center cursor-pointer hover:border-primary/40 transition-colors">
-                      <div className="flex justify-center gap-2 mb-1.5">
-                        <Image size={18} className="text-muted-foreground" />
-                        <Video size={18} className="text-muted-foreground" />
-                      </div>
-                      <p className="text-xs text-muted-foreground">Galeria</p>
+                    <div onClick={() => cameraVideoRef.current?.click()} className="border border-dashed border-border rounded-xl p-6 text-center cursor-pointer hover:border-primary/40 hover:bg-primary/5 transition-all">
+                      <Video size={24} className="mx-auto mb-2 text-primary" />
+                      <p className="text-xs font-medium text-muted-foreground">Gravar Vídeo</p>
+                    </div>
+                    <div onClick={() => fileRef.current?.click()} className="col-span-2 border border-dashed border-border rounded-xl p-4 text-center cursor-pointer hover:border-primary/40 hover:bg-primary/5 transition-all">
+                      <Image size={20} className="mx-auto mb-1.5 text-muted-foreground" />
+                      <p className="text-xs font-medium text-muted-foreground">Escolher da Galeria</p>
                     </div>
                   </div>
                 ) : (
@@ -254,63 +257,66 @@ const ReelsPage: React.FC = () => {
                       </p>
                     )}
 
-                    {/* Comments toggle */}
-                    <button
-                      onClick={() => setExpandedComments(prev => {
-                        const next = new Set(prev);
-                        next.has(post.id) ? next.delete(post.id) : next.add(post.id);
-                        return next;
-                      })}
-                      className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors"
-                    >
-                      <MessageCircle size={13} />
-                      {postComments.length > 0 ? `${postComments.length} comentário${postComments.length > 1 ? 's' : ''}` : 'Comentar'}
-                    </button>
+                    {/* Comment input - always visible */}
+                    <div className="flex gap-2 pt-1">
+                      <Input
+                        placeholder="Comentar..."
+                        value={commentText[post.id] || ''}
+                        onChange={e => setCommentText(prev => ({ ...prev, [post.id]: e.target.value }))}
+                        onKeyDown={e => e.key === 'Enter' && handleComment(post.id)}
+                        className="h-9 text-xs rounded-full bg-muted border-0"
+                      />
+                      <Button
+                        size="icon"
+                        className="h-9 w-9 rounded-full shrink-0"
+                        onClick={() => handleComment(post.id)}
+                        disabled={sendingComment === post.id}
+                      >
+                        {sendingComment === post.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send size={13} />}
+                      </Button>
+                    </div>
 
-                    {/* Chat-style comments */}
-                    {isExpanded && (
-                      <div className="space-y-2 pt-1 border-t border-border/50">
-                        <div className="max-h-[200px] overflow-y-auto space-y-2 py-2">
-                          {postComments.map(comment => {
-                            const isOwn = comment.user_id === session?.user?.id;
-                            return (
-                              <div key={comment.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-[80%] rounded-2xl px-3 py-1.5 ${isOwn ? 'bg-primary text-primary-foreground rounded-br-md' : 'bg-muted text-foreground rounded-bl-md'}`}>
-                                  {!isOwn && <p className="text-[10px] font-medium opacity-70 mb-0.5">{comment.user_name}</p>}
-                                  <p className="text-xs">{comment.content}</p>
-                                  <div className="flex items-center justify-end gap-1 mt-0.5">
-                                    <span className="text-[9px] opacity-50">
-                                      {format(new Date(comment.created_at), 'HH:mm')}
-                                    </span>
-                                    {(comment.user_id === session?.user?.id || isAdmin) && (
-                                      <button onClick={() => handleDeleteComment(comment.id)} className="opacity-40 hover:opacity-100 transition-opacity">
-                                        <Trash2 size={9} />
-                                      </button>
-                                    )}
+                    {/* Comments toggle & list */}
+                    {postComments.length > 0 && (
+                      <>
+                        <button
+                          onClick={() => setExpandedComments(prev => {
+                            const next = new Set(prev);
+                            next.has(post.id) ? next.delete(post.id) : next.add(post.id);
+                            return next;
+                          })}
+                          className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors"
+                        >
+                          <MessageCircle size={13} />
+                          {isExpanded ? 'Ocultar' : `Ver ${postComments.length} comentário${postComments.length > 1 ? 's' : ''}`}
+                        </button>
+
+                        {isExpanded && (
+                          <div className="max-h-[250px] overflow-y-auto space-y-2 pt-1 border-t border-border/50">
+                            {postComments.map(comment => {
+                              const isOwn = comment.user_id === session?.user?.id;
+                              return (
+                                <div key={comment.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
+                                  <div className={`max-w-[80%] rounded-2xl px-3 py-1.5 ${isOwn ? 'bg-primary text-primary-foreground rounded-br-md' : 'bg-muted text-foreground rounded-bl-md'}`}>
+                                    {!isOwn && <p className="text-[10px] font-medium opacity-70 mb-0.5">{comment.user_name}</p>}
+                                    <p className="text-xs">{comment.content}</p>
+                                    <div className="flex items-center justify-end gap-1 mt-0.5">
+                                      <span className="text-[9px] opacity-50">
+                                        {format(new Date(comment.created_at), 'HH:mm')}
+                                      </span>
+                                      {(comment.user_id === session?.user?.id || isAdmin) && (
+                                        <button onClick={() => handleDeleteComment(comment.id)} className="opacity-40 hover:opacity-100 transition-opacity">
+                                          <Trash2 size={9} />
+                                        </button>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                        <div className="flex gap-2">
-                          <Input
-                            placeholder="Mensagem..."
-                            value={commentText[post.id] || ''}
-                            onChange={e => setCommentText(prev => ({ ...prev, [post.id]: e.target.value }))}
-                            onKeyDown={e => e.key === 'Enter' && handleComment(post.id)}
-                            className="h-9 text-xs rounded-full bg-muted border-0"
-                          />
-                          <Button
-                            size="icon"
-                            className="h-9 w-9 rounded-full shrink-0"
-                            onClick={() => handleComment(post.id)}
-                            disabled={sendingComment === post.id}
-                          >
-                            {sendingComment === post.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send size={13} />}
-                          </Button>
-                        </div>
-                      </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 </article>
