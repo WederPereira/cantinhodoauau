@@ -221,7 +221,28 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     const client = clients.find(c => c.id === id);
     const { error } = await supabase.from('clients').update(dbUpdates).eq('id', id);
     if (error) { console.error('Error updating client:', error); return; }
-    if (client) logAction('edit_client', 'client', id, { dog_name: client.name, tutor_name: client.tutorName });
+    if (client) {
+      // Store previous values for undo
+      const prevData: Record<string, any> = { dog_name: client.name, tutor_name: client.tutorName };
+      if (updates.name !== undefined) prevData.prev_name = client.name;
+      if (updates.breed !== undefined) prevData.prev_breed = client.breed;
+      if (updates.tutorName !== undefined) prevData.prev_tutor_name = client.tutorName;
+      if (updates.tutorPhone !== undefined) prevData.prev_tutor_phone = client.tutorPhone;
+      if (updates.tutorEmail !== undefined) prevData.prev_tutor_email = client.tutorEmail;
+      if (updates.tutorAddress !== undefined) prevData.prev_tutor_address = client.tutorAddress;
+      if (updates.tutorNeighborhood !== undefined) prevData.prev_tutor_neighborhood = client.tutorNeighborhood;
+      if (updates.tutorCpf !== undefined) prevData.prev_tutor_cpf = client.tutorCpf;
+      if (updates.petSize !== undefined) prevData.prev_pet_size = client.petSize;
+      if (updates.weight !== undefined) prevData.prev_weight = client.weight;
+      if (updates.birthDate !== undefined) prevData.prev_birth_date = client.birthDate;
+      if (updates.photo !== undefined) prevData.prev_photo = client.photo;
+      if (updates.gender !== undefined) prevData.prev_gender = client.gender;
+      if (updates.castrated !== undefined) prevData.prev_castrated = client.castrated;
+      if (updates.vaccines !== undefined) prevData.prev_vaccines = client.vaccines;
+      if (updates.healthRestrictions !== undefined) prevData.prev_health_restrictions = client.healthRestrictions;
+      prevData.updated_fields = Object.keys(updates);
+      logAction('edit_client', 'client', id, prevData);
+    }
     await fetchClients();
   }, [clients, fetchClients]);
 
