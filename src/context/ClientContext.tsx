@@ -294,6 +294,13 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     const client = clients.find(c => c.id === clientId);
     const deleted = client?.vaccineHistory?.find(r => r.id === recordId);
 
+    if (deleted) {
+      logAction('delete_vaccine', 'vaccine', recordId, {
+        dog_name: client?.name, tutor_name: client?.tutorName, client_id: clientId,
+        vaccine_type: deleted.type, date: deleted.date, notes: deleted.notes
+      });
+    }
+
     const { error } = await supabase.from('vaccine_records').delete().eq('id', recordId);
     if (error) { console.error('Error deleting vaccine record:', error); return; }
 
