@@ -45,7 +45,7 @@ const ReelsPage: React.FC = () => {
   const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set());
   const [sendingComment, setSendingComment] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const cameraFileRef = useRef<HTMLInputElement>(null);
+  const cameraVideoRef = useRef<HTMLInputElement>(null);
 
   const fetchPosts = useCallback(async () => {
     const { data } = await supabase
