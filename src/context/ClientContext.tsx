@@ -336,6 +336,15 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   }, [clients, fetchClients]);
 
   const deleteFleaRecord = useCallback(async (clientId: string, recordId: string) => {
+    const client = clients.find(c => c.id === clientId);
+    const deleted = client?.fleaHistory?.find(r => r.id === recordId);
+    if (deleted) {
+      logAction('delete_flea', 'flea', recordId, {
+        dog_name: client?.name, tutor_name: client?.tutorName, client_id: clientId,
+        date: deleted.date, brand: deleted.brand, duration_months: deleted.durationMonths, notes: deleted.notes
+      });
+    }
+
     const { error } = await supabase.from('flea_records').delete().eq('id', recordId);
     if (error) { console.error('Error deleting flea record:', error); return; }
 
