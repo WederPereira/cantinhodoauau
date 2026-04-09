@@ -928,6 +928,18 @@ export const HealthControlTab: React.FC = () => {
               </Button>
             </div>
           )}
+
+          {/* Vaccine type filter */}
+          {category === 'vaccines' && (
+            <div className="flex gap-1 ml-auto flex-wrap">
+              <Button size="sm" variant={vaccineTypeFilter === 'all' ? 'default' : 'outline'} className="h-7 text-[10px] px-2" onClick={() => setVaccineTypeFilter('all')}>Todas</Button>
+              {(['gripe', 'v10', 'raiva', 'giardia'] as VaccineType[]).map(vt => (
+                <Button key={vt} size="sm" variant={vaccineTypeFilter === vt ? 'default' : 'outline'} className="h-7 text-[10px] px-2" onClick={() => setVaccineTypeFilter(vaccineTypeFilter === vt ? 'all' : vt)}>
+                  {VACCINE_TYPE_LABELS[vt]}
+                </Button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
