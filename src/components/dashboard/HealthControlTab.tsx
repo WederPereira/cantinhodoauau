@@ -776,7 +776,7 @@ export const HealthControlTab: React.FC = () => {
       return getStatusPriority(aStatus as HealthStatus) - getStatusPriority(bStatus as HealthStatus);
     });
     return data;
-  }, [clientHealthData, search, filter, category, dateFilterFrom, dateFilterTo, fleaTypeFilter]);
+  }, [clientHealthData, search, filter, category, dateFilterFrom, dateFilterTo, fleaTypeFilter, vaccineTypeFilter]);
 
   const hasIssues = (info: ClientHealthInfo) => {
     if (category === 'vaccines') return info.vaccines.some(v => v.status === 'expired' || v.status === 'expiring');
