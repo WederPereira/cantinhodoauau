@@ -36,7 +36,7 @@ interface ClientContextType {
   getClientById: (id: string) => Client | undefined;
   addVaccineRecord: (clientId: string, type: VaccineType, date: string, notes?: string) => Promise<void>;
   deleteVaccineRecord: (clientId: string, recordId: string) => Promise<void>;
-  addFleaRecord: (clientId: string, date: string, brand: string, durationMonths: 1 | 2 | 3 | 6, notes?: string, fleaType?: FleaType) => Promise<void>;
+  addFleaRecord: (clientId: string, date: string, brand: string, durationMonths: 1 | 2 | 3 | 6 | 35, notes?: string, fleaType?: FleaType) => Promise<void>;
   deleteFleaRecord: (clientId: string, recordId: string) => Promise<void>;
   refreshClients: () => Promise<void>;
 }
@@ -68,7 +68,7 @@ const dbRowToClient = (row: any, vaccineRecords: any[] = [], fleaRecords: any[] 
     .map(r => ({ id: r.id, type: r.type as VaccineType, date: r.date, notes: r.notes || undefined })),
   fleaHistory: fleaRecords
     .filter(r => r.client_id === row.id)
-    .map(r => ({ id: r.id, date: r.date, brand: r.brand, durationMonths: r.duration_months as 1 | 2 | 3 | 6, fleaType: (r.flea_type || 'fixo') as FleaType, notes: r.notes || undefined })),
+    .map(r => ({ id: r.id, date: r.date, brand: r.brand, durationMonths: r.duration_months as 1 | 2 | 3 | 6 | 35, fleaType: (r.flea_type || 'fixo') as FleaType, notes: r.notes || undefined })),
   createdAt: new Date(row.created_at),
   updatedAt: new Date(row.updated_at),
 });
@@ -313,7 +313,7 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     await fetchClients();
   }, [clients, fetchClients]);
 
-  const addFleaRecord = useCallback(async (clientId: string, date: string, brand: string, durationMonths: 1 | 2 | 3 | 6, notes?: string, fleaType?: FleaType) => {
+  const addFleaRecord = useCallback(async (clientId: string, date: string, brand: string, durationMonths: 1 | 2 | 3 | 6 | 35, notes?: string, fleaType?: FleaType) => {
     const { error } = await supabase.from('flea_records').insert({
       client_id: clientId,
       date,

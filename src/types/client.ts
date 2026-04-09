@@ -23,7 +23,7 @@ export interface FleaRecord {
   id: string;
   date: string; // ISO
   brand: string;
-  durationMonths: 1 | 2 | 3 | 6;
+  durationMonths: 1 | 2 | 3 | 6 | 35;
   fleaType: FleaType;
   notes?: string;
 }
@@ -175,10 +175,14 @@ export const getVaccineExpiryDate = (lastDate: string): Date => {
   return d;
 };
 
-// Flea treatment expires after N months
+// Flea treatment expires after N months (or 35 days for the 35-day interval)
 export const getFleaExpiryDate = (lastDate: string, durationMonths: number): Date => {
   const d = new Date(lastDate);
-  d.setMonth(d.getMonth() + durationMonths);
+  if (durationMonths === 35) {
+    d.setDate(d.getDate() + 35);
+  } else {
+    d.setMonth(d.getMonth() + durationMonths);
+  }
   return d;
 };
 
