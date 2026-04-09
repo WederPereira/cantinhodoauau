@@ -975,7 +975,7 @@ export const HealthControlTab: React.FC = () => {
             {/* Category-specific content */}
             {category === 'vaccines' ? (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
-                {info.vaccines.map(v => {
+                {info.vaccines.filter(v => vaccineTypeFilter === 'all' || v.type === vaccineTypeFilter).map(v => {
                   const popKey = `${info.client.id}-${v.type}`;
                   const hasVaccineRestriction = vaccineRestrictions.some(r => r.toLowerCase().includes(v.label.toLowerCase()));
                   return (
