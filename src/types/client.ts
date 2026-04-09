@@ -23,7 +23,7 @@ export interface FleaRecord {
   id: string;
   date: string; // ISO
   brand: string;
-  durationMonths: 1 | 2 | 3 | 6;
+  durationMonths: 1 | 2 | 3 | 6 | 35;
   fleaType: FleaType;
   notes?: string;
 }
