@@ -36,7 +36,7 @@ interface ClientContextType {
   getClientById: (id: string) => Client | undefined;
   addVaccineRecord: (clientId: string, type: VaccineType, date: string, notes?: string) => Promise<void>;
   deleteVaccineRecord: (clientId: string, recordId: string) => Promise<void>;
-  addFleaRecord: (clientId: string, date: string, brand: string, durationMonths: 1 | 2 | 3 | 6, notes?: string, fleaType?: FleaType) => Promise<void>;
+  addFleaRecord: (clientId: string, date: string, brand: string, durationMonths: 1 | 2 | 3 | 6 | 35, notes?: string, fleaType?: FleaType) => Promise<void>;
   deleteFleaRecord: (clientId: string, recordId: string) => Promise<void>;
   refreshClients: () => Promise<void>;
 }

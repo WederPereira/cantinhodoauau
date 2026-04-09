@@ -495,6 +495,7 @@ const FleaFormPopover: React.FC<{
           <Select value={duration} onValueChange={setDuration}>
             <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
+              <SelectItem value="35">35 dias</SelectItem>
               <SelectItem value="1">1 mês</SelectItem>
               <SelectItem value="2">2 meses</SelectItem>
               <SelectItem value="3">3 meses</SelectItem>

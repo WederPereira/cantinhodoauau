@@ -314,6 +314,7 @@ export const HealthHistorySection: React.FC<HealthHistorySectionProps> = ({ clie
               <Select value={String(fleaDuration)} onValueChange={(v) => setFleaDuration(Number(v))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="35">35 dias</SelectItem>
                   <SelectItem value="1">1 mês</SelectItem>
                   <SelectItem value="2">2 meses</SelectItem>
                   <SelectItem value="3">3 meses</SelectItem>
