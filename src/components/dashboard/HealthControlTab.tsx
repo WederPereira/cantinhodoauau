@@ -791,7 +791,7 @@ export const HealthControlTab: React.FC = () => {
       {/* Category Toggle */}
       <div className="flex rounded-xl bg-muted/50 p-1 gap-1">
         <button
-          onClick={() => { setCategory('vaccines'); setFilter('all'); clearDateFilter(); setFleaTypeFilter('all'); }}
+          onClick={() => { setCategory('vaccines'); setFilter('all'); clearDateFilter(); setFleaTypeFilter('all'); setVaccineTypeFilter('all'); }}
           className={cn(
             'flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs sm:text-sm font-medium transition-all',
             category === 'vaccines'
@@ -880,8 +880,8 @@ export const HealthControlTab: React.FC = () => {
               className="pl-9 h-10 text-sm"
             />
           </div>
-          {(filter !== 'all' || hasDateFilter || fleaTypeFilter !== 'all') && (
-            <Button variant="outline" size="sm" onClick={() => { setFilter('all'); clearDateFilter(); setFleaTypeFilter('all'); }} className="shrink-0 h-10">
+          {(filter !== 'all' || hasDateFilter || fleaTypeFilter !== 'all' || vaccineTypeFilter !== 'all') && (
+            <Button variant="outline" size="sm" onClick={() => { setFilter('all'); clearDateFilter(); setFleaTypeFilter('all'); setVaccineTypeFilter('all'); }} className="shrink-0 h-10">
               <Filter size={14} className="mr-1" /> Limpar
             </Button>
           )}
