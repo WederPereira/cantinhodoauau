@@ -454,7 +454,7 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
                 <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 mb-2">
                   📱 QR Code
                 </h3>
-                <div className="bg-card border border-border rounded-xl p-4 flex flex-col items-center gap-3">
+                <div className="bg-card border border-border rounded-xl p-4 flex flex-col items-center gap-3 qr-profile-section">
                   <div className="bg-white p-3 rounded-xl">
                     <QRCodeCanvas
                       value={JSON.stringify({ dog: client.name, tutor: client.tutorName, raca: client.breed || 'SRD' })}
