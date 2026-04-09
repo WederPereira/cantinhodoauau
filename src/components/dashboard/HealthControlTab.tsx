@@ -1021,7 +1021,7 @@ export const HealthControlTab: React.FC = () => {
                 {info.flea.lastDate && (
                   <p className="text-[10px] text-muted-foreground">
                     Última aplicação: {formatDate(new Date(info.flea.lastDate))}
-                    {info.client.fleaHistory?.[0] && ` • ${info.client.fleaHistory[0].durationMonths} ${info.client.fleaHistory[0].durationMonths === 1 ? 'mês' : 'meses'}`}
+                    {info.client.fleaHistory?.[0] && ` • ${info.client.fleaHistory[0].durationMonths === 35 ? '35 dias' : `${info.client.fleaHistory[0].durationMonths} ${info.client.fleaHistory[0].durationMonths === 1 ? 'mês' : 'meses'}`}`}
                   </p>
                 )}
               </div>
