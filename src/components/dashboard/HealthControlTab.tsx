@@ -739,10 +739,27 @@ export const HealthControlTab: React.FC = () => {
       });
     }
 
+    // Vaccine type filter
+    if (category === 'vaccines' && vaccineTypeFilter !== 'all') {
+      data = data.filter(d => {
+        const v = d.vaccines.find(v => v.type === vaccineTypeFilter);
+        return v !== undefined;
+      });
+    }
+
     if (category === 'vaccines') {
-      if (filter === 'expired') data = data.filter(d => d.vaccines.some(v => v.status === 'expired'));
-      else if (filter === 'expiring') data = data.filter(d => d.vaccines.some(v => v.status === 'expiring'));
-      else if (filter === 'ok') data = data.filter(d => d.vaccines.every(v => v.status === 'ok' || v.status === 'none') && d.vaccines.some(v => v.status === 'ok'));
+      if (filter === 'expired') data = data.filter(d => {
+        const vaccines = vaccineTypeFilter !== 'all' ? d.vaccines.filter(v => v.type === vaccineTypeFilter) : d.vaccines;
+        return vaccines.some(v => v.status === 'expired');
+      });
+      else if (filter === 'expiring') data = data.filter(d => {
+        const vaccines = vaccineTypeFilter !== 'all' ? d.vaccines.filter(v => v.type === vaccineTypeFilter) : d.vaccines;
+        return vaccines.some(v => v.status === 'expiring');
+      });
+      else if (filter === 'ok') data = data.filter(d => {
+        const vaccines = vaccineTypeFilter !== 'all' ? d.vaccines.filter(v => v.type === vaccineTypeFilter) : d.vaccines;
+        return vaccines.every(v => v.status === 'ok' || v.status === 'none') && vaccines.some(v => v.status === 'ok');
+      });
     } else {
       if (filter === 'expired') data = data.filter(d => d.flea.status === 'expired');
       else if (filter === 'expiring') data = data.filter(d => d.flea.status === 'expiring');
