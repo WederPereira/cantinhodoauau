@@ -633,6 +633,7 @@ export const HealthControlTab: React.FC = () => {
   const [dateFilterFrom, setDateFilterFrom] = useState<Date | undefined>(undefined);
   const [dateFilterTo, setDateFilterTo] = useState<Date | undefined>(undefined);
   const [fleaTypeFilter, setFleaTypeFilter] = useState<'all' | 'fixo' | 'nao_fixo'>('all');
+  const [vaccineTypeFilter, setVaccineTypeFilter] = useState<'all' | VaccineType>('all');
 
   const clientHealthData = useMemo((): ClientHealthInfo[] => {
     return clients.map(client => {
