@@ -633,6 +633,7 @@ export const HealthControlTab: React.FC = () => {
   const [dateFilterFrom, setDateFilterFrom] = useState<Date | undefined>(undefined);
   const [dateFilterTo, setDateFilterTo] = useState<Date | undefined>(undefined);
   const [fleaTypeFilter, setFleaTypeFilter] = useState<'all' | 'fixo' | 'nao_fixo'>('all');
+  const [vaccineTypeFilter, setVaccineTypeFilter] = useState<'all' | VaccineType>('all');
 
   const clientHealthData = useMemo((): ClientHealthInfo[] => {
     return clients.map(client => {
@@ -738,10 +739,27 @@ export const HealthControlTab: React.FC = () => {
       });
     }
 
+    // Vaccine type filter
+    if (category === 'vaccines' && vaccineTypeFilter !== 'all') {
+      data = data.filter(d => {
+        const v = d.vaccines.find(v => v.type === vaccineTypeFilter);
+        return v !== undefined;
+      });
+    }
+
     if (category === 'vaccines') {
-      if (filter === 'expired') data = data.filter(d => d.vaccines.some(v => v.status === 'expired'));
-      else if (filter === 'expiring') data = data.filter(d => d.vaccines.some(v => v.status === 'expiring'));
-      else if (filter === 'ok') data = data.filter(d => d.vaccines.every(v => v.status === 'ok' || v.status === 'none') && d.vaccines.some(v => v.status === 'ok'));
+      if (filter === 'expired') data = data.filter(d => {
+        const vaccines = vaccineTypeFilter !== 'all' ? d.vaccines.filter(v => v.type === vaccineTypeFilter) : d.vaccines;
+        return vaccines.some(v => v.status === 'expired');
+      });
+      else if (filter === 'expiring') data = data.filter(d => {
+        const vaccines = vaccineTypeFilter !== 'all' ? d.vaccines.filter(v => v.type === vaccineTypeFilter) : d.vaccines;
+        return vaccines.some(v => v.status === 'expiring');
+      });
+      else if (filter === 'ok') data = data.filter(d => {
+        const vaccines = vaccineTypeFilter !== 'all' ? d.vaccines.filter(v => v.type === vaccineTypeFilter) : d.vaccines;
+        return vaccines.every(v => v.status === 'ok' || v.status === 'none') && vaccines.some(v => v.status === 'ok');
+      });
     } else {
       if (filter === 'expired') data = data.filter(d => d.flea.status === 'expired');
       else if (filter === 'expiring') data = data.filter(d => d.flea.status === 'expiring');
@@ -758,7 +776,7 @@ export const HealthControlTab: React.FC = () => {
       return getStatusPriority(aStatus as HealthStatus) - getStatusPriority(bStatus as HealthStatus);
     });
     return data;
-  }, [clientHealthData, search, filter, category, dateFilterFrom, dateFilterTo, fleaTypeFilter]);
+  }, [clientHealthData, search, filter, category, dateFilterFrom, dateFilterTo, fleaTypeFilter, vaccineTypeFilter]);
 
   const hasIssues = (info: ClientHealthInfo) => {
     if (category === 'vaccines') return info.vaccines.some(v => v.status === 'expired' || v.status === 'expiring');
@@ -773,7 +791,7 @@ export const HealthControlTab: React.FC = () => {
       {/* Category Toggle */}
       <div className="flex rounded-xl bg-muted/50 p-1 gap-1">
         <button
-          onClick={() => { setCategory('vaccines'); setFilter('all'); clearDateFilter(); setFleaTypeFilter('all'); }}
+          onClick={() => { setCategory('vaccines'); setFilter('all'); clearDateFilter(); setFleaTypeFilter('all'); setVaccineTypeFilter('all'); }}
           className={cn(
             'flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs sm:text-sm font-medium transition-all',
             category === 'vaccines'
@@ -862,8 +880,8 @@ export const HealthControlTab: React.FC = () => {
               className="pl-9 h-10 text-sm"
             />
           </div>
-          {(filter !== 'all' || hasDateFilter || fleaTypeFilter !== 'all') && (
-            <Button variant="outline" size="sm" onClick={() => { setFilter('all'); clearDateFilter(); setFleaTypeFilter('all'); }} className="shrink-0 h-10">
+          {(filter !== 'all' || hasDateFilter || fleaTypeFilter !== 'all' || vaccineTypeFilter !== 'all') && (
+            <Button variant="outline" size="sm" onClick={() => { setFilter('all'); clearDateFilter(); setFleaTypeFilter('all'); setVaccineTypeFilter('all'); }} className="shrink-0 h-10">
               <Filter size={14} className="mr-1" /> Limpar
             </Button>
           )}
@@ -910,6 +928,18 @@ export const HealthControlTab: React.FC = () => {
               </Button>
             </div>
           )}
+
+          {/* Vaccine type filter */}
+          {category === 'vaccines' && (
+            <div className="flex gap-1 ml-auto flex-wrap">
+              <Button size="sm" variant={vaccineTypeFilter === 'all' ? 'default' : 'outline'} className="h-7 text-[10px] px-2" onClick={() => setVaccineTypeFilter('all')}>Todas</Button>
+              {(['gripe', 'v10', 'raiva', 'giardia'] as VaccineType[]).map(vt => (
+                <Button key={vt} size="sm" variant={vaccineTypeFilter === vt ? 'default' : 'outline'} className="h-7 text-[10px] px-2" onClick={() => setVaccineTypeFilter(vaccineTypeFilter === vt ? 'all' : vt)}>
+                  {VACCINE_TYPE_LABELS[vt]}
+                </Button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -945,7 +975,7 @@ export const HealthControlTab: React.FC = () => {
             {/* Category-specific content */}
             {category === 'vaccines' ? (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
-                {info.vaccines.map(v => {
+                {info.vaccines.filter(v => vaccineTypeFilter === 'all' || v.type === vaccineTypeFilter).map(v => {
                   const popKey = `${info.client.id}-${v.type}`;
                   const hasVaccineRestriction = vaccineRestrictions.some(r => r.toLowerCase().includes(v.label.toLowerCase()));
                   return (

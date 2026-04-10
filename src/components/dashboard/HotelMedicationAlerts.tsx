@@ -1,8 +1,9 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Pill, AlertTriangle, Clock, Dog, Check, Timer } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { useUserRole } from '@/hooks/useUserRole';
 
 interface MedAlert {
   id: string;
@@ -17,6 +18,8 @@ interface MedAlert {
 const HotelMedicationAlerts: React.FC = () => {
   const [alerts, setAlerts] = useState<MedAlert[]>([]);
   const [now, setNow] = useState(new Date());
+  const { isAdmin } = useUserRole();
+  const notifiedOverdueRef = useRef<Set<string>>(new Set());
 
   const fetchAlerts = useCallback(async () => {
     try {
@@ -61,11 +64,30 @@ const HotelMedicationAlerts: React.FC = () => {
     return () => { supabase.removeChannel(channel); };
   }, [fetchAlerts]);
 
-  // Tick every second for countdown
   useEffect(() => {
     const interval = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // Send browser notification for overdue medications (admin only)
+  useEffect(() => {
+    if (!isAdmin) return;
+    alerts.forEach(med => {
+      if (med.administered) return;
+      const [h, m] = med.scheduled_time.split(':').map(Number);
+      const medMinutes = h * 60 + m;
+      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+      if (nowMinutes - medMinutes >= 120 && !notifiedOverdueRef.current.has(med.id)) {
+        notifiedOverdueRef.current.add(med.id);
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('⚠️ Remédio atrasado +2h!', {
+            body: `${med.dog_name} — ${med.medication_name} (${med.scheduled_time.slice(0, 5)})`,
+            icon: '/app-icon.png',
+          });
+        }
+      }
+    });
+  }, [alerts, now, isAdmin]);
 
   const handleAdminister = async (med: MedAlert) => {
     try {
