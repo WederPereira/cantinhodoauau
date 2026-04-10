@@ -52,19 +52,6 @@ const TaskNotifications: React.FC = () => {
     } catch { /* no audio */ }
   }, []);
 
-  const sendBrowserNotification = useCallback((title: string, body: string) => {
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(title, { body, icon: '/app-icon.png' });
-    }
-  }, []);
-
-  // Request notification permission
-  useEffect(() => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
-  }, []);
-
   // Employee: check for new tasks assigned to me
   useEffect(() => {
     if (!session?.user?.id || isAdmin) return;
@@ -81,7 +68,6 @@ const TaskNotifications: React.FC = () => {
         if (notifiedTasksRef.current.has(task.id)) return;
         notifiedTasksRef.current.add(task.id);
         playNotificationSound();
-        sendBrowserNotification('📋 Nova tarefa!', `${task.title} • ⏰ ${task.scheduled_time?.slice(0, 5)}`);
         toast('📋 Nova tarefa atribuída!', {
           description: `${task.title} • ⏰ ${task.scheduled_time?.slice(0, 5)}`,
           duration: 10000,
@@ -91,7 +77,7 @@ const TaskNotifications: React.FC = () => {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [session?.user?.id, isAdmin, playNotificationSound, sendBrowserNotification]);
+  }, [session?.user?.id, isAdmin, playNotificationSound]);
 
   // Admin: check for late tasks (2h past scheduled time and still pending)
   useEffect(() => {
@@ -120,7 +106,6 @@ const TaskNotifications: React.FC = () => {
           notifiedLateRef.current.add(task.id);
           playAlertSound();
           const employeeName = task.profiles?.full_name || 'Funcionário';
-          sendBrowserNotification('⚠️ Tarefa atrasada!', `"${task.title}" de ${employeeName} — ${Math.floor(diff / 60)}h atrasada`);
           toast.error(`⚠️ Tarefa atrasada!`, {
             description: `"${task.title}" de ${employeeName} não foi concluída (${Math.floor(diff / 60)}h atrasada)`,
             duration: 15000,
@@ -131,11 +116,11 @@ const TaskNotifications: React.FC = () => {
     };
 
     checkLateTasks();
-    const interval = setInterval(checkLateTasks, 5 * 60 * 1000);
+    const interval = setInterval(checkLateTasks, 5 * 60 * 1000); // check every 5min
     return () => clearInterval(interval);
-  }, [session?.user?.id, isAdmin, playAlertSound, sendBrowserNotification]);
+  }, [session?.user?.id, isAdmin, playAlertSound]);
 
-  return null;
+  return null; // This is a headless component
 };
 
 export default TaskNotifications;
