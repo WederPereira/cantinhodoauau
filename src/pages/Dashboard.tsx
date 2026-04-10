@@ -1,30 +1,23 @@
-import React, { lazy, Suspense, useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useClients } from '@/context/ClientContext';
+import { AddClientDialog } from '@/components/AddClientDialog';
+import { ClientDetailSheet } from '@/components/ClientDetailSheet';
+import { HealthAlerts } from '@/components/HealthAlerts';
+import { BirthdaySection } from '@/components/dashboard/BirthdaySection';
+import { HealthControlTab } from '@/components/dashboard/HealthControlTab';
+import DaycareTab from '@/components/dashboard/DaycareTab';
+import TaxiTab from '@/components/dashboard/TaxiTab';
+import HotelTab from '@/components/dashboard/HotelTab';
+import HotelMedicationAlerts from '@/components/dashboard/HotelMedicationAlerts';
+import HotelFeedingAlerts from '@/components/dashboard/HotelFeedingAlerts';
+import HotelCheckoutAlerts from '@/components/dashboard/HotelCheckoutAlerts';
+import QrReader from '@/components/qrcode/QrReader';
+import EmployeeTasksBanner from '@/components/dashboard/EmployeeTasksBanner';
 import { Client, getHealthAlerts } from '@/types/client';
-import { LayoutDashboard, HeartPulse, PawPrint, Hotel, Camera, Car, Loader2 } from 'lucide-react';
+import { LayoutDashboard, HeartPulse, PawPrint, Hotel, Camera, Car } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-
-const AddClientDialog = lazy(() => import('@/components/AddClientDialog').then((module) => ({ default: module.AddClientDialog })));
-const ClientDetailSheet = lazy(() => import('@/components/ClientDetailSheet').then((module) => ({ default: module.ClientDetailSheet })));
-const HealthAlerts = lazy(() => import('@/components/HealthAlerts').then((module) => ({ default: module.HealthAlerts })));
-const BirthdaySection = lazy(() => import('@/components/dashboard/BirthdaySection').then((module) => ({ default: module.BirthdaySection })));
-const HealthControlTab = lazy(() => import('@/components/dashboard/HealthControlTab').then((module) => ({ default: module.HealthControlTab })));
-const DaycareTab = lazy(() => import('@/components/dashboard/DaycareTab'));
-const TaxiTab = lazy(() => import('@/components/dashboard/TaxiTab'));
-const HotelTab = lazy(() => import('@/components/dashboard/HotelTab'));
-const HotelMedicationAlerts = lazy(() => import('@/components/dashboard/HotelMedicationAlerts'));
-const HotelFeedingAlerts = lazy(() => import('@/components/dashboard/HotelFeedingAlerts'));
-const HotelCheckoutAlerts = lazy(() => import('@/components/dashboard/HotelCheckoutAlerts'));
-const QrReader = lazy(() => import('@/components/qrcode/QrReader'));
-const EmployeeTasksBanner = lazy(() => import('@/components/dashboard/EmployeeTasksBanner'));
-
-const SectionLoader = () => (
-  <div className="flex items-center justify-center py-10">
-    <Loader2 size={20} className="animate-spin text-primary" />
-  </div>
-);
 
 const Dashboard: React.FC = () => {
   const { clients, getClientById } = useClients();
@@ -59,6 +52,7 @@ const Dashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container px-4 py-5 max-w-6xl mx-auto space-y-5">
+        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-foreground tracking-tight">Dashboard</h1>
@@ -78,17 +72,14 @@ const Dashboard: React.FC = () => {
                 <DialogHeader>
                   <DialogTitle>Leitor QR Code</DialogTitle>
                 </DialogHeader>
-                <Suspense fallback={<SectionLoader />}>
-                  <QrReader />
-                </Suspense>
+                <QrReader />
               </DialogContent>
             </Dialog>
-            <Suspense fallback={<Button size="sm" variant="outline" className="h-9 text-xs rounded-xl" disabled><Loader2 size={14} className="animate-spin" /></Button>}>
-              <AddClientDialog />
-            </Suspense>
+            <AddClientDialog />
           </div>
         </div>
 
+        {/* Tabs */}
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="w-full grid grid-cols-5 h-10 rounded-xl p-0.5 bg-muted/50 border border-border/50">
             <TabsTrigger value="overview" className="gap-1 text-[10px] sm:text-xs rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm transition-all px-1 sm:px-3">
@@ -114,10 +105,9 @@ const Dashboard: React.FC = () => {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4 mt-4">
-            <Suspense fallback={<SectionLoader />}>
-              <EmployeeTasksBanner />
-            </Suspense>
+            <EmployeeTasksBanner />
 
+            {/* Stats */}
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-card border border-border rounded-xl p-4">
                 <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Total Pets</p>
@@ -129,41 +119,29 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
 
-            <Suspense fallback={<SectionLoader />}>
-              <HotelMedicationAlerts />
-              <HotelFeedingAlerts />
-              <HotelCheckoutAlerts />
-              <HealthAlerts alerts={healthAlerts} onClientClick={handleAlertClientClick} />
-              <BirthdaySection clients={clients} onClientClick={handleClientClick} />
-            </Suspense>
+            <HotelMedicationAlerts />
+            <HotelFeedingAlerts />
+            <HotelCheckoutAlerts />
+            <HealthAlerts alerts={healthAlerts} onClientClick={handleAlertClientClick} />
+            <BirthdaySection clients={clients} onClientClick={handleClientClick} />
           </TabsContent>
 
           <TabsContent value="daycare" className="mt-4">
-            <Suspense fallback={<SectionLoader />}>
-              <DaycareTab />
-            </Suspense>
+            <DaycareTab />
           </TabsContent>
           <TabsContent value="taxi" className="mt-4">
-            <Suspense fallback={<SectionLoader />}>
-              <TaxiTab />
-            </Suspense>
+            <TaxiTab />
           </TabsContent>
           <TabsContent value="hotel" className="mt-4">
-            <Suspense fallback={<SectionLoader />}>
-              <HotelTab />
-            </Suspense>
+            <HotelTab />
           </TabsContent>
           <TabsContent value="health" className="mt-4">
-            <Suspense fallback={<SectionLoader />}>
-              <HealthControlTab />
-            </Suspense>
+            <HealthControlTab />
           </TabsContent>
         </Tabs>
       </div>
 
-      <Suspense fallback={null}>
-        <ClientDetailSheet client={selectedClient} open={sheetOpen} onOpenChange={setSheetOpen} />
-      </Suspense>
+      <ClientDetailSheet client={selectedClient} open={sheetOpen} onOpenChange={setSheetOpen} />
     </div>
   );
 };
