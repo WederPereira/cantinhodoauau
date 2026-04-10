@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,33 +10,46 @@ import { Header } from "@/components/Header";
 import { BottomNavbar } from "@/components/BottomNavbar";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { useAuth } from "@/hooks/useAuth";
-import Index from "./pages/Index";
-import ClientsPage from "./pages/ClientsPage";
-import SpreadsheetPage from "./pages/SpreadsheetPage";
-import ReportsPage from "./pages/ReportsPage";
-import AccountPage from "./pages/AccountPage";
-import ReelsPage from "./pages/ReelsPage";
-import LoginPage from "./pages/LoginPage";
-import NotFound from "./pages/NotFound";
 import TaskNotifications from "./components/TaskNotifications";
 import { Loader2 } from "lucide-react";
 
+const Index = lazy(() => import("./pages/Index"));
+const ClientsPage = lazy(() => import("./pages/ClientsPage"));
+const SpreadsheetPage = lazy(() => import("./pages/SpreadsheetPage"));
+const ReportsPage = lazy(() => import("./pages/ReportsPage"));
+const AccountPage = lazy(() => import("./pages/AccountPage"));
+const ReelsPage = lazy(() => import("./pages/ReelsPage"));
+const LoginPage = lazy(() => import("./pages/LoginPage"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+
 const queryClient = new QueryClient();
+
+const FullScreenLoader = () => (
+  <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
+    <img src="/app-icon.png" alt="Cantinho do AuAu" className="w-20 h-20 rounded-2xl shadow-lg" />
+    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+  </div>
+);
+
+const RouteLoader = () => (
+  <div className="flex items-center justify-center py-16">
+    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+  </div>
+);
 
 const AppContent = () => {
   const { session, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
-        <img src="/app-icon.png" alt="Cantinho do AuAu" className="w-20 h-20 rounded-2xl shadow-lg" />
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
-      </div>
-    );
+    return <FullScreenLoader />;
   }
 
   if (!session) {
-    return <LoginPage />;
+    return (
+      <Suspense fallback={<FullScreenLoader />}>
+        <LoginPage />
+      </Suspense>
+    );
   }
 
   return (
@@ -43,15 +57,17 @@ const AppContent = () => {
       <div className="min-h-screen bg-background flex flex-col">
         <Header />
         <main className="flex-1 pb-16 lg:pb-6">
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/clients" element={<ClientsPage />} />
-            <Route path="/spreadsheet" element={<SpreadsheetPage />} />
-            <Route path="/reports" element={<ReportsPage />} />
-            <Route path="/reels" element={<ReelsPage />} />
-            <Route path="/account" element={<AccountPage />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <Suspense fallback={<RouteLoader />}>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/clients" element={<ClientsPage />} />
+              <Route path="/spreadsheet" element={<SpreadsheetPage />} />
+              <Route path="/reports" element={<ReportsPage />} />
+              <Route path="/reels" element={<ReelsPage />} />
+              <Route path="/account" element={<AccountPage />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
           <TaskNotifications />
         </main>
         <BottomNavbar />
