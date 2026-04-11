@@ -455,7 +455,7 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
                 <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 mb-2">
                   📱 QR Code
                 </h3>
-                <div className="bg-gradient-to-br from-[#1a1a2e] to-[#16213e] border border-border rounded-xl p-5 flex flex-col items-center gap-3">
+                <div className="qr-profile-section bg-gradient-to-br from-[#1a1a2e] to-[#16213e] border border-border rounded-xl p-5 flex flex-col items-center gap-3">
                   <div className="bg-white p-3 rounded-xl shadow-md">
                     <QRCodeSVG
                       value={`Tutor: ${client.tutorName}\nDog: ${client.name}\nRaça: ${client.breed || 'SRD'}`}
