@@ -58,13 +58,6 @@ const TaskNotifications: React.FC = () => {
     }
   }, []);
 
-  // Request notification permission
-  useEffect(() => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
-  }, []);
-
   // Employee: check for new tasks assigned to me
   useEffect(() => {
     if (!session?.user?.id || isAdmin) return;

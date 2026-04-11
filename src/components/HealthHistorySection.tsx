@@ -47,7 +47,7 @@ export const HealthHistorySection: React.FC<HealthHistorySectionProps> = ({ clie
       toast.error('Selecione ou digite a marca');
       return;
     }
-    addFleaRecord(client.id, fleaDate.toISOString(), brand, fleaDuration as 1 | 2 | 3 | 6);
+    addFleaRecord(client.id, fleaDate.toISOString(), brand, fleaDuration as 1 | 2 | 3 | 6 | 35 | 45);
     toast.success(`Antipulgas ${brand} registrado!`);
     setFleaDialogOpen(false);
     setCustomBrand('');
@@ -315,6 +315,7 @@ export const HealthHistorySection: React.FC<HealthHistorySectionProps> = ({ clie
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="35">35 dias</SelectItem>
+                  <SelectItem value="45">45 dias</SelectItem>
                   <SelectItem value="1">1 mês</SelectItem>
                   <SelectItem value="2">2 meses</SelectItem>
                   <SelectItem value="3">3 meses</SelectItem>

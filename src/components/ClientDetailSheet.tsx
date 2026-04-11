@@ -20,7 +20,8 @@ import { BreedSelect } from './BreedSelect';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { QRCodeCanvas } from 'qrcode.react';
+import { QRCodeSVG } from 'qrcode.react';
+import logoSrc from '@/assets/logo-cantinho.png';
 
 interface ClientDetailSheetProps {
   client: Client | null;
@@ -454,29 +455,45 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
                 <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 mb-2">
                   📱 QR Code
                 </h3>
-                <div className="bg-card border border-border rounded-xl p-4 flex flex-col items-center gap-3 qr-profile-section">
-                  <div className="bg-white p-3 rounded-xl">
-                    <QRCodeCanvas
-                      value={JSON.stringify({ dog: client.name, tutor: client.tutorName, raca: client.breed || 'SRD' })}
-                      size={140}
+                <div className="qr-profile-section bg-gradient-to-br from-[#1a1a2e] to-[#16213e] border border-border rounded-xl p-5 flex flex-col items-center gap-3">
+                  <div className="bg-white p-3 rounded-xl shadow-md">
+                    <QRCodeSVG
+                      value={`Tutor: ${client.tutorName}\nDog: ${client.name}\nRaça: ${client.breed || 'SRD'}`}
+                      size={160}
                       level="H"
                       imageSettings={{
-                        src: '/logo-cantinho.png',
-                        height: 35,
-                        width: 35,
+                        src: logoSrc,
+                        x: undefined,
+                        y: undefined,
+                        height: 40,
+                        width: 40,
                         excavate: true,
                       }}
                     />
                   </div>
+                  <p className="text-[10px] text-slate-400 font-medium tracking-wider">CANTINHO DO AUAU</p>
                   <div className="flex gap-2">
-                    <Button size="sm" variant="outline" className="text-xs h-8 gap-1" onClick={() => {
-                      const canvas = document.querySelector('.qr-profile-section canvas') as HTMLCanvasElement;
-                      if (!canvas) return;
-                      const link = document.createElement('a');
-                      link.download = `qr-${client.name}.png`;
-                      link.href = canvas.toDataURL('image/png');
-                      link.click();
-                      toast.success('QR Code baixado!');
+                    <Button size="sm" variant="outline" className="text-xs h-8 gap-1 border-slate-600 text-slate-300 hover:bg-slate-700" onClick={() => {
+                      const svgEl = document.querySelector('.qr-profile-section svg') as SVGSVGElement;
+                      if (!svgEl) return;
+                      const svgData = new XMLSerializer().serializeToString(svgEl);
+                      const canvas = document.createElement('canvas');
+                      const ctx = canvas.getContext('2d')!;
+                      const img = new Image();
+                      img.onload = () => {
+                        canvas.width = img.width * 3;
+                        canvas.height = img.height * 3;
+                        ctx.scale(3, 3);
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, img.width, img.height);
+                        ctx.drawImage(img, 0, 0);
+                        const link = document.createElement('a');
+                        link.download = `qr-${client.name}.png`;
+                        link.href = canvas.toDataURL('image/png');
+                        link.click();
+                        toast.success('QR Code baixado!');
+                      };
+                      img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
                     }}>
                       Baixar QR
                     </Button>
