@@ -89,20 +89,27 @@ const ReelsPage: React.FC = () => {
   };
 
   const handlePost = async () => {
-    if (!selectedFile || !session?.user) return;
+    if (!session?.user) return;
+    if (!selectedFile && !caption.trim()) return;
     setUploading(true);
     try {
-      const ext = selectedFile.name.split('.').pop();
-      const path = `${session.user.id}/${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from('reels').upload(path, selectedFile);
-      if (upErr) throw upErr;
-      const { data: urlData } = supabase.storage.from('reels').getPublicUrl(path);
-      const mediaType = selectedFile.type.startsWith('video') ? 'video' : 'image';
+      let mediaUrl = '';
+      let mediaType = 'text';
+
+      if (selectedFile) {
+        const ext = selectedFile.name.split('.').pop();
+        const path = `${session.user.id}/${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from('reels').upload(path, selectedFile);
+        if (upErr) throw upErr;
+        const { data: urlData } = supabase.storage.from('reels').getPublicUrl(path);
+        mediaUrl = urlData.publicUrl;
+        mediaType = selectedFile.type.startsWith('video') ? 'video' : 'image';
+      }
 
       const { error } = await supabase.from('reels_posts').insert({
         user_id: session.user.id,
         user_name: session.user.user_metadata?.full_name || session.user.email || 'Anônimo',
-        media_url: urlData.publicUrl,
+        media_url: mediaUrl,
         media_type: mediaType,
         caption,
       });
@@ -197,7 +204,7 @@ const ReelsPage: React.FC = () => {
               </div>
               <DialogFooter>
                 <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
-                <Button onClick={handlePost} disabled={!selectedFile || uploading}>
+                <Button onClick={handlePost} disabled={(!selectedFile && !caption.trim()) || uploading}>
                   {uploading ? <Loader2 className="animate-spin w-4 h-4" /> : 'Publicar'}
                 </Button>
               </DialogFooter>
@@ -242,11 +249,15 @@ const ReelsPage: React.FC = () => {
                   </div>
 
                   {/* Media */}
-                  {post.media_type === 'video' ? (
+                  {post.media_url && post.media_type === 'video' ? (
                     <video src={post.media_url} controls className="w-full max-h-[420px] object-contain bg-muted" />
-                  ) : (
+                  ) : post.media_url && post.media_type !== 'text' ? (
                     <img src={post.media_url} alt="" className="w-full max-h-[420px] object-contain bg-muted" />
-                  )}
+                  ) : !post.media_url || post.media_type === 'text' ? (
+                    <div className="px-5 py-6 bg-gradient-to-br from-primary/10 to-accent/10">
+                      <p className="text-base font-medium text-foreground leading-relaxed">{post.caption}</p>
+                    </div>
+                  ) : null}
 
                   {/* Content */}
                   <div className="px-4 py-3 space-y-2.5">
