@@ -2,7 +2,6 @@ import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { supabase } from '@/integrations/supabase/client';
 import { useClients } from '@/context/ClientContext';
 import { format, startOfDay, differenceInDays, addDays, eachDayOfInterval, isSameDay } from 'date-fns';
-import { format, startOfDay, differenceInDays, addDays, eachDayOfInterval, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
   Hotel, Plus, Camera, Pill, Clock, Trash2, X, ChevronDown, ChevronUp,
@@ -1088,10 +1087,6 @@ const HotelTab: React.FC = () => {
               </div>
             </div>
           </div>
-        </TabsContent>
-
-        <TabsContent value="analytics" className="mt-4">
-          <HotelAnalyticsTab />
         </TabsContent>
       </Tabs>
 
