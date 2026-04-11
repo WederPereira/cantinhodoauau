@@ -1,10 +1,20 @@
-import React, { useMemo, useState } from 'react';
+import React, { lazy, Suspense, useMemo, useState } from 'react';
 import { useClients } from '@/context/ClientContext';
-import { BarChart3, TrendingUp, Users, Calendar as CalendarIcon } from 'lucide-react';
+import { BarChart3, TrendingUp, Users, Calendar as CalendarIcon, Loader2 } from 'lucide-react';
 import { Tooltip, Legend, ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { format, subMonths, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+const FrequencyAnalytics = lazy(() => import('@/components/dashboard/FrequencyAnalytics'));
+const HotelAnalyticsTab = lazy(() => import('@/components/dashboard/HotelAnalyticsTab'));
+
+const SectionLoader = () => (
+  <div className="flex items-center justify-center py-10">
+    <Loader2 size={20} className="animate-spin text-primary" />
+  </div>
+);
 
 const ReportsPage: React.FC = () => {
   const { clients } = useClients();
@@ -62,47 +72,69 @@ const ReportsPage: React.FC = () => {
           </Select>
         </div>
 
-        {/* KPI Cards */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
-            <div className="flex items-center gap-2 mb-2">
-              <Users size={16} className="text-primary" />
-              <p className="text-xs text-muted-foreground">Total Clientes</p>
-            </div>
-            <p className="text-xl font-bold text-foreground">{clients.length}</p>
-          </div>
-          <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
-            <div className="flex items-center gap-2 mb-2">
-              <TrendingUp size={16} className="text-accent" />
-              <p className="text-xs text-muted-foreground">Novos (último mês)</p>
-            </div>
-            <p className="text-xl font-bold text-foreground">{newClientsData.length > 0 ? newClientsData[newClientsData.length - 1].novos : 0}</p>
-          </div>
-        </div>
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="w-full grid grid-cols-3 h-10 mb-6">
+            <TabsTrigger value="overview" className="text-xs">Visão Geral</TabsTrigger>
+            <TabsTrigger value="daycare" className="text-xs">Creche</TabsTrigger>
+            <TabsTrigger value="hotel" className="text-xs">Hotel</TabsTrigger>
+          </TabsList>
 
-        {/* New Clients Chart */}
-        <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
-          <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
-            <Users size={16} className="text-primary" />
-            Novos Clientes por Mês
-          </h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <AreaChart data={newClientsData}>
-              <defs>
-                <linearGradient id="clientsGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(174, 72%, 40%)" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="hsl(174, 72%, 40%)" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
-              <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} allowDecimals={false} />
-              <Tooltip contentStyle={CustomTooltipStyle} />
-              <Legend wrapperStyle={{ fontSize: '12px' }} />
-              <Area type="monotone" dataKey="novos" stroke="hsl(174, 72%, 40%)" strokeWidth={2} fill="url(#clientsGradient)" name="Novos Clientes" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
+          <TabsContent value="overview" className="space-y-6 mt-0">
+            {/* KPI Cards */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
+                <div className="flex items-center gap-2 mb-2">
+                  <Users size={16} className="text-primary" />
+                  <p className="text-xs text-muted-foreground">Total Clientes</p>
+                </div>
+                <p className="text-xl font-bold text-foreground">{clients.length}</p>
+              </div>
+              <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
+                <div className="flex items-center gap-2 mb-2">
+                  <TrendingUp size={16} className="text-accent" />
+                  <p className="text-xs text-muted-foreground">Novos (último mês)</p>
+                </div>
+                <p className="text-xl font-bold text-foreground">{newClientsData.length > 0 ? newClientsData[newClientsData.length - 1].novos : 0}</p>
+              </div>
+            </div>
+
+            {/* New Clients Chart */}
+            <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
+              <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+                <Users size={16} className="text-primary" />
+                Novos Clientes por Mês
+              </h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <AreaChart data={newClientsData}>
+                  <defs>
+                    <linearGradient id="clientsGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(174, 72%, 40%)" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="hsl(174, 72%, 40%)" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
+                  <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} allowDecimals={false} />
+                  <Tooltip contentStyle={CustomTooltipStyle} />
+                  <Legend wrapperStyle={{ fontSize: '12px' }} />
+                  <Area type="monotone" dataKey="novos" stroke="hsl(174, 72%, 40%)" strokeWidth={2} fill="url(#clientsGradient)" name="Novos Clientes" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="daycare" className="mt-0">
+            <Suspense fallback={<SectionLoader />}>
+              <FrequencyAnalytics />
+            </Suspense>
+          </TabsContent>
+
+          <TabsContent value="hotel" className="mt-0">
+            <Suspense fallback={<SectionLoader />}>
+              <HotelAnalyticsTab />
+            </Suspense>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
