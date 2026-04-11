@@ -90,27 +90,23 @@ const Dashboard: React.FC = () => {
         </div>
 
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="w-full grid grid-cols-5 h-10 rounded-xl p-0.5 bg-muted/50 border border-border/50">
-            <TabsTrigger value="overview" className="gap-1 text-[10px] sm:text-xs rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm transition-all px-1 sm:px-3">
-              <LayoutDashboard size={14} className="shrink-0" />
-              <span className="hidden sm:inline">Geral</span>
-            </TabsTrigger>
-            <TabsTrigger value="daycare" className="gap-1 text-[10px] sm:text-xs rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm transition-all px-1 sm:px-3">
-              <PawPrint size={14} className="shrink-0" />
-              <span className="hidden sm:inline">Creche</span>
-            </TabsTrigger>
-            <TabsTrigger value="taxi" className="gap-1 text-[10px] sm:text-xs rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm transition-all px-1 sm:px-3">
-              <Car size={14} className="shrink-0" />
-              <span className="hidden sm:inline">Táxi</span>
-            </TabsTrigger>
-            <TabsTrigger value="hotel" className="gap-1 text-[10px] sm:text-xs rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm transition-all px-1 sm:px-3">
-              <Hotel size={14} className="shrink-0" />
-              <span className="hidden sm:inline">Hotel</span>
-            </TabsTrigger>
-            <TabsTrigger value="health" className="gap-1 text-[10px] sm:text-xs rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm transition-all px-1 sm:px-3">
-              <HeartPulse size={14} className="shrink-0" />
-              <span className="hidden sm:inline">Saúde</span>
-            </TabsTrigger>
+          <TabsList className="w-full flex gap-2 h-auto p-0 bg-transparent border-none overflow-x-auto scrollbar-none">
+            {[
+              { value: 'overview', icon: LayoutDashboard, label: 'Geral' },
+              { value: 'daycare', icon: PawPrint, label: 'Creche' },
+              { value: 'taxi', icon: Car, label: 'Táxi' },
+              { value: 'hotel', icon: Hotel, label: 'Hotel' },
+              { value: 'health', icon: HeartPulse, label: 'Saúde' },
+            ].map(({ value, icon: Icon, label }) => (
+              <TabsTrigger
+                key={value}
+                value={value}
+                className="flex flex-col items-center gap-1 px-4 py-2.5 rounded-xl border border-border/60 bg-card/60 text-muted-foreground transition-all min-w-[4.2rem] flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary data-[state=active]:shadow-md hover:bg-muted/80"
+              >
+                <Icon size={18} strokeWidth={1.8} />
+                <span className="text-[10px] font-medium leading-none">{label}</span>
+              </TabsTrigger>
+            ))}
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4 mt-4">
