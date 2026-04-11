@@ -452,7 +452,7 @@ const FleaFormPopover: React.FC<{
   client: Client;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (date: string, brand: string, duration: 1 | 2 | 3 | 6, fleaType: FleaType) => void;
+  onSave: (date: string, brand: string, duration: 1 | 2 | 3 | 6 | 35 | 45, fleaType: FleaType) => void;
   children: React.ReactNode;
 }> = ({ client, isOpen, onOpenChange, onSave, children }) => {
   const lastFlea = client.fleaHistory?.[0];
@@ -496,6 +496,7 @@ const FleaFormPopover: React.FC<{
             <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="35">35 dias</SelectItem>
+              <SelectItem value="45">45 dias</SelectItem>
               <SelectItem value="1">1 mês</SelectItem>
               <SelectItem value="2">2 meses</SelectItem>
               <SelectItem value="3">3 meses</SelectItem>
@@ -521,7 +522,7 @@ const FleaFormPopover: React.FC<{
           disabled={!date || !brand}
           onClick={() => {
             if (date && brand) {
-              onSave(date.toISOString(), brand, Number(duration) as 1 | 2 | 3 | 6, fleaType);
+              onSave(date.toISOString(), brand, Number(duration) as 1 | 2 | 3 | 6 | 35 | 45, fleaType);
               onOpenChange(false);
             }
           }}
