@@ -26,7 +26,7 @@ export const Header: React.FC = () => {
         <div className="flex items-center gap-3">
           <div className="relative">
             <img src="/app-icon.png" alt="Cantinho do AuAu" className="w-9 h-9 rounded-xl shadow-md ring-2 ring-primary/20" />
-            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-background" />
+            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-[hsl(var(--status-ok))] rounded-full border-2 border-background" />
           </div>
           <div>
             <span className="font-bold text-sm text-foreground tracking-tight block leading-tight">Cantinho do AuAu</span>
