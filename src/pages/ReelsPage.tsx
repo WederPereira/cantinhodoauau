@@ -261,7 +261,7 @@ const ReelsPage: React.FC = () => {
 
                   {/* Content */}
                   <div className="px-4 py-3 space-y-2.5">
-                    {post.caption && (
+                    {post.caption && post.media_type !== 'text' && post.media_url && (
                       <p className="text-sm text-foreground">
                         <span className="font-medium">{post.user_name}</span>{' '}
                         <span className="text-foreground/80">{post.caption}</span>
