@@ -1,7 +1,7 @@
 import React, { lazy, Suspense, useState, useMemo, useEffect } from 'react';
 import { useClients } from '@/context/ClientContext';
 import { Client, getHealthAlerts } from '@/types/client';
-import { LayoutDashboard, HeartPulse, PawPrint, Hotel, Camera, Car, Loader2 } from 'lucide-react';
+import { LayoutDashboard, HeartPulse, PawPrint, Hotel, Camera, Car, Loader2, Sparkles } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -25,6 +25,14 @@ const SectionLoader = () => (
     <Loader2 size={20} className="animate-spin text-primary" />
   </div>
 );
+
+const tabItems = [
+  { value: 'overview', icon: LayoutDashboard, label: 'Geral', color: 'from-primary/20 to-primary/5' },
+  { value: 'daycare', icon: PawPrint, label: 'Creche', color: 'from-accent/20 to-accent/5' },
+  { value: 'taxi', icon: Car, label: 'Táxi', color: 'from-blue-500/20 to-blue-500/5' },
+  { value: 'hotel', icon: Hotel, label: 'Hotel', color: 'from-emerald-500/20 to-emerald-500/5' },
+  { value: 'health', icon: HeartPulse, label: 'Saúde', color: 'from-rose-500/20 to-rose-500/5' },
+];
 
 const Dashboard: React.FC = () => {
   const { clients, getClientById } = useClients();
@@ -59,9 +67,13 @@ const Dashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container px-4 py-5 max-w-6xl mx-auto space-y-5">
+        {/* Header area with gradient accent */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-foreground tracking-tight">Dashboard</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold text-foreground tracking-tight">Dashboard</h1>
+              <Sparkles size={16} className="text-accent" />
+            </div>
             <p className="text-xs text-muted-foreground mt-0.5">
               {clients.length} pets cadastrados
             </p>
@@ -69,7 +81,7 @@ const Dashboard: React.FC = () => {
           <div className="flex items-center gap-2">
             <Dialog open={qrOpen} onOpenChange={setQrOpen}>
               <DialogTrigger asChild>
-                <Button size="sm" variant="outline" className="gap-1.5 h-9 text-xs rounded-xl">
+                <Button size="sm" variant="outline" className="gap-1.5 h-9 text-xs rounded-xl border-primary/30 text-primary hover:bg-primary/10">
                   <Camera size={14} />
                   QR Code
                 </Button>
@@ -90,37 +102,33 @@ const Dashboard: React.FC = () => {
         </div>
 
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="w-full flex gap-2 h-auto p-0 bg-transparent border-none overflow-x-auto scrollbar-none">
-            {[
-              { value: 'overview', icon: LayoutDashboard, label: 'Geral' },
-              { value: 'daycare', icon: PawPrint, label: 'Creche' },
-              { value: 'taxi', icon: Car, label: 'Táxi' },
-              { value: 'hotel', icon: Hotel, label: 'Hotel' },
-              { value: 'health', icon: HeartPulse, label: 'Saúde' },
-            ].map(({ value, icon: Icon, label }) => (
+          <TabsList className="w-full flex gap-2 h-auto p-1.5 bg-muted/50 rounded-2xl border border-border/40 overflow-x-auto scrollbar-none">
+            {tabItems.map(({ value, icon: Icon, label, color }) => (
               <TabsTrigger
                 key={value}
                 value={value}
-                className="flex flex-col items-center gap-1 px-4 py-2.5 rounded-xl border border-border/60 bg-card/60 text-muted-foreground transition-all min-w-[4.2rem] flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary data-[state=active]:shadow-md hover:bg-muted/80"
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 min-w-fit flex-1
+                  data-[state=active]:bg-gradient-to-r data-[state=active]:${color} data-[state=active]:text-foreground data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-border/50
+                  data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground data-[state=inactive]:hover:bg-background/60`}
               >
-                <Icon size={18} strokeWidth={1.8} />
-                <span className="text-[10px] font-medium leading-none">{label}</span>
+                <Icon size={16} strokeWidth={1.8} />
+                <span className="hidden sm:inline">{label}</span>
               </TabsTrigger>
             ))}
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-4 mt-4">
+          <TabsContent value="overview" className="space-y-4 mt-5">
             <Suspense fallback={<SectionLoader />}>
               <EmployeeTasksBanner />
             </Suspense>
 
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-card border border-border rounded-xl p-4">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Total Pets</p>
+              <div className="bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-2xl p-4">
+                <p className="text-[10px] uppercase tracking-wider text-primary/70 font-semibold">Total Pets</p>
                 <p className="text-3xl font-bold text-foreground mt-1">{clients.length}</p>
               </div>
-              <div className="bg-card border border-border rounded-xl p-4">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Alertas</p>
+              <div className="bg-gradient-to-br from-accent/10 to-accent/5 border border-accent/20 rounded-2xl p-4">
+                <p className="text-[10px] uppercase tracking-wider text-accent/70 font-semibold">Alertas</p>
                 <p className="text-3xl font-bold text-foreground mt-1">{healthAlerts.length}</p>
               </div>
             </div>
@@ -134,22 +142,22 @@ const Dashboard: React.FC = () => {
             </Suspense>
           </TabsContent>
 
-          <TabsContent value="daycare" className="mt-4">
+          <TabsContent value="daycare" className="mt-5">
             <Suspense fallback={<SectionLoader />}>
               <DaycareTab />
             </Suspense>
           </TabsContent>
-          <TabsContent value="taxi" className="mt-4">
+          <TabsContent value="taxi" className="mt-5">
             <Suspense fallback={<SectionLoader />}>
               <TaxiTab />
             </Suspense>
           </TabsContent>
-          <TabsContent value="hotel" className="mt-4">
+          <TabsContent value="hotel" className="mt-5">
             <Suspense fallback={<SectionLoader />}>
               <HotelTab />
             </Suspense>
           </TabsContent>
-          <TabsContent value="health" className="mt-4">
+          <TabsContent value="health" className="mt-5">
             <Suspense fallback={<SectionLoader />}>
               <HealthControlTab />
             </Suspense>
