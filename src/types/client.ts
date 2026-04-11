@@ -23,7 +23,7 @@ export interface FleaRecord {
   id: string;
   date: string; // ISO
   brand: string;
-  durationMonths: 1 | 2 | 3 | 6 | 35;
+  durationMonths: 1 | 2 | 3 | 6 | 35 | 45;
   fleaType: FleaType;
   notes?: string;
 }
@@ -123,6 +123,7 @@ export const ANTIPULGAS_BRANDS = [
   'Credeli',
   'Advantage',
   'Seresto',
+  'Wellpet',
 ];
 
 export const formatCurrency = (value: number): string => {
@@ -178,8 +179,8 @@ export const getVaccineExpiryDate = (lastDate: string): Date => {
 // Flea treatment expires after N months (or 35 days for the 35-day interval)
 export const getFleaExpiryDate = (lastDate: string, durationMonths: number): Date => {
   const d = new Date(lastDate);
-  if (durationMonths === 35) {
-    d.setDate(d.getDate() + 35);
+  if (durationMonths === 35 || durationMonths === 45) {
+    d.setDate(d.getDate() + durationMonths);
   } else {
     d.setMonth(d.getMonth() + durationMonths);
   }
