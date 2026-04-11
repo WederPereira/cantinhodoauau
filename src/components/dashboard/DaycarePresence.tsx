@@ -1,10 +1,12 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Utensils, UtensilsCrossed, Dog, RefreshCw, Calendar, Camera } from 'lucide-react';
+import { Utensils, UtensilsCrossed, Dog, RefreshCw, Calendar, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { logAction } from '@/hooks/useActionLog';
@@ -22,6 +24,8 @@ interface TodayEntry {
 const DaycarePresence: React.FC = () => {
   const [entries, setEntries] = useState<TodayEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'ate' | 'not_ate'>('all');
   const today = format(new Date(), 'yyyy-MM-dd');
   const todayDisplay = format(new Date(), "EEEE, dd 'de' MMMM", { locale: ptBR });
 
@@ -124,6 +128,17 @@ const DaycarePresence: React.FC = () => {
   const ateCount = entries.filter(e => e.ate).length;
   const notAteCount = entries.length - ateCount;
 
+  const filteredEntries = useMemo(() => {
+    let list = entries;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(e => e.dog.toLowerCase().includes(q) || e.tutor.toLowerCase().includes(q));
+    }
+    if (statusFilter === 'ate') list = list.filter(e => e.ate);
+    if (statusFilter === 'not_ate') list = list.filter(e => !e.ate);
+    return list;
+  }, [entries, searchQuery, statusFilter]);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -154,15 +169,38 @@ const DaycarePresence: React.FC = () => {
         </div>
       </div>
 
-      {entries.length === 0 ? (
+      {/* Search & Filter */}
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Buscar pet ou tutor..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="pl-9 h-9 text-sm"
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={v => setStatusFilter(v as any)}>
+          <SelectTrigger className="w-[120px] h-9 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="ate">Comeram</SelectItem>
+            <SelectItem value="not_ate">Não comeram</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {filteredEntries.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <Dog size={48} className="mx-auto mb-3 opacity-30" />
-          <p className="text-sm font-medium">Nenhum dog deu entrada hoje</p>
-          <p className="text-xs mt-1">Use o botão de Ler Entrada no Dashboard para registrar</p>
+          <p className="text-sm font-medium">{entries.length === 0 ? 'Nenhum dog deu entrada hoje' : 'Nenhum resultado para a busca'}</p>
+          {entries.length === 0 && <p className="text-xs mt-1">Use o botão de QR Code no Dashboard para registrar</p>}
         </div>
       ) : (
         <div className="space-y-2">
-          {entries.map((entry, idx) => (
+          {filteredEntries.map((entry, idx) => (
             <button
               key={entry.id}
               onClick={() => toggleAte(entry)}
