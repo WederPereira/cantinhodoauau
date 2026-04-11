@@ -1,69 +1,75 @@
 
 
-## Análise: O que falta para uso profissional e venda B2B
+## Plano de Melhorias Gerais do App Cantinho do AuAu
 
-### Problema Principal: Dados no localStorage
-O maior bloqueio é que **todos os dados de clientes/pets estão no localStorage do navegador**, não no banco de dados. Isso significa:
-- Dados se perdem ao limpar o cache ou trocar de dispositivo
-- Não há sincronização entre funcionários — cada um vê dados diferentes
-- Não há backup dos dados
+### 1. QR Code do perfil — usar mesmo estilo do ID Card
+O QR Code no `ClientDetailSheet.tsx` usa `QRCodeCanvas` básico com logo. Será atualizado para usar o mesmo design/estilo do componente `DogIdCard`, com visual consistente (cores, tamanho, margem).
 
-### O que precisa ser feito (por prioridade)
+### 2. Remover pedido de notificação que está bugando
+Remover o `Notification.requestPermission()` automático do `TaskNotifications.tsx` (linha 62-66) e do `Header.tsx`. Manter as notificações funcionando apenas se o usuário já tiver dado permissão previamente — sem popup automático.
 
-**1. Migrar dados de clientes para o banco de dados (CRÍTICO)**
-- Criar tabela `clients` no banco com todos os campos atuais
-- Criar tabelas `vaccine_records` e `flea_records` relacionadas
-- Refatorar o `ClientContext` para ler/gravar no banco em vez do localStorage
-- Adicionar RLS para que apenas usuários autenticados acessem os dados
-- Todos os funcionários passam a ver os mesmos dados em tempo real
+### 3. Navegação mais profissional e clara
+**Header (desktop):** Redesenhar com ícones mais limpos, labels sempre visíveis, indicador ativo mais destacado (barra inferior ou pill colorido), e remover "Relatórios" separado (será integrado).
 
-**2. Multi-tenancy (para vender para múltiplas empresas)**
-- Adicionar campo `tenant_id` (ou `business_id`) em todas as tabelas
-- Cada petshop/creche tem seu espaço isolado de dados
-- RLS garante que empresa A nunca vê dados da empresa B
-- Criar fluxo de onboarding para novas empresas
+**Bottom Navbar (mobile):** Manter 5 itens mas com labels mais claras: Dashboard, Pets, Mural, Planilha, Conta. Ícones com estilo consistente e indicador ativo mais visível.
 
-**3. Segurança e conformidade**
-- Remover as RLS abertas (`Allow all access`) das tabelas `hotel_stays`, `hotel_meals`, `hotel_medications`, `qr_entries`, `daily_records` — hoje qualquer pessoa pode ler/escrever nesses dados
-- Implementar foreign keys adequadas entre tabelas
-- Adicionar validação de entrada (zod) nos formulários
-- LGPD: adicionar termos de uso e política de privacidade
+**Abas do Dashboard (horizontal):** Redesenhar as 5 tabs internas (Geral, Creche, Táxi, Hotel, Saúde) com design mais clean — ícones arredondados, texto sempre legível, melhor espaçamento.
 
-**4. Funcionalidades comerciais ausentes**
-- **Financeiro**: Controle de pagamentos, recebimentos, mensalidades (creche), diárias (hotel)
-- **Agendamento**: Calendário para agendar serviços
-- **Notificações**: WhatsApp/email automático para vacinas vencendo, checkout, etc.
-- **Relatórios avançados**: Faturamento, ocupação do hotel, frequência de creche
-- **Backup/exportação**: Exportar dados em planilha, backup automático
+### 4. Visual mais profissional
+- Cards com sombras e bordas mais sutis
+- Tipografia mais hierárquica (títulos maiores, subtítulos menores)
+- Espaçamento consistente entre seções
+- Cores mais harmoniosas nos indicadores de status
+- Loading states mais elegantes
 
-**5. Experiência e polimento**
-- Tratamento de erros em todas as operações do banco
-- Loading states consistentes
-- Modo offline com sincronização quando voltar online
-- Testes automatizados
-- Documentação de uso
+### 5. Otimizar código / deixar mais leve
+- Verificar imports desnecessários
+- Consolidar lógica de badge de notificação (duplicada entre Header e BottomNavbar) em um hook compartilhado `useNotificationBadges`
+- Revisar componentes pesados que podem ser simplificados
 
-### Resumo visual
+### 6. Filtro e barra de pesquisa na aba de Presença
+No `DaycarePresence.tsx`, adicionar:
+- Campo de busca por nome do dog ou tutor
+- Filtro por status (comeu / não comeu / todos)
 
-```text
-Prioridade    Item                         Status
-─────────────────────────────────────────────────
-P0 (bloqueia) Dados no banco (não localStorage)  ❌
-P0 (bloqueia) RLS seguras nas tabelas             ❌
-P1 (venda)    Multi-tenancy                       ❌
-P1 (venda)    Módulo financeiro                   ❌
-P2 (valor)    Notificações automáticas            ❌
-P2 (valor)    Agendamento/calendário              ❌
-P3 (qualidade)Validação de formulários            ❌
-P3 (qualidade)Tratamento de erros                 parcial
-P3 (qualidade)Testes automatizados                ❌
-✅ já feito   Auth + roles + auditoria            ✅
-✅ já feito   PWA standalone                      ✅
-✅ já feito   Hotel/Creche/Taxi/Saúde             ✅
-```
+### 7. Antipulgas: adicionar Wellpet e duração de 45 dias
+- Em `src/types/client.ts`: adicionar `45` ao tipo `durationMonths`
+- Em `HealthControlTab.tsx` e `HealthHistorySection.tsx`: adicionar opção "45 dias" nos selects de duração
+- A marca "Wellpet" é apenas texto digitado pelo usuário no campo brand (já funciona)
 
-### Recomendação de próximo passo
-Começar pelo **P0: migrar os dados de clientes para o banco de dados**. Sem isso, o sistema não é confiável para uso profissional — basta limpar o navegador e todos os clientes somem. Posso fazer essa migração mantendo a mesma interface que você já tem.
+### 8. Consolidar analytics na aba Relatórios
+Mover `FrequencyAnalytics` (da Creche) e `HotelAnalyticsTab` (do Hotel) para a página `ReportsPage.tsx`, organizados em seções:
+- **Visão Geral**: KPIs existentes (total clientes, novos por mês)
+- **Creche**: Frequência por dia da semana, calendário de entradas, ranking
+- **Hotel**: Ocupação, taxa de alimentação, medicamentos
 
-Quer que eu comece pela migração dos dados para o banco?
+Remover as sub-abas de "Análise" de dentro das abas Creche e Hotel do Dashboard para evitar duplicação.
+
+### 9. Resumo do app para apresentação
+Gerar um documento PDF profissional em `/mnt/documents/` com:
+- O que é o Cantinho do AuAu
+- Funcionalidades principais (Dashboard, Creche, Hotel, Saúde, QR Code, Mural, Planilha)
+- Diferenciais (tempo real, controle de saúde, notificações, PWA)
+
+### Detalhes Técnicos
+
+**Arquivos a criar:**
+- `src/hooks/useNotificationBadges.ts` — hook compartilhado para badges
+- PDF de resumo em `/mnt/documents/`
+
+**Arquivos a editar:**
+- `src/types/client.ts` — adicionar 45 ao tipo durationMonths
+- `src/components/Header.tsx` — redesign nav, remover notification request
+- `src/components/BottomNavbar.tsx` — redesign nav, usar hook compartilhado
+- `src/components/TaskNotifications.tsx` — remover auto-request de notificação
+- `src/components/dashboard/DaycarePresence.tsx` — adicionar busca e filtro
+- `src/components/dashboard/DaycareTab.tsx` — remover aba Análise
+- `src/components/dashboard/HotelTab.tsx` — remover aba de analytics inline
+- `src/pages/ReportsPage.tsx` — integrar FrequencyAnalytics + HotelAnalyticsTab
+- `src/components/dashboard/HealthControlTab.tsx` — adicionar 45 dias
+- `src/components/HealthHistorySection.tsx` — adicionar 45 dias
+- `src/components/ClientDetailSheet.tsx` — atualizar QR code style
+- `src/context/ClientContext.tsx` — suportar durationMonths 45
+
+**Migração de banco:** Nenhuma necessária (45 é armazenado como integer no campo `duration_months`).
 
