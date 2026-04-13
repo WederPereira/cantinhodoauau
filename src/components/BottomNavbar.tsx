@@ -17,8 +17,8 @@ export const BottomNavbar: React.FC = () => {
   const { getBadge } = useNotificationBadges();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-2xl border-t border-border/30 safe-area-bottom lg:hidden">
-      <div className="flex items-center justify-around h-16 max-w-md mx-auto px-2">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-xl border-t border-border/50 safe-area-bottom lg:hidden">
+      <div className="flex items-center justify-around h-14 max-w-md mx-auto">
         {navItems.map((item) => {
           const isActive = location.pathname === item.to;
           const Icon = item.icon;
@@ -29,28 +29,23 @@ export const BottomNavbar: React.FC = () => {
               key={item.to}
               to={item.to}
               className={cn(
-                'flex flex-col items-center justify-center gap-0.5 flex-1 h-full relative transition-all duration-200',
+                'flex flex-col items-center justify-center gap-0.5 flex-1 h-full relative',
+                'transition-colors duration-150',
                 isActive ? 'text-primary' : 'text-muted-foreground'
               )}
             >
-              <div className={cn(
-                "relative flex items-center justify-center w-10 h-10 rounded-2xl transition-all duration-200",
-                isActive ? "bg-primary/12 scale-105" : ""
-              )}>
-                <Icon size={20} strokeWidth={isActive ? 2.3 : 1.5} />
+              <div className="relative">
+                <Icon size={20} strokeWidth={isActive ? 2.2 : 1.6} />
                 {hasBadge && (
-                  <span className="absolute top-0.5 right-0.5 w-2.5 h-2.5 bg-destructive rounded-full animate-pulse ring-2 ring-background" />
+                  <span className="absolute -top-1 -right-1.5 w-2.5 h-2.5 bg-destructive rounded-full animate-pulse" />
                 )}
               </div>
               <span className={cn(
-                "text-[10px] leading-none transition-all",
-                isActive ? "font-bold text-primary" : "font-medium"
+                "text-[10px]",
+                isActive ? "font-semibold" : "font-normal"
               )}>
                 {item.label}
               </span>
-              {isActive && (
-                <div className="absolute -bottom-0 w-6 h-1 bg-primary rounded-full" />
-              )}
             </RouterNavLink>
           );
         })}
