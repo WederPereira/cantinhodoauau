@@ -81,7 +81,8 @@ const HotelTab: React.FC = () => {
   const [meals, setMeals] = useState<HotelMeal[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedStay, setExpandedStay] = useState<string | null>(null);
-  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [sheetStayId, setSheetStayId] = useState<string | null>(null);
+  const [activeSearch, setActiveSearch] = useState('');
   const [selectedClientId, setSelectedClientId] = useState('');
   const [observations, setObservations] = useState('');
   const [checkInDate, setCheckInDate] = useState<Date>(new Date());
