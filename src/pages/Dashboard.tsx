@@ -97,6 +97,8 @@ const Dashboard: React.FC = () => {
               { value: 'daycare', icon: PawPrint, label: 'Creche' },
               { value: 'taxi', icon: Car, label: 'Táxi' },
               { value: 'hotel', icon: Hotel, label: 'Hotel' },
+              { value: 'medication', icon: Pill, label: 'Medicação' },
+              { value: 'health', icon: HeartPulse, label: 'Saúde' },
               { value: 'health', icon: HeartPulse, label: 'Saúde' },
             ].map(({ value, icon: Icon, label }) => (
               <TabsTrigger
