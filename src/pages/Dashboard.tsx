@@ -17,6 +17,7 @@ const HotelTab = lazy(() => import('@/components/dashboard/HotelTab'));
 const HotelMedicationAlerts = lazy(() => import('@/components/dashboard/HotelMedicationAlerts'));
 const HotelFeedingAlerts = lazy(() => import('@/components/dashboard/HotelFeedingAlerts'));
 const HotelCheckoutAlerts = lazy(() => import('@/components/dashboard/HotelCheckoutAlerts'));
+const MedicationTab = lazy(() => import('@/components/dashboard/MedicationTab'));
 const QrReader = lazy(() => import('@/components/qrcode/QrReader'));
 const EmployeeTasksBanner = lazy(() => import('@/components/dashboard/EmployeeTasksBanner'));
 
