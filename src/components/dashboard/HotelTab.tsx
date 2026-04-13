@@ -191,6 +191,12 @@ const HotelTab: React.FC = () => {
     return clients.filter(c => c.name.toLowerCase().includes(q) || c.breed.toLowerCase().includes(q) || c.tutorName.toLowerCase().includes(q));
   }, [clients, searchFilter]);
 
+  const filteredActiveStays = useMemo(() => {
+    if (!activeSearch) return stays;
+    const q = activeSearch.toLowerCase();
+    return stays.filter(s => s.dog_name.toLowerCase().includes(q) || s.tutor_name.toLowerCase().includes(q));
+  }, [stays, activeSearch]);
+
   const datesWithStays = useMemo(() => {
     const set = new Set<string>();
     allStays.forEach(s => set.add(format(new Date(s.check_in), 'yyyy-MM-dd')));
