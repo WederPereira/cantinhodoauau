@@ -151,6 +151,11 @@ const Dashboard: React.FC = () => {
               <HotelTab />
             </Suspense>
           </TabsContent>
+          <TabsContent value="medication" className="mt-4">
+            <Suspense fallback={<SectionLoader />}>
+              <MedicationTab />
+            </Suspense>
+          </TabsContent>
           <TabsContent value="health" className="mt-4">
             <Suspense fallback={<SectionLoader />}>
               <HealthControlTab />
