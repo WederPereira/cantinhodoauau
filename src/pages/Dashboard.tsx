@@ -129,7 +129,6 @@ const Dashboard: React.FC = () => {
             </div>
 
             <Suspense fallback={<SectionLoader />}>
-              <HotelMedicationAlerts />
               <HotelFeedingAlerts />
               <HotelCheckoutAlerts />
               <HealthAlerts alerts={healthAlerts} onClientClick={handleAlertClientClick} />
