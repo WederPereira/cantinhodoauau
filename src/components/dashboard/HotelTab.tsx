@@ -84,6 +84,7 @@ const HotelTab: React.FC = () => {
   const [sheetStayId, setSheetStayId] = useState<string | null>(null);
   const [activeSearch, setActiveSearch] = useState('');
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState('');
   const [observations, setObservations] = useState('');
   const [checkInDate, setCheckInDate] = useState<Date>(new Date());
   const [expectedCheckoutDate, setExpectedCheckoutDate] = useState<Date>(addDays(new Date(), 1));
