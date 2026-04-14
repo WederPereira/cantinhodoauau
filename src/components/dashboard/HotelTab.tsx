@@ -756,9 +756,11 @@ const HotelTab: React.FC = () => {
                         {todayMeals.map(tm => (
                           <div key={tm.key} className={cn(
                             "w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border-2",
-                            tm.ate ? "bg-primary border-primary text-primary-foreground" : "bg-black/40 border-white/30 text-white"
+                            tm.ate === true ? "bg-primary border-primary text-primary-foreground" : 
+                            tm.ate === false ? "bg-destructive border-destructive text-destructive-foreground" :
+                            "bg-black/40 border-white/30 text-white"
                           )}>
-                            {tm.icon}
+                            {tm.ate === true ? '✓' : tm.ate === false ? '✗' : tm.icon}
                           </div>
                         ))}
                       </div>
@@ -777,7 +779,7 @@ const HotelTab: React.FC = () => {
                         <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
                           <div className={cn("h-full rounded-full transition-all", mealPercent >= 70 ? "bg-[hsl(var(--status-ok))]" : mealPercent >= 40 ? "bg-[hsl(var(--status-warning))]" : "bg-destructive")} style={{ width: `${mealPercent}%` }} />
                         </div>
-                        <span className="text-[8px] text-muted-foreground font-mono">{mealsEaten}/{totalMealsExpected}</span>
+                        <span className="text-[8px] text-muted-foreground font-mono">{mealsMarked}/{totalMealsExpected}</span>
                       </div>
                     </div>
                   </div>
