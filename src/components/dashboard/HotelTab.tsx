@@ -57,7 +57,7 @@ interface HotelMeal {
   hotel_stay_id: string;
   date: string;
   meal_type: string;
-  ate: boolean;
+  ate: boolean | null;
 }
 
 const RECURRENCE_OPTIONS = [
