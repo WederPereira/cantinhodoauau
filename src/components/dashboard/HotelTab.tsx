@@ -838,33 +838,46 @@ const HotelTab: React.FC = () => {
                         <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
                           <Utensils size={16} className="text-primary" /> Refeições de Hoje
                         </h3>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-3">
                           {MEAL_TYPES.map(mt => {
                             const meal = stayMeals.find(m => m.date === todayStr && m.meal_type === mt.key);
-                            const ate = meal?.ate || false;
+                            const ateVal = meal?.ate ?? null;
                             return (
-                              <button
-                                key={mt.key}
-                                onClick={() => handleToggleMeal(stay.id, todayStr, mt.key)}
-                                className={cn(
-                                  "flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all active:scale-95",
-                                  ate
-                                    ? "border-primary bg-primary/10 shadow-md"
-                                    : "border-border bg-card hover:border-primary/40"
-                                )}
-                              >
-                                <span className="text-3xl">{mt.icon}</span>
-                                <span className={cn("text-sm font-bold", ate ? "text-primary" : "text-foreground")}>{mt.label}</span>
-                                {ate ? (
-                                  <Badge className="bg-primary text-primary-foreground text-[10px]">
-                                    <Check size={10} className="mr-0.5" /> Comeu
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="outline" className="text-[10px] text-muted-foreground">
-                                    Não comeu
-                                  </Badge>
-                                )}
-                              </button>
+                              <div key={mt.key} className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xl">{mt.icon}</span>
+                                  <span className="text-sm font-bold text-foreground">{mt.label}</span>
+                                  {ateVal === null && (
+                                    <Badge variant="outline" className="text-[9px] text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-950/30 animate-pulse">
+                                      Pendente
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <button
+                                    onClick={() => handleSetMeal(stay.id, todayStr, mt.key, true)}
+                                    className={cn(
+                                      "flex items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all active:scale-95 font-semibold text-sm",
+                                      ateVal === true
+                                        ? "border-primary bg-primary text-primary-foreground shadow-md"
+                                        : "border-border bg-card hover:border-primary/40 text-foreground"
+                                    )}
+                                  >
+                                    <Check size={16} /> Comeu ✅
+                                  </button>
+                                  <button
+                                    onClick={() => handleSetMeal(stay.id, todayStr, mt.key, false)}
+                                    className={cn(
+                                      "flex items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all active:scale-95 font-semibold text-sm",
+                                      ateVal === false
+                                        ? "border-destructive bg-destructive text-destructive-foreground shadow-md"
+                                        : "border-border bg-card hover:border-destructive/40 text-foreground"
+                                    )}
+                                  >
+                                    <X size={16} /> Não comeu ❌
+                                  </button>
+                                </div>
+                              </div>
                             );
                           })}
                         </div>
