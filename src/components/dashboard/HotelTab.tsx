@@ -709,16 +709,18 @@ const HotelTab: React.FC = () => {
                 const stayDays = getStayDays(stay);
                 const totalDays = stayDays.length;
                 const daysElapsed = Math.max(1, differenceInDays(new Date(), new Date(stay.check_in)) + 1);
-                const mealsEaten = stayMeals.filter(m => m.ate).length;
+                const mealsEaten = stayMeals.filter(m => m.ate === true).length;
+                const mealsNotEaten = stayMeals.filter(m => m.ate === false).length;
+                const mealsMarked = mealsEaten + mealsNotEaten;
                 const totalMealsExpected = totalDays * 2;
-                const mealPercent = totalMealsExpected > 0 ? Math.round((mealsEaten / totalMealsExpected) * 100) : 0;
+                const mealPercent = totalMealsExpected > 0 ? Math.round((mealsMarked / totalMealsExpected) * 100) : 0;
                 const hasPhotos = (stay.belongings_photos?.length || 0) > 0;
 
                 // Today's meals
                 const todayStr = format(new Date(), 'yyyy-MM-dd');
                 const todayMeals = MEAL_TYPES.map(mt => {
                   const meal = stayMeals.find(m => m.date === todayStr && m.meal_type === mt.key);
-                  return { ...mt, ate: meal?.ate || false };
+                  return { ...mt, ate: meal?.ate ?? null };
                 });
 
                 return (
