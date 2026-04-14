@@ -242,7 +242,7 @@ const HotelTab: React.FC = () => {
       if (newStay) {
         // Insert meals
         const mealRows = days.flatMap(day => MEAL_TYPES.map(mt => ({
-          hotel_stay_id: newStay.id, date: format(day, 'yyyy-MM-dd'), meal_type: mt.key, ate: false,
+          hotel_stay_id: newStay.id, date: format(day, 'yyyy-MM-dd'), meal_type: mt.key, ate: null,
         })));
         if (mealRows.length > 0) await supabase.from('hotel_meals').insert(mealRows);
 
@@ -1019,7 +1019,7 @@ const HotelTab: React.FC = () => {
                                   const newEnd = startOfDay(d);
                                   if (newEnd > oldEnd) {
                                     const newDays = eachDayOfInterval({ start: addDays(oldEnd, 1), end: newEnd });
-                                    const newMealRows = newDays.flatMap(day => MEAL_TYPES.map(mt => ({ hotel_stay_id: stay.id, date: format(day, 'yyyy-MM-dd'), meal_type: mt.key, ate: false })));
+                                    const newMealRows = newDays.flatMap(day => MEAL_TYPES.map(mt => ({ hotel_stay_id: stay.id, date: format(day, 'yyyy-MM-dd'), meal_type: mt.key, ate: null })));
                                     if (newMealRows.length > 0) await supabase.from('hotel_meals').insert(newMealRows);
                                   }
                                   toast.success(`Prolongado até ${format(d, 'dd/MM')}!`);
