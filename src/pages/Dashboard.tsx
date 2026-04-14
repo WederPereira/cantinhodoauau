@@ -1,7 +1,7 @@
 import React, { lazy, Suspense, useState, useMemo, useEffect } from 'react';
 import { useClients } from '@/context/ClientContext';
 import { Client, getHealthAlerts } from '@/types/client';
-import { LayoutDashboard, HeartPulse, PawPrint, Hotel, Camera, Car, Loader2 } from 'lucide-react';
+import { LayoutDashboard, HeartPulse, PawPrint, Hotel, Camera, Car, Loader2, Pill } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -17,6 +17,7 @@ const HotelTab = lazy(() => import('@/components/dashboard/HotelTab'));
 const HotelMedicationAlerts = lazy(() => import('@/components/dashboard/HotelMedicationAlerts'));
 const HotelFeedingAlerts = lazy(() => import('@/components/dashboard/HotelFeedingAlerts'));
 const HotelCheckoutAlerts = lazy(() => import('@/components/dashboard/HotelCheckoutAlerts'));
+const MedicationTab = lazy(() => import('@/components/dashboard/MedicationTab'));
 const QrReader = lazy(() => import('@/components/qrcode/QrReader'));
 const EmployeeTasksBanner = lazy(() => import('@/components/dashboard/EmployeeTasksBanner'));
 
@@ -96,6 +97,8 @@ const Dashboard: React.FC = () => {
               { value: 'daycare', icon: PawPrint, label: 'Creche' },
               { value: 'taxi', icon: Car, label: 'Táxi' },
               { value: 'hotel', icon: Hotel, label: 'Hotel' },
+              { value: 'medication', icon: Pill, label: 'Medicação' },
+              { value: 'health', icon: HeartPulse, label: 'Saúde' },
               { value: 'health', icon: HeartPulse, label: 'Saúde' },
             ].map(({ value, icon: Icon, label }) => (
               <TabsTrigger
@@ -126,7 +129,6 @@ const Dashboard: React.FC = () => {
             </div>
 
             <Suspense fallback={<SectionLoader />}>
-              <HotelMedicationAlerts />
               <HotelFeedingAlerts />
               <HotelCheckoutAlerts />
               <HealthAlerts alerts={healthAlerts} onClientClick={handleAlertClientClick} />
@@ -147,6 +149,11 @@ const Dashboard: React.FC = () => {
           <TabsContent value="hotel" className="mt-4">
             <Suspense fallback={<SectionLoader />}>
               <HotelTab />
+            </Suspense>
+          </TabsContent>
+          <TabsContent value="medication" className="mt-4">
+            <Suspense fallback={<SectionLoader />}>
+              <MedicationTab />
             </Suspense>
           </TabsContent>
           <TabsContent value="health" className="mt-4">
