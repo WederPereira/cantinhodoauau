@@ -901,13 +901,15 @@ const HotelTab: React.FC = () => {
                                 {stayDays.slice(0, 7).map((day, i) => {
                                   const dateStr = format(day, 'yyyy-MM-dd');
                                   const meal = stayMeals.find(m => m.date === dateStr && m.meal_type === mt.key);
-                                  const ate = meal?.ate || false;
+                                  const ateVal = meal?.ate ?? null;
                                   return (
-                                    <button key={i} onClick={() => handleToggleMeal(stay.id, dateStr, mt.key)}
+                                    <button key={i} onClick={() => handleSetMeal(stay.id, dateStr, mt.key, ateVal !== true ? true : false)}
                                       className={cn("w-full h-8 rounded-lg border-2 text-xs font-bold transition-all active:scale-95",
-                                        ate ? "bg-primary/20 border-primary/50 text-primary" : "bg-card border-border text-muted-foreground hover:border-primary/40"
+                                        ateVal === true ? "bg-primary/20 border-primary/50 text-primary" : 
+                                        ateVal === false ? "bg-destructive/20 border-destructive/50 text-destructive" :
+                                        "bg-card border-border text-muted-foreground hover:border-primary/40"
                                       )}>
-                                      {ate ? '✓' : '·'}
+                                      {ateVal === true ? '✓' : ateVal === false ? '✗' : '·'}
                                     </button>
                                   );
                                 })}
