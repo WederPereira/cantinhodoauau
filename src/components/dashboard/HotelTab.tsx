@@ -318,15 +318,17 @@ const HotelTab: React.FC = () => {
     } catch { toast.error('Erro ao apagar check-in'); }
   };
 
-  const handleToggleMeal = async (stayId: string, date: string, mealType: string) => {
+  const handleSetMeal = async (stayId: string, date: string, mealType: string, ateValue: boolean) => {
     const existing = meals.find(m => m.hotel_stay_id === stayId && m.date === date && m.meal_type === mealType);
     try {
       if (existing) {
-        await supabase.from('hotel_meals').update({ ate: !existing.ate }).eq('id', existing.id);
-        logAction('mark_meal', 'meal', existing.id, { meal_type: mealType, date, ate: !existing.ate });
+        // If clicking the same value, keep it (don't toggle to null)
+        const newVal = existing.ate === ateValue ? null : ateValue;
+        await supabase.from('hotel_meals').update({ ate: newVal }).eq('id', existing.id);
+        logAction('mark_meal', 'meal', existing.id, { meal_type: mealType, date, ate: newVal });
       } else {
-        const { data: newMeal } = await supabase.from('hotel_meals').insert({ hotel_stay_id: stayId, date, meal_type: mealType, ate: true }).select('id').single();
-        logAction('mark_meal', 'meal', newMeal?.id, { meal_type: mealType, date, ate: true });
+        const { data: newMeal } = await supabase.from('hotel_meals').insert({ hotel_stay_id: stayId, date, meal_type: mealType, ate: ateValue }).select('id').single();
+        logAction('mark_meal', 'meal', newMeal?.id, { meal_type: mealType, date, ate: ateValue });
       }
       fetchData();
     } catch { toast.error('Erro ao atualizar refeição'); }
