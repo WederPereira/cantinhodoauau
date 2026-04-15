@@ -905,40 +905,69 @@ const HotelTab: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Meals history grid */}
+                      {/* Meals history - spreadsheet style */}
                       <div className="space-y-2">
                         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Histórico de Refeições</h3>
-                        <div className="overflow-x-auto -mx-1 px-1">
-                          <div className="inline-grid gap-1" style={{ gridTemplateColumns: `60px repeat(${Math.min(stayDays.length, 7)}, minmax(40px, 1fr))` }}>
-                            <div />
-                            {stayDays.slice(0, 7).map((day, i) => (
-                              <div key={i} className={cn("text-[8px] text-center font-medium px-0.5 py-0.5 rounded",
-                                isSameDay(day, new Date()) ? "bg-primary/10 text-primary font-bold" : "text-muted-foreground")}>
-                                {format(day, 'EEE', { locale: ptBR })}<br />{format(day, 'dd/MM')}
-                              </div>
-                            ))}
-                            {MEAL_TYPES.map(mt => (
-                              <React.Fragment key={mt.key}>
-                                <div className="text-[10px] text-muted-foreground flex items-center gap-0.5">{mt.icon}</div>
-                                {stayDays.slice(0, 7).map((day, i) => {
-                                  const dateStr = format(day, 'yyyy-MM-dd');
-                                  const meal = stayMeals.find(m => m.date === dateStr && m.meal_type === mt.key);
-                                  const ateVal = meal?.ate ?? null;
-                                  return (
-                                    <button key={i} onClick={() => handleSetMeal(stay.id, dateStr, mt.key, ateVal !== true ? true : false)}
-                                      className={cn("w-full h-8 rounded-lg border-2 text-xs font-bold transition-all active:scale-95",
-                                        ateVal === true ? "bg-primary/20 border-primary/50 text-primary" : 
-                                        ateVal === false ? "bg-destructive/20 border-destructive/50 text-destructive" :
-                                        "bg-card border-border text-muted-foreground hover:border-primary/40"
-                                      )}>
-                                      {ateVal === true ? '✓' : ateVal === false ? '✗' : '·'}
-                                    </button>
-                                  );
-                                })}
-                              </React.Fragment>
-                            ))}
-                          </div>
-                          {stayDays.length > 7 && <p className="text-[8px] text-muted-foreground mt-1">Mostrando 7 de {stayDays.length} dias</p>}
+                        <div className="overflow-x-auto -mx-4 px-4">
+                          <table className="w-full text-[10px] border-collapse min-w-[300px]">
+                            <thead>
+                              <tr className="bg-muted/50">
+                                <th className="text-left p-1.5 font-semibold text-muted-foreground border border-border sticky left-0 bg-muted/50 z-10">Data</th>
+                                {MEAL_TYPES.map(mt => (
+                                  <th key={mt.key} className="text-center p-1.5 font-semibold text-muted-foreground border border-border min-w-[100px]">
+                                    {mt.icon} {mt.label}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {stayDays.map((day, i) => {
+                                const dateStr = format(day, 'yyyy-MM-dd');
+                                const isToday = isSameDay(day, new Date());
+                                return (
+                                  <tr key={i} className={cn(isToday && "bg-primary/5")}>
+                                    <td className={cn("p-1.5 border border-border font-medium sticky left-0 z-10",
+                                      isToday ? "bg-primary/10 text-primary font-bold" : "bg-card text-foreground")}>
+                                      {format(day, 'EEE dd/MM', { locale: ptBR })}
+                                      {isToday && <span className="ml-1 text-[8px]">hoje</span>}
+                                    </td>
+                                    {MEAL_TYPES.map(mt => {
+                                      const meal = stayMeals.find(m => m.date === dateStr && m.meal_type === mt.key);
+                                      const ateVal = meal?.ate ?? null;
+                                      return (
+                                        <td key={mt.key} className="p-1 border border-border text-center">
+                                          <div className="flex gap-1 justify-center">
+                                            <button
+                                              onClick={() => handleSetMeal(stay.id, dateStr, mt.key, true)}
+                                              className={cn(
+                                                "px-2 py-1 rounded text-[9px] font-semibold transition-all active:scale-95 border",
+                                                ateVal === true
+                                                  ? "bg-primary border-primary text-primary-foreground"
+                                                  : "bg-card border-border hover:border-primary/40 text-muted-foreground"
+                                              )}
+                                            >
+                                              ✅
+                                            </button>
+                                            <button
+                                              onClick={() => handleSetMeal(stay.id, dateStr, mt.key, false)}
+                                              className={cn(
+                                                "px-2 py-1 rounded text-[9px] font-semibold transition-all active:scale-95 border",
+                                                ateVal === false
+                                                  ? "bg-destructive border-destructive text-destructive-foreground"
+                                                  : "bg-card border-border hover:border-destructive/40 text-muted-foreground"
+                                              )}
+                                            >
+                                              ❌
+                                            </button>
+                                          </div>
+                                        </td>
+                                      );
+                                    })}
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
                         </div>
                       </div>
 
