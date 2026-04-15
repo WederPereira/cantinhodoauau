@@ -726,11 +726,11 @@ const HotelTab: React.FC = () => {
                 return (
                   <div
                     key={stay.id}
-                    className="bg-card border border-border rounded-2xl overflow-hidden cursor-pointer transition-all hover:border-primary/30 hover:shadow-md active:scale-[0.98]"
-                    onClick={() => setSheetStayId(stay.id)}
+                    className="bg-card border border-border rounded-2xl overflow-hidden transition-all hover:border-primary/30 hover:shadow-md"
                   >
-                    {/* Large photo */}
-                    <div className="aspect-[4/3] bg-muted relative overflow-hidden">
+                    {/* Large photo - clickable to open sheet */}
+                    <div className="aspect-[4/3] bg-muted relative overflow-hidden cursor-pointer active:scale-[0.98] transition-transform"
+                      onClick={() => setSheetStayId(stay.id)}>
                       {client?.photo ? (
                         <img src={client.photo} alt={stay.dog_name} className="w-full h-full object-cover" />
                       ) : (
@@ -751,29 +751,49 @@ const HotelTab: React.FC = () => {
                           </Badge>
                         )}
                       </div>
-                      {/* Today's meals mini indicator */}
-                      <div className="absolute top-2 left-2 flex gap-1">
-                        {todayMeals.map(tm => (
-                          <div key={tm.key} className={cn(
-                            "w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border-2",
-                            tm.ate === true ? "bg-primary border-primary text-primary-foreground" : 
-                            tm.ate === false ? "bg-destructive border-destructive text-destructive-foreground" :
-                            "bg-black/40 border-white/30 text-white"
-                          )}>
-                            {tm.ate === true ? '✓' : tm.ate === false ? '✗' : tm.icon}
-                          </div>
-                        ))}
-                      </div>
                       <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-2.5 pt-6">
                         <p className="font-bold text-sm text-white truncate">{stay.dog_name}</p>
                         <p className="text-[10px] text-white/70 truncate">{stay.tutor_name}</p>
                       </div>
                     </div>
-                    {/* Info below photo */}
-                    <div className="p-2.5 space-y-1.5">
+                    {/* Info + meal buttons below photo */}
+                    <div className="p-2.5 space-y-2">
                       <div className="flex items-center justify-between text-[9px] text-muted-foreground">
                         <span>📅 {format(new Date(stay.check_in), 'dd/MM')} → {stay.expected_checkout ? format(new Date(stay.expected_checkout), 'dd/MM') : '?'}</span>
                         <Badge variant="secondary" className="text-[8px] px-1 py-0">{daysElapsed}/{totalDays}d</Badge>
+                      </div>
+                      {/* Today's meal buttons directly on card */}
+                      <div className="space-y-1.5">
+                        {MEAL_TYPES.map(mt => {
+                          const ateVal = todayMeals.find(m => m.key === mt.key)?.ate ?? null;
+                          return (
+                            <div key={mt.key} className="flex items-center gap-1.5">
+                              <span className="text-xs w-5 text-center">{mt.icon}</span>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleSetMeal(stay.id, todayStr, mt.key, true); }}
+                                className={cn(
+                                  "flex-1 py-1.5 rounded-lg text-[10px] font-semibold border transition-all active:scale-95",
+                                  ateVal === true
+                                    ? "bg-primary border-primary text-primary-foreground"
+                                    : "bg-card border-border hover:border-primary/40 text-muted-foreground"
+                                )}
+                              >
+                                ✅ Comeu
+                              </button>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleSetMeal(stay.id, todayStr, mt.key, false); }}
+                                className={cn(
+                                  "flex-1 py-1.5 rounded-lg text-[10px] font-semibold border transition-all active:scale-95",
+                                  ateVal === false
+                                    ? "bg-destructive border-destructive text-destructive-foreground"
+                                    : "bg-card border-border hover:border-destructive/40 text-muted-foreground"
+                                )}
+                              >
+                                ❌ Não
+                              </button>
+                            </div>
+                          );
+                        })}
                       </div>
                       <div className="flex items-center gap-1.5">
                         <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
