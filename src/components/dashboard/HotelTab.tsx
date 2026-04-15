@@ -57,7 +57,7 @@ interface HotelMeal {
   hotel_stay_id: string;
   date: string;
   meal_type: string;
-  ate: boolean;
+  ate: boolean | null;
 }
 
 const RECURRENCE_OPTIONS = [
@@ -242,7 +242,7 @@ const HotelTab: React.FC = () => {
       if (newStay) {
         // Insert meals
         const mealRows = days.flatMap(day => MEAL_TYPES.map(mt => ({
-          hotel_stay_id: newStay.id, date: format(day, 'yyyy-MM-dd'), meal_type: mt.key, ate: false,
+          hotel_stay_id: newStay.id, date: format(day, 'yyyy-MM-dd'), meal_type: mt.key, ate: null,
         })));
         if (mealRows.length > 0) await supabase.from('hotel_meals').insert(mealRows);
 
@@ -318,15 +318,17 @@ const HotelTab: React.FC = () => {
     } catch { toast.error('Erro ao apagar check-in'); }
   };
 
-  const handleToggleMeal = async (stayId: string, date: string, mealType: string) => {
+  const handleSetMeal = async (stayId: string, date: string, mealType: string, ateValue: boolean) => {
     const existing = meals.find(m => m.hotel_stay_id === stayId && m.date === date && m.meal_type === mealType);
     try {
       if (existing) {
-        await supabase.from('hotel_meals').update({ ate: !existing.ate }).eq('id', existing.id);
-        logAction('mark_meal', 'meal', existing.id, { meal_type: mealType, date, ate: !existing.ate });
+        // If clicking the same value, keep it (don't toggle to null)
+        const newVal = existing.ate === ateValue ? null : ateValue;
+        await supabase.from('hotel_meals').update({ ate: newVal }).eq('id', existing.id);
+        logAction('mark_meal', 'meal', existing.id, { meal_type: mealType, date, ate: newVal });
       } else {
-        const { data: newMeal } = await supabase.from('hotel_meals').insert({ hotel_stay_id: stayId, date, meal_type: mealType, ate: true }).select('id').single();
-        logAction('mark_meal', 'meal', newMeal?.id, { meal_type: mealType, date, ate: true });
+        const { data: newMeal } = await supabase.from('hotel_meals').insert({ hotel_stay_id: stayId, date, meal_type: mealType, ate: ateValue }).select('id').single();
+        logAction('mark_meal', 'meal', newMeal?.id, { meal_type: mealType, date, ate: ateValue });
       }
       fetchData();
     } catch { toast.error('Erro ao atualizar refeição'); }
@@ -707,16 +709,18 @@ const HotelTab: React.FC = () => {
                 const stayDays = getStayDays(stay);
                 const totalDays = stayDays.length;
                 const daysElapsed = Math.max(1, differenceInDays(new Date(), new Date(stay.check_in)) + 1);
-                const mealsEaten = stayMeals.filter(m => m.ate).length;
+                const mealsEaten = stayMeals.filter(m => m.ate === true).length;
+                const mealsNotEaten = stayMeals.filter(m => m.ate === false).length;
+                const mealsMarked = mealsEaten + mealsNotEaten;
                 const totalMealsExpected = totalDays * 2;
-                const mealPercent = totalMealsExpected > 0 ? Math.round((mealsEaten / totalMealsExpected) * 100) : 0;
+                const mealPercent = totalMealsExpected > 0 ? Math.round((mealsMarked / totalMealsExpected) * 100) : 0;
                 const hasPhotos = (stay.belongings_photos?.length || 0) > 0;
 
                 // Today's meals
                 const todayStr = format(new Date(), 'yyyy-MM-dd');
                 const todayMeals = MEAL_TYPES.map(mt => {
                   const meal = stayMeals.find(m => m.date === todayStr && m.meal_type === mt.key);
-                  return { ...mt, ate: meal?.ate || false };
+                  return { ...mt, ate: meal?.ate ?? null };
                 });
 
                 return (
@@ -752,9 +756,11 @@ const HotelTab: React.FC = () => {
                         {todayMeals.map(tm => (
                           <div key={tm.key} className={cn(
                             "w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border-2",
-                            tm.ate ? "bg-primary border-primary text-primary-foreground" : "bg-black/40 border-white/30 text-white"
+                            tm.ate === true ? "bg-primary border-primary text-primary-foreground" : 
+                            tm.ate === false ? "bg-destructive border-destructive text-destructive-foreground" :
+                            "bg-black/40 border-white/30 text-white"
                           )}>
-                            {tm.icon}
+                            {tm.ate === true ? '✓' : tm.ate === false ? '✗' : tm.icon}
                           </div>
                         ))}
                       </div>
@@ -773,7 +779,7 @@ const HotelTab: React.FC = () => {
                         <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
                           <div className={cn("h-full rounded-full transition-all", mealPercent >= 70 ? "bg-[hsl(var(--status-ok))]" : mealPercent >= 40 ? "bg-[hsl(var(--status-warning))]" : "bg-destructive")} style={{ width: `${mealPercent}%` }} />
                         </div>
-                        <span className="text-[8px] text-muted-foreground font-mono">{mealsEaten}/{totalMealsExpected}</span>
+                        <span className="text-[8px] text-muted-foreground font-mono">{mealsMarked}/{totalMealsExpected}</span>
                       </div>
                     </div>
                   </div>
@@ -834,33 +840,46 @@ const HotelTab: React.FC = () => {
                         <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
                           <Utensils size={16} className="text-primary" /> Refeições de Hoje
                         </h3>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-3">
                           {MEAL_TYPES.map(mt => {
                             const meal = stayMeals.find(m => m.date === todayStr && m.meal_type === mt.key);
-                            const ate = meal?.ate || false;
+                            const ateVal = meal?.ate ?? null;
                             return (
-                              <button
-                                key={mt.key}
-                                onClick={() => handleToggleMeal(stay.id, todayStr, mt.key)}
-                                className={cn(
-                                  "flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all active:scale-95",
-                                  ate
-                                    ? "border-primary bg-primary/10 shadow-md"
-                                    : "border-border bg-card hover:border-primary/40"
-                                )}
-                              >
-                                <span className="text-3xl">{mt.icon}</span>
-                                <span className={cn("text-sm font-bold", ate ? "text-primary" : "text-foreground")}>{mt.label}</span>
-                                {ate ? (
-                                  <Badge className="bg-primary text-primary-foreground text-[10px]">
-                                    <Check size={10} className="mr-0.5" /> Comeu
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="outline" className="text-[10px] text-muted-foreground">
-                                    Não comeu
-                                  </Badge>
-                                )}
-                              </button>
+                              <div key={mt.key} className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xl">{mt.icon}</span>
+                                  <span className="text-sm font-bold text-foreground">{mt.label}</span>
+                                  {ateVal === null && (
+                                    <Badge variant="outline" className="text-[9px] text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-950/30 animate-pulse">
+                                      Pendente
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <button
+                                    onClick={() => handleSetMeal(stay.id, todayStr, mt.key, true)}
+                                    className={cn(
+                                      "flex items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all active:scale-95 font-semibold text-sm",
+                                      ateVal === true
+                                        ? "border-primary bg-primary text-primary-foreground shadow-md"
+                                        : "border-border bg-card hover:border-primary/40 text-foreground"
+                                    )}
+                                  >
+                                    <Check size={16} /> Comeu ✅
+                                  </button>
+                                  <button
+                                    onClick={() => handleSetMeal(stay.id, todayStr, mt.key, false)}
+                                    className={cn(
+                                      "flex items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all active:scale-95 font-semibold text-sm",
+                                      ateVal === false
+                                        ? "border-destructive bg-destructive text-destructive-foreground shadow-md"
+                                        : "border-border bg-card hover:border-destructive/40 text-foreground"
+                                    )}
+                                  >
+                                    <X size={16} /> Não comeu ❌
+                                  </button>
+                                </div>
+                              </div>
                             );
                           })}
                         </div>
@@ -884,13 +903,15 @@ const HotelTab: React.FC = () => {
                                 {stayDays.slice(0, 7).map((day, i) => {
                                   const dateStr = format(day, 'yyyy-MM-dd');
                                   const meal = stayMeals.find(m => m.date === dateStr && m.meal_type === mt.key);
-                                  const ate = meal?.ate || false;
+                                  const ateVal = meal?.ate ?? null;
                                   return (
-                                    <button key={i} onClick={() => handleToggleMeal(stay.id, dateStr, mt.key)}
+                                    <button key={i} onClick={() => handleSetMeal(stay.id, dateStr, mt.key, ateVal !== true ? true : false)}
                                       className={cn("w-full h-8 rounded-lg border-2 text-xs font-bold transition-all active:scale-95",
-                                        ate ? "bg-primary/20 border-primary/50 text-primary" : "bg-card border-border text-muted-foreground hover:border-primary/40"
+                                        ateVal === true ? "bg-primary/20 border-primary/50 text-primary" : 
+                                        ateVal === false ? "bg-destructive/20 border-destructive/50 text-destructive" :
+                                        "bg-card border-border text-muted-foreground hover:border-primary/40"
                                       )}>
-                                      {ate ? '✓' : '·'}
+                                      {ateVal === true ? '✓' : ateVal === false ? '✗' : '·'}
                                     </button>
                                   );
                                 })}
@@ -998,7 +1019,7 @@ const HotelTab: React.FC = () => {
                                   const newEnd = startOfDay(d);
                                   if (newEnd > oldEnd) {
                                     const newDays = eachDayOfInterval({ start: addDays(oldEnd, 1), end: newEnd });
-                                    const newMealRows = newDays.flatMap(day => MEAL_TYPES.map(mt => ({ hotel_stay_id: stay.id, date: format(day, 'yyyy-MM-dd'), meal_type: mt.key, ate: false })));
+                                    const newMealRows = newDays.flatMap(day => MEAL_TYPES.map(mt => ({ hotel_stay_id: stay.id, date: format(day, 'yyyy-MM-dd'), meal_type: mt.key, ate: null })));
                                     if (newMealRows.length > 0) await supabase.from('hotel_meals').insert(newMealRows);
                                   }
                                   toast.success(`Prolongado até ${format(d, 'dd/MM')}!`);
