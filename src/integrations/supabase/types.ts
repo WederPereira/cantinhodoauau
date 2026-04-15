@@ -242,7 +242,7 @@ export type Database = {
       }
       hotel_meals: {
         Row: {
-          ate: boolean | null
+          ate: boolean
           created_at: string
           date: string
           hotel_stay_id: string
@@ -251,7 +251,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          ate?: boolean | null
+          ate?: boolean
           created_at?: string
           date?: string
           hotel_stay_id: string
@@ -260,7 +260,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          ate?: boolean | null
+          ate?: boolean
           created_at?: string
           date?: string
           hotel_stay_id?: string
@@ -286,7 +286,6 @@ export type Database = {
           hotel_stay_id: string
           id: string
           medication_name: string
-          medication_type: string
           notes: string | null
           recurrence: string
           scheduled_time: string
@@ -298,7 +297,6 @@ export type Database = {
           hotel_stay_id: string
           id?: string
           medication_name: string
-          medication_type?: string
           notes?: string | null
           recurrence?: string
           scheduled_time: string
@@ -310,7 +308,6 @@ export type Database = {
           hotel_stay_id?: string
           id?: string
           medication_name?: string
-          medication_type?: string
           notes?: string | null
           recurrence?: string
           scheduled_time?: string

@@ -97,6 +97,8 @@ const Dashboard: React.FC = () => {
               { value: 'daycare', icon: PawPrint, label: 'Creche' },
               { value: 'taxi', icon: Car, label: 'Táxi' },
               { value: 'hotel', icon: Hotel, label: 'Hotel' },
+              { value: 'medication', icon: Pill, label: 'Medicação' },
+              { value: 'health', icon: HeartPulse, label: 'Saúde' },
               { value: 'health', icon: HeartPulse, label: 'Saúde' },
             ].map(({ value, icon: Icon, label }) => (
               <TabsTrigger
@@ -149,28 +151,14 @@ const Dashboard: React.FC = () => {
               <HotelTab />
             </Suspense>
           </TabsContent>
+          <TabsContent value="medication" className="mt-4">
+            <Suspense fallback={<SectionLoader />}>
+              <MedicationTab />
+            </Suspense>
+          </TabsContent>
           <TabsContent value="health" className="mt-4">
             <Suspense fallback={<SectionLoader />}>
-              <Tabs defaultValue="medication" className="w-full">
-                <TabsList className="w-full grid grid-cols-2 h-10 mb-4">
-                  <TabsTrigger value="medication" className="gap-1.5 text-xs font-medium">
-                    <Pill size={14} /> Medicação
-                  </TabsTrigger>
-                  <TabsTrigger value="health-control" className="gap-1.5 text-xs font-medium">
-                    <HeartPulse size={14} /> Controle
-                  </TabsTrigger>
-                </TabsList>
-                <TabsContent value="medication">
-                  <Suspense fallback={<SectionLoader />}>
-                    <MedicationTab />
-                  </Suspense>
-                </TabsContent>
-                <TabsContent value="health-control">
-                  <Suspense fallback={<SectionLoader />}>
-                    <HealthControlTab />
-                  </Suspense>
-                </TabsContent>
-              </Tabs>
+              <HealthControlTab />
             </Suspense>
           </TabsContent>
         </Tabs>
