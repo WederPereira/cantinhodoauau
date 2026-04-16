@@ -282,8 +282,9 @@ export type Database = {
         Row: {
           administered: boolean
           administered_at: string | null
+          client_id: string | null
           created_at: string
-          hotel_stay_id: string
+          hotel_stay_id: string | null
           id: string
           medication_name: string
           medication_type: string
@@ -294,8 +295,9 @@ export type Database = {
         Insert: {
           administered?: boolean
           administered_at?: string | null
+          client_id?: string | null
           created_at?: string
-          hotel_stay_id: string
+          hotel_stay_id?: string | null
           id?: string
           medication_name: string
           medication_type?: string
@@ -306,8 +308,9 @@ export type Database = {
         Update: {
           administered?: boolean
           administered_at?: string | null
+          client_id?: string | null
           created_at?: string
-          hotel_stay_id?: string
+          hotel_stay_id?: string | null
           id?: string
           medication_name?: string
           medication_type?: string
@@ -492,6 +495,30 @@ export type Database = {
           media_url?: string | null
           user_id?: string
           user_name?: string
+        }
+        Relationships: []
+      }
+      taxi_groups: {
+        Row: {
+          created_at: string
+          entries: Json
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          entries?: Json
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          entries?: Json
+          id?: string
+          name?: string
+          updated_at?: string
         }
         Relationships: []
       }
