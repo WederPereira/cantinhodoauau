@@ -103,8 +103,8 @@ const Dashboard: React.FC = () => {
           <div className="flex items-center gap-2">
             <Dialog open={qrOpen} onOpenChange={setQrOpen}>
               <DialogTrigger asChild>
-                <Button size="sm" variant="outline" className="gap-1.5 h-9 text-xs rounded-xl" title="Salvar Backup">
-                  <Save size={14} className="text-muted-foreground mr-1" />
+                <Button size="sm" variant="outline" className="gap-1.5 h-9 text-xs rounded-xl">
+                  <Camera size={14} />
                   QR Code
                 </Button>
               </DialogTrigger>
