@@ -67,6 +67,7 @@ const MedicationTab: React.FC = () => {
 
   // Add medication form
   const [selectedStayId, setSelectedStayId] = useState('');
+  const [selectedClientId, setSelectedClientId] = useState('');
   const [newMedName, setNewMedName] = useState('');
   const [newMedType, setNewMedType] = useState('comprimido');
   const [newMedTime, setNewMedTime] = useState('');
@@ -86,19 +87,18 @@ const MedicationTab: React.FC = () => {
         .from('hotel_stays')
         .select('id, dog_name, tutor_name, client_id')
         .eq('active', true);
-      if (!stays || stays.length === 0) { setMeds([]); setActiveStays([]); return; }
 
-      setActiveStays(stays.map((s: any) => ({ id: s.id, dog_name: s.dog_name, tutor_name: s.tutor_name, client_id: s.client_id })));
-      const stayMap = new Map(stays.map((s: any) => [s.id, s.dog_name]));
-      const stayIds = stays.map((s: any) => s.id);
+      const staysList = stays || [];
+      setActiveStays(staysList.map((s: any) => ({ id: s.id, dog_name: s.dog_name, tutor_name: s.tutor_name, client_id: s.client_id })));
+      const stayMap = new Map(staysList.map((s: any) => [s.id, s.dog_name]));
 
-      const { data: hotelMeds } = await supabase
+      // Fetch ALL non-administered medications (hotel + standalone)
+      const { data: allMeds } = await supabase
         .from('hotel_medications')
         .select('*')
-        .in('hotel_stay_id', stayIds)
         .order('scheduled_time', { ascending: true });
 
-      const items: MedItem[] = (hotelMeds || []).map((m: any) => ({
+      const items: MedItem[] = (allMeds || []).map((m: any) => ({
         id: m.id,
         medication_name: m.medication_name,
         medication_type: m.medication_type || 'comprimido',
@@ -107,9 +107,10 @@ const MedicationTab: React.FC = () => {
         administered_at: m.administered_at || null,
         recurrence: m.recurrence || 'once',
         notes: m.notes || '',
-        dog_name: stayMap.get(m.hotel_stay_id) || 'Dog',
+        dog_name: m.hotel_stay_id ? (stayMap.get(m.hotel_stay_id) || 'Dog') : (m.client_id ? '' : 'Dog'),
         source: 'hotel',
-        stay_id: m.hotel_stay_id,
+        stay_id: m.hotel_stay_id || '',
+        client_id: m.client_id || null,
       }));
 
       setMeds(items);
@@ -186,13 +187,14 @@ const MedicationTab: React.FC = () => {
   };
 
   const handleAddMedication = async () => {
-    if (!selectedStayId || !newMedName || !newMedTime) {
+    if ((!selectedStayId && !selectedClientId) || !newMedName || !newMedTime) {
       toast.error('Preencha todos os campos');
       return;
     }
     try {
       await supabase.from('hotel_medications').insert({
-        hotel_stay_id: selectedStayId,
+        hotel_stay_id: selectedStayId || null,
+        client_id: selectedClientId || null,
         medication_name: newMedName,
         medication_type: newMedType,
         scheduled_time: newMedTime,
@@ -248,6 +250,7 @@ const MedicationTab: React.FC = () => {
     setNewMedRecurrence('once');
     setNewMedNotes('');
     setSelectedStayId('');
+    setSelectedClientId('');
     setStaySearch('');
     setDogSearch('');
   };
