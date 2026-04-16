@@ -890,7 +890,7 @@ const HotelTab: React.FC = () => {
                             return (
                               <div key={mt.key} className="space-y-2">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-xl">{mt.icon}</span>
+                                  <span className="text-xl">{mt.key === 'almoco' ? '☀️' : '🌙'}</span>
                                   <span className="text-sm font-bold text-foreground">{mt.label}</span>
                                   {ateVal === null && (
                                     <Badge variant="outline" className="text-[9px] text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-950/30 animate-pulse">
@@ -938,7 +938,7 @@ const HotelTab: React.FC = () => {
                                 <th className="text-left p-1.5 font-semibold text-muted-foreground border border-border sticky left-0 bg-muted/50 z-10">Data</th>
                                 {MEAL_TYPES.map(mt => (
                                   <th key={mt.key} className="text-center p-1.5 font-semibold text-muted-foreground border border-border min-w-[100px]">
-                                    {mt.icon} {mt.label}
+                                    {mt.key === 'almoco' ? '☀️' : '🌙'} {mt.label}
                                   </th>
                                 ))}
                               </tr>
