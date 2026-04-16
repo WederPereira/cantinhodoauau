@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useClients } from '@/context/ClientContext';
-import { Pill, AlertTriangle, Clock, Dog, Check, Timer, Search, CheckCircle2, Plus, X, Syringe, Pencil, PawPrint } from 'lucide-react';
+import { Pill, AlertTriangle, Clock, Dog, Check, Timer, Search, CheckCircle2, Plus, X, Syringe } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,6 @@ interface MedItem {
   administered: boolean;
   administered_at: string | null;
   recurrence: string;
-  notes: string;
   dog_name: string;
   source: 'hotel';
   stay_id: string;
@@ -62,8 +61,6 @@ const MedicationTab: React.FC = () => {
   const [search, setSearch] = useState('');
   const [showAdministered, setShowAdministered] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [editingMed, setEditingMed] = useState<MedItem | null>(null);
 
   // Add medication form
   const [selectedStayId, setSelectedStayId] = useState('');
@@ -71,14 +68,10 @@ const MedicationTab: React.FC = () => {
   const [newMedType, setNewMedType] = useState('comprimido');
   const [newMedTime, setNewMedTime] = useState('');
   const [newMedRecurrence, setNewMedRecurrence] = useState('once');
-  const [newMedNotes, setNewMedNotes] = useState('');
   const [staySearch, setStaySearch] = useState('');
-  const [dogSearch, setDogSearch] = useState('');
 
   // Active stays for adding meds
   const [activeStays, setActiveStays] = useState<Array<{ id: string; dog_name: string; tutor_name: string; client_id: string }>>([]);
-  // Dogs present at daycare today
-  const [daycareDogNames, setDaycareDogNames] = useState<Set<string>>(new Set());
 
   const fetchMeds = useCallback(async () => {
     try {
@@ -106,7 +99,6 @@ const MedicationTab: React.FC = () => {
         administered: m.administered,
         administered_at: m.administered_at || null,
         recurrence: m.recurrence || 'once',
-        notes: m.notes || '',
         dog_name: stayMap.get(m.hotel_stay_id) || 'Dog',
         source: 'hotel',
         stay_id: m.hotel_stay_id,
@@ -118,30 +110,15 @@ const MedicationTab: React.FC = () => {
     }
   }, []);
 
-  // Fetch daycare dogs for today
-  const fetchDaycareDogs = useCallback(async () => {
-    try {
-      const todayStr = format(new Date(), 'yyyy-MM-dd');
-      const { data } = await supabase
-        .from('daily_records')
-        .select('dog')
-        .eq('date', todayStr);
-      if (data) {
-        setDaycareDogNames(new Set(data.map((d: any) => d.dog.toLowerCase())));
-      }
-    } catch { /* silent */ }
-  }, []);
-
   useEffect(() => {
     fetchMeds();
-    fetchDaycareDogs();
     const channel = supabase
       .channel('med-tab-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'hotel_medications' }, fetchMeds)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'hotel_stays' }, fetchMeds)
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [fetchMeds, fetchDaycareDogs]);
+  }, [fetchMeds]);
 
   useEffect(() => {
     const interval = setInterval(() => setNow(new Date()), 1000);
@@ -175,16 +152,6 @@ const MedicationTab: React.FC = () => {
     }
   };
 
-  const handleDeleteMed = async (medId: string) => {
-    try {
-      await supabase.from('hotel_medications').delete().eq('id', medId);
-      toast.success('Medicamento removido');
-      fetchMeds();
-    } catch {
-      toast.error('Erro ao remover');
-    }
-  };
-
   const handleAddMedication = async () => {
     if (!selectedStayId || !newMedName || !newMedTime) {
       toast.error('Preencha todos os campos');
@@ -197,59 +164,18 @@ const MedicationTab: React.FC = () => {
         medication_type: newMedType,
         scheduled_time: newMedTime,
         recurrence: newMedRecurrence,
-        notes: newMedNotes,
       });
       toast.success(`${newMedName} adicionado!`);
-      resetAddForm();
+      setNewMedName('');
+      setNewMedType('comprimido');
+      setNewMedTime('');
+      setNewMedRecurrence('once');
+      setSelectedStayId('');
       setAddDialogOpen(false);
       fetchMeds();
     } catch {
       toast.error('Erro ao adicionar medicamento');
     }
-  };
-
-  const handleEditMedication = async () => {
-    if (!editingMed || !newMedName || !newMedTime) {
-      toast.error('Preencha todos os campos');
-      return;
-    }
-    try {
-      await supabase.from('hotel_medications').update({
-        medication_name: newMedName,
-        medication_type: newMedType,
-        scheduled_time: newMedTime,
-        recurrence: newMedRecurrence,
-        notes: newMedNotes,
-      }).eq('id', editingMed.id);
-      toast.success(`${newMedName} atualizado!`);
-      setEditDialogOpen(false);
-      setEditingMed(null);
-      resetAddForm();
-      fetchMeds();
-    } catch {
-      toast.error('Erro ao editar medicamento');
-    }
-  };
-
-  const openEditDialog = (med: MedItem) => {
-    setEditingMed(med);
-    setNewMedName(med.medication_name);
-    setNewMedType(med.medication_type);
-    setNewMedTime(med.scheduled_time.slice(0, 5));
-    setNewMedRecurrence(med.recurrence);
-    setNewMedNotes(med.notes || '');
-    setEditDialogOpen(true);
-  };
-
-  const resetAddForm = () => {
-    setNewMedName('');
-    setNewMedType('comprimido');
-    setNewMedTime('');
-    setNewMedRecurrence('once');
-    setNewMedNotes('');
-    setSelectedStayId('');
-    setStaySearch('');
-    setDogSearch('');
   };
 
   const getMedMinutes = (med: MedItem) => {
@@ -300,25 +226,10 @@ const MedicationTab: React.FC = () => {
   const pastNotOverdue = pending.filter(isPastNotOverdue);
   const upcoming = pending.filter(isUpcoming);
 
-  // For the add dialog: show all registered dogs, not just hotel stays
-  const allDogs = clients.map(c => {
-    const hotelStay = activeStays.find(s => s.client_id === c.id);
-    const isDaycare = daycareDogNames.has(c.name.toLowerCase());
-    return {
-      id: c.id,
-      name: c.name,
-      photo: c.photo,
-      breed: c.breed,
-      hotelStayId: hotelStay?.id || null,
-      isDaycare,
-      isHotel: !!hotelStay,
-    };
-  });
-
-  const filteredDogs = allDogs.filter(d => {
-    if (!dogSearch) return true;
-    const q = dogSearch.toLowerCase();
-    return d.name.toLowerCase().includes(q) || d.breed.toLowerCase().includes(q);
+  const filteredStays = activeStays.filter(s => {
+    if (!staySearch) return true;
+    const q = staySearch.toLowerCase();
+    return s.dog_name.toLowerCase().includes(q) || s.tutor_name.toLowerCase().includes(q);
   });
 
   const MedCard = ({ med, variant }: { med: MedItem; variant: 'overdue' | 'past' | 'upcoming' }) => {
@@ -365,78 +276,21 @@ const MedicationTab: React.FC = () => {
               <Timer size={14} />
               <span>{countdown}</span>
             </div>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => openEditDialog(med)}
-                className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-              >
-                <Pencil size={12} />
-              </button>
-              <button
-                onClick={() => handleAdminister(med)}
-                className={cn("flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all active:scale-95",
-                  variant === 'overdue'
-                    ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
-                    : 'bg-primary text-primary-foreground hover:bg-primary/90'
-                )}
-              >
-                <Check size={12} /> Aplicar
-              </button>
-            </div>
+            <button
+              onClick={() => handleAdminister(med)}
+              className={cn("flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all active:scale-95",
+                variant === 'overdue'
+                  ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                  : 'bg-primary text-primary-foreground hover:bg-primary/90'
+              )}
+            >
+              <Check size={12} /> Aplicar
+            </button>
           </div>
         </div>
       </div>
     );
   };
-
-  const MedFormFields = () => (
-    <div className="space-y-4">
-      <div>
-        <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Nome do medicamento</label>
-        <Input placeholder="Ex: Prednisolona" value={newMedName} onChange={e => setNewMedName(e.target.value)} className="text-sm h-9" />
-      </div>
-
-      <div>
-        <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Tipo</label>
-        <div className="grid grid-cols-4 gap-1.5">
-          {MEDICATION_TYPES.map(t => (
-            <button
-              key={t.value}
-              onClick={() => setNewMedType(t.value)}
-              className={cn(
-                "flex flex-col items-center gap-0.5 p-2 rounded-xl border-2 transition-all text-center",
-                newMedType === t.value ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/40'
-              )}
-            >
-              <span className="text-lg">{t.icon}</span>
-              <span className="text-[8px] font-medium leading-tight">{t.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Horário</label>
-          <Input type="time" value={newMedTime} onChange={e => setNewMedTime(e.target.value)} className="text-sm h-9" />
-        </div>
-        <div>
-          <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Recorrência</label>
-          <Select value={newMedRecurrence} onValueChange={setNewMedRecurrence}>
-            <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {RECURRENCE_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div>
-        <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Observações (opcional)</label>
-        <Input placeholder="Ex: dar com comida" value={newMedNotes} onChange={e => setNewMedNotes(e.target.value)} className="text-sm h-9" />
-      </div>
-    </div>
-  );
 
   return (
     <div className="space-y-4">
@@ -456,8 +310,7 @@ const MedicationTab: React.FC = () => {
               <AlertTriangle size={12} className="mr-1" /> {pending.length}
             </Badge>
           )}
-          {/* Add medication dialog */}
-          <Dialog open={addDialogOpen} onOpenChange={(o) => { setAddDialogOpen(o); if (!o) resetAddForm(); }}>
+          <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
             <DialogTrigger asChild>
               <Button size="sm" className="gap-1.5 h-9 text-xs rounded-xl">
                 <Plus size={14} /> Adicionar
@@ -470,98 +323,91 @@ const MedicationTab: React.FC = () => {
                 </DialogTitle>
               </DialogHeader>
 
-              <div className="space-y-4">
-                {/* Select dog - ALL registered dogs */}
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Dog</label>
-                  <div className="relative mb-2">
-                    <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                    <Input placeholder="Buscar dog..." value={dogSearch} onChange={e => setDogSearch(e.target.value)} className="pl-8 h-8 text-xs" />
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 max-h-[200px] overflow-y-auto">
-                    {filteredDogs.map(dog => (
-                      <button
-                        key={dog.id}
-                        onClick={() => {
-                          if (dog.hotelStayId) {
-                            setSelectedStayId(dog.hotelStayId);
-                          } else {
-                            toast.error('Este dog não está hospedado. Faça o check-in primeiro.');
-                            return;
-                          }
-                        }}
-                        className={cn(
-                          "flex flex-col items-center p-2 rounded-xl border-2 transition-all text-center relative",
-                          dog.hotelStayId && selectedStayId === dog.hotelStayId ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/40 bg-card',
-                          !dog.hotelStayId && !dog.isDaycare && 'opacity-40'
-                        )}
-                      >
-                        {dog.photo ? (
-                          <img src={dog.photo} alt={dog.name} className="w-10 h-10 rounded-full object-cover mb-1 border border-border" />
-                        ) : (
-                          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center mb-1">
-                            <Dog size={16} className="text-muted-foreground" />
-                          </div>
-                        )}
-                        <p className="font-semibold text-[10px] truncate w-full">{dog.name}</p>
-                        <div className="flex gap-0.5 mt-0.5">
-                          {dog.isHotel && <Badge variant="secondary" className="text-[7px] px-1 py-0">🏨</Badge>}
-                          {dog.isDaycare && (
-                            <Badge variant="outline" className="text-[7px] px-1 py-0 border-amber-400 text-amber-600 bg-amber-50">
-                              <PawPrint size={7} className="mr-0.5" /> Creche
-                            </Badge>
-                          )}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                  {/* Daycare warning */}
-                  {selectedStayId && (() => {
-                    const stay = activeStays.find(s => s.id === selectedStayId);
-                    if (stay && daycareDogNames.has(stay.dog_name.toLowerCase())) {
-                      return (
-                        <div className="mt-2 p-2 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-300 text-amber-700 dark:text-amber-400 text-xs flex items-center gap-2">
-                          <PawPrint size={14} />
-                          <span><strong>{stay.dog_name}</strong> está presente na creche hoje! Confira antes de aplicar.</span>
-                        </div>
-                      );
-                    }
-                    return null;
-                  })()}
+              {activeStays.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Dog size={36} className="mx-auto mb-2 opacity-30" />
+                  <p className="text-sm">Nenhum dog hospedado no momento</p>
+                  <p className="text-xs mt-1">Faça um check-in no hotel primeiro</p>
                 </div>
-
-                <MedFormFields />
-
-                <Button className="w-full gap-1.5" onClick={handleAddMedication} disabled={!selectedStayId || !newMedName || !newMedTime}>
-                  <Plus size={14} /> Adicionar Medicamento
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          {/* Edit medication dialog */}
-          <Dialog open={editDialogOpen} onOpenChange={(o) => { setEditDialogOpen(o); if (!o) { setEditingMed(null); resetAddForm(); } }}>
-            <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2 text-base">
-                  <Pencil size={18} className="text-primary" /> Editar Medicamento
-                </DialogTitle>
-              </DialogHeader>
-              {editingMed && (
+              ) : (
                 <div className="space-y-4">
-                  <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
-                    <Dog size={16} className="text-primary" />
-                    <span className="text-sm font-semibold">{editingMed.dog_name}</span>
+                  {/* Select dog */}
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Dog</label>
+                    <div className="relative mb-2">
+                      <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                      <Input placeholder="Buscar dog..." value={staySearch} onChange={e => setStaySearch(e.target.value)} className="pl-8 h-8 text-xs" />
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 max-h-[140px] overflow-y-auto">
+                      {filteredStays.map(stay => {
+                        const client = clients.find(c => c.id === stay.client_id);
+                        return (
+                          <button
+                            key={stay.id}
+                            onClick={() => setSelectedStayId(stay.id)}
+                            className={cn(
+                              "flex flex-col items-center p-2 rounded-xl border-2 transition-all text-center",
+                              selectedStayId === stay.id ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/40 bg-card'
+                            )}
+                          >
+                            {client?.photo ? (
+                              <img src={client.photo} alt={stay.dog_name} className="w-10 h-10 rounded-full object-cover mb-1 border border-border" />
+                            ) : (
+                              <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center mb-1">
+                                <Dog size={16} className="text-muted-foreground" />
+                              </div>
+                            )}
+                            <p className="font-semibold text-[10px] truncate w-full">{stay.dog_name}</p>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                  <MedFormFields />
-                  <div className="flex gap-2">
-                    <Button variant="destructive" size="sm" className="gap-1" onClick={() => { handleDeleteMed(editingMed.id); setEditDialogOpen(false); setEditingMed(null); }}>
-                      <X size={14} /> Remover
-                    </Button>
-                    <Button className="flex-1 gap-1.5" onClick={handleEditMedication} disabled={!newMedName || !newMedTime}>
-                      <Check size={14} /> Salvar Alterações
-                    </Button>
+
+                  {/* Medication details */}
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Nome do medicamento</label>
+                    <Input placeholder="Ex: Prednisolona" value={newMedName} onChange={e => setNewMedName(e.target.value)} className="text-sm h-9" />
                   </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Tipo</label>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {MEDICATION_TYPES.map(t => (
+                        <button
+                          key={t.value}
+                          onClick={() => setNewMedType(t.value)}
+                          className={cn(
+                            "flex flex-col items-center gap-0.5 p-2 rounded-xl border-2 transition-all text-center",
+                            newMedType === t.value ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/40'
+                          )}
+                        >
+                          <span className="text-lg">{t.icon}</span>
+                          <span className="text-[8px] font-medium leading-tight">{t.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Horário</label>
+                      <Input type="time" value={newMedTime} onChange={e => setNewMedTime(e.target.value)} className="text-sm h-9" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Recorrência</label>
+                      <Select value={newMedRecurrence} onValueChange={setNewMedRecurrence}>
+                        <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {RECURRENCE_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <Button className="w-full gap-1.5" onClick={handleAddMedication} disabled={!selectedStayId || !newMedName || !newMedTime}>
+                    <Plus size={14} /> Adicionar Medicamento
+                  </Button>
                 </div>
               )}
             </DialogContent>
@@ -655,12 +501,6 @@ const MedicationTab: React.FC = () => {
                         ✓ {format(new Date(med.administered_at), 'HH:mm')}
                       </span>
                     )}
-                    <button
-                      onClick={() => openEditDialog(med)}
-                      className="text-[10px] text-muted-foreground hover:text-primary transition-colors px-1.5 py-0.5 rounded border border-border"
-                    >
-                      Editar
-                    </button>
                     <button
                       onClick={() => handleUndo(med)}
                       className="text-[10px] text-muted-foreground hover:text-destructive transition-colors px-1.5 py-0.5 rounded border border-border"
