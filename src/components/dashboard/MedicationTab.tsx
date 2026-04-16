@@ -92,8 +92,9 @@ const MedicationTab: React.FC = () => {
       const staysList = stays || [];
       setActiveStays(staysList.map((s: any) => ({ id: s.id, dog_name: s.dog_name, tutor_name: s.tutor_name, client_id: s.client_id })));
       const stayMap = new Map(staysList.map((s: any) => [s.id, s.dog_name]));
+      const clientMap = new Map(clients.map(c => [c.id, c.name]));
 
-      // Fetch ALL non-administered medications (hotel + standalone)
+      // Fetch ALL medications (hotel + standalone)
       const { data: allMeds } = await supabase
         .from('hotel_medications')
         .select('*')
@@ -108,8 +109,8 @@ const MedicationTab: React.FC = () => {
         administered_at: m.administered_at || null,
         recurrence: m.recurrence || 'once',
         notes: m.notes || '',
-        dog_name: m.hotel_stay_id ? (stayMap.get(m.hotel_stay_id) || 'Dog') : (m.client_id ? '' : 'Dog'),
-        source: 'hotel',
+        dog_name: m.hotel_stay_id ? (stayMap.get(m.hotel_stay_id) || 'Dog') : (m.client_id ? (clientMap.get(m.client_id) || 'Dog') : 'Dog'),
+        source: m.hotel_stay_id ? 'hotel' : 'standalone',
         stay_id: m.hotel_stay_id || '',
         client_id: m.client_id || null,
       }));
@@ -118,7 +119,7 @@ const MedicationTab: React.FC = () => {
     } catch (err) {
       console.error(err);
     }
-  }, []);
+  }, [clients]);
 
   // Fetch daycare dogs for today
   const fetchDaycareDogs = useCallback(async () => {
