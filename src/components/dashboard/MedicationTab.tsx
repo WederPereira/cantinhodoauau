@@ -21,8 +21,9 @@ interface MedItem {
   recurrence: string;
   notes: string;
   dog_name: string;
-  source: 'hotel';
+  source: 'hotel' | 'standalone';
   stay_id: string;
+  client_id: string | null;
 }
 
 const MEDICATION_TYPES = [
