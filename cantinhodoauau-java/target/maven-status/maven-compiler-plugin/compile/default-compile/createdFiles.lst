@@ -1,0 +1,13 @@
+com\cantinhodoauau\service\ClientService.class
+com\cantinhodoauau\model\VaccineRecord.class
+com\cantinhodoauau\model\Client.class
+com\cantinhodoauau\model\PetSize.class
+com\cantinhodoauau\model\VaccineType.class
+com\cantinhodoauau\model\PetGender.class
+com\cantinhodoauau\controller\ClientController.class
+com\cantinhodoauau\repository\ClientRepository.class
+com\cantinhodoauau\repository\VaccineRecordRepository.class
+com\cantinhodoauau\model\FleaRecord.class
+com\cantinhodoauau\service\ClientService$1.class
+com\cantinhodoauau\CantinhoDoAuAuApplication.class
+com\cantinhodoauau\repository\FleaRecordRepository.class

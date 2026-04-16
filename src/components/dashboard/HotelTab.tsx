@@ -96,7 +96,7 @@ const HotelTab: React.FC = () => {
   const [selectedClientId, setSelectedClientId] = useState('');
   const [observations, setObservations] = useState('');
   const [checkInDate, setCheckInDate] = useState<Date>(new Date());
-  const [expectedCheckoutDate, setExpectedCheckoutDate] = useState<Date>(addDays(new Date(), 1));
+  const [expectedCheckoutDate, setExpectedCheckoutDate] = useState<Date | undefined>(undefined);
   // Check-in step state
   const [checkinStep, setCheckinStep] = useState<1 | 2 | 3>(1);
   // Inline meds for check-in
@@ -124,6 +124,7 @@ const HotelTab: React.FC = () => {
   const [uploadLabels, setUploadLabels] = useState<Record<string, string>>({});
   const [pendingFiles, setPendingFiles] = useState<{ stayId: string; files: File[] } | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -206,6 +207,22 @@ const HotelTab: React.FC = () => {
     return stays.filter(s => s.dog_name.toLowerCase().includes(q) || s.tutor_name.toLowerCase().includes(q));
   }, [stays, activeSearch]);
 
+  const handleCopyStays = () => {
+    const lines = filteredActiveStays.map((s, i) => {
+      const checkin = format(new Date(s.check_in), 'dd/MM');
+      const checkout = s.expected_checkout ? format(new Date(s.expected_checkout), 'dd/MM') : 'Indet.';
+      return `${i + 1}. 🏨 ${s.dog_name} (${s.tutor_name}) — Entrou: ${checkin} | Saída: ${checkout}`;
+    });
+    const header = `📋 Dogs no Hotel — ${format(new Date(), 'dd/MM/yyyy')}\n${'─'.repeat(30)}`;
+    const text = `${header}\n${lines.join('\n')}`;
+    
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      toast.success('Lista copiada!');
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
   const datesWithStays = useMemo(() => {
     const set = new Set<string>();
     allStays.forEach(s => set.add(format(new Date(s.check_in), 'yyyy-MM-dd')));
@@ -223,7 +240,7 @@ const HotelTab: React.FC = () => {
     setObservations('');
     setSearchFilter('');
     setCheckInDate(new Date());
-    setExpectedCheckoutDate(addDays(new Date(), 1));
+    setExpectedCheckoutDate(undefined);
     setCheckinStep(1);
     setCheckinMeds([]);
     setCheckinPhotos([]);
@@ -239,11 +256,11 @@ const HotelTab: React.FC = () => {
     try {
       const { error } = await supabase.from('hotel_stays').insert({
         client_id: client.id, dog_name: client.name, tutor_name: client.tutorName,
-        observations, check_in: checkInDate.toISOString(), expected_checkout: expectedCheckoutDate.toISOString(),
+        observations, check_in: checkInDate.toISOString(), expected_checkout: expectedCheckoutDate ? expectedCheckoutDate.toISOString() : null,
       });
       if (error) throw error;
 
-      const days = eachDayOfInterval({ start: checkInDate, end: expectedCheckoutDate });
+      const days = eachDayOfInterval({ start: checkInDate, end: expectedCheckoutDate || addDays(checkInDate, 30) });
       const { data: newStay } = await supabase
         .from('hotel_stays').select('id').eq('client_id', client.id).eq('active', true)
         .order('created_at', { ascending: false }).limit(1).single();
@@ -529,17 +546,20 @@ const HotelTab: React.FC = () => {
                         <PopoverTrigger asChild>
                           <Button variant="outline" className="w-full justify-start text-left text-xs h-9">
                             <CalendarIcon size={12} className="mr-1.5" />
-                            {format(expectedCheckoutDate, 'dd/MM/yy', { locale: ptBR })}
+                            {expectedCheckoutDate ? format(expectedCheckoutDate, 'dd/MM/yy', { locale: ptBR }) : 'Indeterminado'}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar mode="single" selected={expectedCheckoutDate} onSelect={(d) => d && setExpectedCheckoutDate(d)} className="pointer-events-auto" locale={ptBR} />
+                          <Calendar mode="single" selected={expectedCheckoutDate} onSelect={(d) => setExpectedCheckoutDate(d)} className="pointer-events-auto" locale={ptBR} />
+                          <div className="p-2 border-t">
+                            <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => setExpectedCheckoutDate(undefined)}>Indeterminado</Button>
+                          </div>
                         </PopoverContent>
                       </Popover>
                     </div>
                   </div>
                   <p className="text-[10px] text-muted-foreground text-center">
-                    {differenceInDays(expectedCheckoutDate, checkInDate) + 1} dia(s) · {(differenceInDays(expectedCheckoutDate, checkInDate) + 1) * 2} refeições
+                    {expectedCheckoutDate ? `${differenceInDays(expectedCheckoutDate, checkInDate) + 1} dia(s) · ${(differenceInDays(expectedCheckoutDate, checkInDate) + 1) * 2} refeições` : 'Estadia por tempo indeterminado'}
                   </p>
 
                   <Textarea value={observations} onChange={e => setObservations(e.target.value)} placeholder="Observações (alergias, comportamento...)" rows={2} className="text-xs" />
@@ -671,14 +691,19 @@ const HotelTab: React.FC = () => {
 
           {/* Search bar */}
           {stays.length > 0 && (
-            <div className="relative">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Buscar dog ou tutor..."
-                value={activeSearch}
-                onChange={e => setActiveSearch(e.target.value)}
-                className="pl-9 h-9 text-sm rounded-xl"
-              />
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar dog ou tutor..."
+                  value={activeSearch}
+                  onChange={e => setActiveSearch(e.target.value)}
+                  className="pl-9 h-9 text-sm rounded-xl"
+                />
+              </div>
+              <Button onClick={handleCopyStays} variant="outline" size="icon" className="h-9 w-9 shrink-0 rounded-xl">
+                {copied ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
+              </Button>
             </div>
           )}
 
@@ -721,8 +746,8 @@ const HotelTab: React.FC = () => {
                 const mealsEaten = stayMeals.filter(m => m.ate === true).length;
                 const mealsNotEaten = stayMeals.filter(m => m.ate === false).length;
                 const mealsMarked = mealsEaten + mealsNotEaten;
-                const totalMealsExpected = totalDays * 2;
-                const mealPercent = totalMealsExpected > 0 ? Math.round((mealsMarked / totalMealsExpected) * 100) : 0;
+                const mealsExpectedUpToToday = daysElapsed * 2;
+                const mealPercent = mealsExpectedUpToToday > 0 ? Math.round((mealsMarked / mealsExpectedUpToToday) * 100) : 0;
                 const hasPhotos = (stay.belongings_photos?.length || 0) > 0;
 
                 // Today's meals
@@ -822,7 +847,7 @@ const HotelTab: React.FC = () => {
                         <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
                           <div className={cn("h-full rounded-full transition-all", mealPercent >= 70 ? "bg-[hsl(var(--status-ok))]" : mealPercent >= 40 ? "bg-[hsl(var(--status-warning))]" : "bg-destructive")} style={{ width: `${mealPercent}%` }} />
                         </div>
-                        <span className="text-[8px] text-muted-foreground font-mono">{mealsMarked}/{totalMealsExpected}</span>
+                        <span className="text-[8px] text-muted-foreground font-mono">{mealsMarked}/{mealsExpectedUpToToday} analisadas</span>
                       </div>
                     </div>
                   </div>
@@ -878,55 +903,7 @@ const HotelTab: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* TODAY'S MEALS - Big buttons */}
-                      <div className="bg-muted/30 rounded-2xl p-4 space-y-3">
-                        <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                          <Utensils size={16} className="text-primary" /> Refeições de Hoje
-                        </h3>
-                        <div className="space-y-3">
-                          {MEAL_TYPES.map(mt => {
-                            const meal = stayMeals.find(m => m.date === todayStr && m.meal_type === mt.key);
-                            const ateVal = meal?.ate ?? null;
-                            return (
-                              <div key={mt.key} className="space-y-2">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xl">{mt.key === 'almoco' ? '☀️' : '🌙'}</span>
-                                  <span className="text-sm font-bold text-foreground">{mt.label}</span>
-                                  {ateVal === null && (
-                                    <Badge variant="outline" className="text-[9px] text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-950/30 animate-pulse">
-                                      Pendente
-                                    </Badge>
-                                  )}
-                                </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                  <button
-                                    onClick={() => handleSetMeal(stay.id, todayStr, mt.key, true)}
-                                    className={cn(
-                                      "flex items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all active:scale-95 font-semibold text-sm",
-                                      ateVal === true
-                                        ? "border-primary bg-primary text-primary-foreground shadow-md"
-                                        : "border-border bg-card hover:border-primary/40 text-foreground"
-                                    )}
-                                  >
-                                    <Check size={16} /> Comeu ✅
-                                  </button>
-                                  <button
-                                    onClick={() => handleSetMeal(stay.id, todayStr, mt.key, false)}
-                                    className={cn(
-                                      "flex items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all active:scale-95 font-semibold text-sm",
-                                      ateVal === false
-                                        ? "border-destructive bg-destructive text-destructive-foreground shadow-md"
-                                        : "border-border bg-card hover:border-destructive/40 text-foreground"
-                                    )}
-                                  >
-                                    <X size={16} /> Não comeu ❌
-                                  </button>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
+
 
                       {/* Meals history - spreadsheet style */}
                       <div className="space-y-2">

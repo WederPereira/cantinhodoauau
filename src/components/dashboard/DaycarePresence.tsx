@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { useClients } from '@/context/ClientContext';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Utensils, UtensilsCrossed, Dog, RefreshCw, Calendar, Search } from 'lucide-react';
+import { Utensils, UtensilsCrossed, Dog, RefreshCw, Calendar, Search, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -17,15 +18,18 @@ interface TodayEntry {
   tutor: string;
   raca: string;
   qrEntryId: string;
-  ate: boolean;
+  ate: boolean | null;
+  notes: string | null;
   recordId: string | null;
 }
 
 const DaycarePresence: React.FC = () => {
+  const { clients } = useClients();
   const [entries, setEntries] = useState<TodayEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'ate' | 'not_ate'>('all');
+  const [copied, setCopied] = useState(false);
   const today = format(new Date(), 'yyyy-MM-dd');
   const todayDisplay = format(new Date(), "EEEE, dd 'de' MMMM", { locale: ptBR });
 
@@ -64,7 +68,8 @@ const DaycarePresence: React.FC = () => {
           tutor: qr.tutor,
           raca: qr.raca,
           qrEntryId: qr.id,
-          ate: record?.ate ?? false,
+          ate: record?.ate ?? null,
+          notes: record?.notes ?? null,
           recordId: record?.id ?? null,
         };
       });
@@ -88,16 +93,15 @@ const DaycarePresence: React.FC = () => {
     return () => { supabase.removeChannel(channel); };
   }, [fetchEntries]);
 
-  const toggleAte = async (entry: TodayEntry) => {
-    const newAte = !entry.ate;
+  const setMealStatus = async (entry: TodayEntry, newAte: boolean, newNotes: string | null) => {
     try {
       if (entry.recordId) {
         const { error } = await supabase
           .from('daily_records')
-          .update({ ate: newAte, updated_at: new Date().toISOString() })
+          .update({ ate: newAte, notes: newNotes, updated_at: new Date().toISOString() })
           .eq('id', entry.recordId);
         if (error) throw error;
-        logAction('daycare_meal', 'daycare', entry.recordId, { dog_name: entry.dog, tutor_name: entry.tutor, ate: newAte });
+        logAction('daycare_meal', 'daycare', entry.recordId, { dog_name: entry.dog, tutor_name: entry.tutor, ate: newAte, notes: newNotes });
       } else {
         const { data: newRecord, error } = await supabase
           .from('daily_records')
@@ -107,28 +111,42 @@ const DaycarePresence: React.FC = () => {
             tutor: entry.tutor,
             date: today,
             ate: newAte,
+            notes: newNotes,
           })
           .select('id')
           .single();
         if (error) throw error;
-        logAction('daycare_meal', 'daycare', newRecord?.id, { dog_name: entry.dog, tutor_name: entry.tutor, ate: newAte });
+        logAction('daycare_meal', 'daycare', newRecord?.id, { dog_name: entry.dog, tutor_name: entry.tutor, ate: newAte, notes: newNotes });
       }
 
       setEntries(prev =>
-        prev.map(e => e.id === entry.id ? { ...e, ate: newAte } : e)
+        prev.map(e => e.id === entry.id ? { ...e, ate: newAte, notes: newNotes, recordId: entry.recordId || 'temp' } : e)
       );
 
-      toast.success(newAte ? `${entry.dog} comeu! ✅` : `${entry.dog} marcado como não comeu`);
+      toast.success(`${entry.dog} atualizado!`);
     } catch (err) {
       console.error(err);
       toast.error('Erro ao atualizar registro');
     }
   };
 
-  const ateCount = entries.filter(e => e.ate).length;
-  const notAteCount = entries.length - ateCount;
+  const ateCount = entries.filter(e => e.ate === true).length;
+  const notAteCount = entries.filter(e => e.ate === false).length;
 
-  const filteredEntries = useMemo(() => {
+  const handleCopy = () => {
+    const lines = filteredEntries.map((e, i) => {
+      const status = e.ate === true ? (e.notes === 'tudo' ? '✅ Comeu Tudo' : '🟡 Comeu Metade') : (e.ate === false ? '❌ Não Comeu' : '⚪ Pendente');
+      return `${i + 1}. 🐾 ${e.dog} — ${status}`;
+    });
+    const header = `📋 Presença Creche — ${todayDisplay}\n${'─'.repeat(30)}`;
+    const text = `${header}\n${lines.join('\n')}`;
+    
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      toast.success('Lista copiada!');
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
     let list = entries;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -190,6 +208,9 @@ const DaycarePresence: React.FC = () => {
             <SelectItem value="not_ate">Não comeram</SelectItem>
           </SelectContent>
         </Select>
+        <Button onClick={handleCopy} variant="outline" size="icon" className="h-9 w-9 shrink-0">
+          {copied ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
+        </Button>
       </div>
 
       {filteredEntries.length === 0 ? (
@@ -199,46 +220,97 @@ const DaycarePresence: React.FC = () => {
           {entries.length === 0 && <p className="text-xs mt-1">Use o botão de QR Code no Dashboard para registrar</p>}
         </div>
       ) : (
-        <div className="space-y-2">
-          {filteredEntries.map((entry, idx) => (
-            <button
-              key={entry.id}
-              onClick={() => toggleAte(entry)}
-              className={cn(
-                "w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all active:scale-[0.98]",
-                entry.ate
-                  ? 'bg-green-50 border-green-300 dark:bg-green-950/30 dark:border-green-800'
-                  : 'bg-card border-border hover:border-orange-300'
-              )}
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <span className="text-xs font-mono text-muted-foreground w-5 text-right shrink-0">
-                  {idx + 1}.
-                </span>
-                <div className="min-w-0 text-left">
-                  <p className="font-semibold text-sm text-foreground truncate">{entry.dog}</p>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-muted-foreground truncate">{entry.tutor}</span>
-                    {entry.raca && (
-                      <Badge variant="secondary" className="text-[9px] px-1.5 py-0">{entry.raca}</Badge>
-                    )}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {filteredEntries.map((entry, idx) => {
+            const client = clients.find(c => c.name === entry.dog && c.tutorName === entry.tutor) || clients.find(c => c.name === entry.dog);
+            return (
+              <div
+                key={entry.id}
+                className={cn(
+                  "bg-card border border-border rounded-2xl overflow-hidden transition-all hover:border-primary/30 hover:shadow-md flex flex-col",
+                  entry.ate === true && entry.notes === 'tudo'
+                    ? 'border-green-300 dark:border-green-800'
+                    : entry.ate === true && entry.notes === 'metade'
+                    ? 'border-amber-300 dark:border-amber-800'
+                    : entry.ate === false
+                    ? 'border-red-300 dark:border-red-800'
+                    : 'border-border'
+                )}
+              >
+                {/* Image Section */}
+                <div 
+                  className="aspect-[4/3] bg-muted relative overflow-hidden cursor-pointer active:scale-[0.98] transition-transform flex-shrink-0"
+                  onClick={() => client && window.dispatchEvent(new CustomEvent('openClientDetail', { detail: client.id }))}
+                >
+                  {client?.photo ? (
+                    <img src={client.photo} alt={entry.dog} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-muted/50">
+                      <Dog size={36} className="text-muted-foreground/30 mb-2" />
+                    </div>
+                  )}
+                  <div className="absolute top-2 left-2 bg-black/60 rounded-full w-5 h-5 flex items-center justify-center text-[10px] text-white font-mono font-bold" title="Ordem de Entrada">
+                    {idx + 1}
+                  </div>
+                  <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2.5 pt-8">
+                    <p className="font-bold text-sm text-white truncate drop-shadow-md">{entry.dog}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="text-[10px] text-white/80 truncate drop-shadow">{entry.tutor}</span>
+                      {entry.raca && (
+                        <span className="text-[8px] bg-white/20 text-white px-1.5 py-0.5 rounded font-medium backdrop-blur-sm truncate max-w-[60px]">
+                          {entry.raca}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Meal Buttons Section */}
+                <div className={cn(
+                  "p-2.5 space-y-2 flex-grow flex flex-col justify-end",
+                  entry.ate === true && entry.notes === 'tudo' ? 'bg-green-50 dark:bg-green-950/30' :
+                  entry.ate === true && entry.notes === 'metade' ? 'bg-amber-50 dark:bg-amber-950/30' :
+                  entry.ate === false ? 'bg-red-50 dark:bg-red-950/30' : ''
+                )}>
+                  <div className="flex items-center gap-1.5 w-full">
+                    <button
+                      onClick={() => setMealStatus(entry, true, 'tudo')}
+                      className={cn(
+                        "flex-1 flex justify-center items-center gap-1 py-1.5 rounded-md font-semibold text-[10px] border transition-all active:scale-95 shadow-sm",
+                        entry.ate === true && entry.notes === 'tudo'
+                          ? "bg-green-500 border-green-600 text-white"
+                          : "bg-card border-border hover:border-green-400 text-muted-foreground hover:bg-green-50 dark:hover:bg-green-900/20"
+                      )}
+                    >
+                      <Utensils size={12} /> Tudo
+                    </button>
+                    <button
+                      onClick={() => setMealStatus(entry, true, 'metade')}
+                      className={cn(
+                        "flex-1 flex justify-center items-center gap-1 py-1.5 rounded-md font-semibold text-[10px] border transition-all active:scale-95 shadow-sm",
+                        entry.ate === true && entry.notes === 'metade'
+                          ? "bg-amber-500 border-amber-600 text-white"
+                          : "bg-card border-border hover:border-amber-400 text-muted-foreground hover:bg-amber-50 dark:hover:bg-amber-900/20"
+                      )}
+                    >
+                      <Utensils size={12} /> Meio
+                    </button>
+                    <button
+                      onClick={() => setMealStatus(entry, false, null)}
+                      className={cn(
+                        "flex-1 flex justify-center items-center gap-1 py-1.5 rounded-md font-semibold text-[10px] border transition-all active:scale-95 shadow-sm",
+                        entry.ate === false
+                          ? "bg-red-500 border-red-600 text-white"
+                          : "bg-card border-border hover:border-red-400 text-muted-foreground hover:bg-red-50 dark:hover:bg-red-900/20"
+                      )}
+                    >
+                      <UtensilsCrossed size={12} /> Não
+                    </button>
                   </div>
                 </div>
               </div>
-              <div className={cn(
-                "flex items-center gap-2 shrink-0 px-3 py-1.5 rounded-lg font-semibold text-xs transition-all",
-                entry.ate
-                  ? "bg-green-200 text-green-800 dark:bg-green-900 dark:text-green-300"
-                  : "bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300"
-              )}>
-                {entry.ate ? (
-                  <><Utensils size={14} /> Comeu</>
-                ) : (
-                  <><UtensilsCrossed size={14} /> Não comeu</>
-                )}
-              </div>
-            </button>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

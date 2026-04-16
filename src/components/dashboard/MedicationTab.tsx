@@ -86,11 +86,16 @@ const MedicationTab: React.FC = () => {
     try {
       const { data: stays } = await supabase
         .from('hotel_stays')
+        .select('id, dog_name, tutor_name, client_id');
+        
+      const activeStaysFetch = await supabase
+        .from('hotel_stays')
         .select('id, dog_name, tutor_name, client_id')
         .eq('active', true);
 
       const staysList = stays || [];
-      setActiveStays(staysList.map((s: any) => ({ id: s.id, dog_name: s.dog_name, tutor_name: s.tutor_name, client_id: s.client_id })));
+      const activeStaysList = activeStaysFetch.data || [];
+      setActiveStays(activeStaysList.map((s: any) => ({ id: s.id, dog_name: s.dog_name, tutor_name: s.tutor_name, client_id: s.client_id })));
       const stayMap = new Map(staysList.map((s: any) => [s.id, s.dog_name]));
       const clientMap = new Map(clients.map(c => [c.id, c.name]));
 
@@ -326,7 +331,7 @@ const MedicationTab: React.FC = () => {
     return d.name.toLowerCase().includes(q) || d.breed.toLowerCase().includes(q);
   });
 
-  const MedCard = ({ med, variant }: { med: MedItem; variant: 'overdue' | 'past' | 'upcoming' }) => {
+  const renderMedCard = (med: MedItem, variant: 'overdue' | 'past' | 'upcoming') => {
     const countdown = getCountdown(med);
     const client = clients.find(c => c.id === activeStays.find(s => s.id === med.stay_id)?.client_id);
     const borderColors = {
@@ -394,7 +399,7 @@ const MedicationTab: React.FC = () => {
     );
   };
 
-  const MedFormFields = () => (
+  const renderMedFormFields = () => (
     <div className="space-y-4">
       <div>
         <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Nome do medicamento</label>
@@ -537,7 +542,7 @@ const MedicationTab: React.FC = () => {
                   })()}
                 </div>
 
-                <MedFormFields />
+                {renderMedFormFields()}
 
                 <Button className="w-full gap-1.5" onClick={handleAddMedication} disabled={(!selectedStayId && !selectedClientId) || !newMedName || !newMedTime}>
                   <Plus size={14} /> Adicionar Medicamento
@@ -560,7 +565,7 @@ const MedicationTab: React.FC = () => {
                     <Dog size={16} className="text-primary" />
                     <span className="text-sm font-semibold">{editingMed.dog_name}</span>
                   </div>
-                  <MedFormFields />
+                  {renderMedFormFields()}
                   <div className="flex gap-2">
                     <Button variant="destructive" size="sm" className="gap-1" onClick={() => { handleDeleteMed(editingMed.id); setEditDialogOpen(false); setEditingMed(null); }}>
                       <X size={14} /> Remover
@@ -611,7 +616,7 @@ const MedicationTab: React.FC = () => {
           <p className="text-xs font-bold text-destructive uppercase tracking-wide flex items-center gap-1.5">
             <AlertTriangle size={12} /> Atrasados (+2h) — {overdue.length}
           </p>
-          {overdue.map(med => <MedCard key={med.id} med={med} variant="overdue" />)}
+          {overdue.map(med => <React.Fragment key={med.id}>{renderMedCard(med, 'overdue')}</React.Fragment>)}
         </div>
       )}
 
@@ -621,7 +626,7 @@ const MedicationTab: React.FC = () => {
           <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide flex items-center gap-1.5">
             <Clock size={12} /> Horário passou — {pastNotOverdue.length}
           </p>
-          {pastNotOverdue.map(med => <MedCard key={med.id} med={med} variant="past" />)}
+          {pastNotOverdue.map(med => <React.Fragment key={med.id}>{renderMedCard(med, 'past')}</React.Fragment>)}
         </div>
       )}
 
@@ -631,7 +636,7 @@ const MedicationTab: React.FC = () => {
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             Próximos — {upcoming.length}
           </p>
-          {upcoming.map(med => <MedCard key={med.id} med={med} variant="upcoming" />)}
+          {upcoming.map(med => <React.Fragment key={med.id}>{renderMedCard(med, 'upcoming')}</React.Fragment>)}
         </div>
       )}
 

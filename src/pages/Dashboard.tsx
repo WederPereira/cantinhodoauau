@@ -1,7 +1,9 @@
 import React, { lazy, Suspense, useState, useMemo, useEffect } from 'react';
 import { useClients } from '@/context/ClientContext';
 import { Client, getHealthAlerts } from '@/types/client';
-import { LayoutDashboard, HeartPulse, PawPrint, Hotel, Camera, Car, Loader2, Pill } from 'lucide-react';
+import { LayoutDashboard, HeartPulse, PawPrint, Hotel, Camera, Car, Loader2, Pill, Save, Download } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -57,7 +59,38 @@ const Dashboard: React.FC = () => {
     if (client) handleClientClick(client);
   };
 
-  return (
+  const handleExportBackup = async () => {
+    try {
+      toast.loading('Preparando backup...');
+      const tables = [
+        'clients', 'hotel_stays', 'hotel_medications', 'hotel_meals', 
+        'daily_records', 'action_logs', 'vaccine_records', 'flea_records', 'taxi_groups'
+      ];
+      const backupData: any = {};
+      
+      for (const table of tables) {
+        const { data, error } = await supabase.from(table).select('*');
+        if (error) console.error(`Error fetching ${table}:`, error);
+        backupData[table] = data || [];
+      }
+
+      const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `backup-cantinho-${format(new Date(), 'yyyy-MM-dd-HHmm')}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast.dismiss();
+      toast.success('Backup concluído com sucesso! 💾');
+    } catch (error) {
+      console.error('Backup error:', error);
+      toast.error('Erro ao gerar backup');
+    }
+  };
     <div className="min-h-screen bg-background">
       <div className="container px-4 py-5 max-w-6xl mx-auto space-y-5">
         <div className="flex items-center justify-between">
@@ -70,8 +103,8 @@ const Dashboard: React.FC = () => {
           <div className="flex items-center gap-2">
             <Dialog open={qrOpen} onOpenChange={setQrOpen}>
               <DialogTrigger asChild>
-                <Button size="sm" variant="outline" className="gap-1.5 h-9 text-xs rounded-xl">
-                  <Camera size={14} />
+                <Button size="sm" variant="outline" className="gap-1.5 h-9 text-xs rounded-xl" title="Salvar Backup">
+                  <Save size={14} className="text-muted-foreground mr-1" />
                   QR Code
                 </Button>
               </DialogTrigger>
@@ -87,6 +120,9 @@ const Dashboard: React.FC = () => {
             <Suspense fallback={<Button size="sm" variant="outline" className="h-9 text-xs rounded-xl" disabled><Loader2 size={14} className="animate-spin" /></Button>}>
               <AddClientDialog />
             </Suspense>
+            <Button size="sm" variant="outline" className="gap-1.5 h-9 w-9 p-0 rounded-xl" onClick={handleExportBackup} title="Gerar Backup Completo">
+              <Download size={15} />
+            </Button>
           </div>
         </div>
 

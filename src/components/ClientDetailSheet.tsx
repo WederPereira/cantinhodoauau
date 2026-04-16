@@ -441,10 +441,14 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
                   </h3>
                   <div className="flex gap-2 flex-wrap">
                     {siblings.map(s => (
-                      <span key={s.id} className="text-xs bg-muted/40 border border-border rounded-lg px-2.5 py-1.5 font-medium">
-                        {s.photo ? <img src={s.photo} className="w-4 h-4 rounded-full inline mr-1.5" /> : null}
+                      <button 
+                        key={s.id} 
+                        onClick={() => window.dispatchEvent(new CustomEvent('openClientDetail', { detail: s.id }))}
+                        className="flex items-center text-xs bg-muted/40 border border-border rounded-lg px-2.5 py-1.5 font-medium hover:bg-primary/10 hover:border-primary/50 transition-colors cursor-pointer"
+                      >
+                        {s.photo ? <img src={s.photo} className="w-4 h-4 object-cover rounded-full inline mr-1.5" alt="" /> : <span className="mr-1.5">🐕</span>}
                         {s.name}
-                      </span>
+                      </button>
                     ))}
                   </div>
                 </div>
