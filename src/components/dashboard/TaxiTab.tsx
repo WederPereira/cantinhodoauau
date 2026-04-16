@@ -1,11 +1,13 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useClients } from '@/context/ClientContext';
-import { Car, Copy, Check, Plus, Trash2, ArrowRight, ArrowLeft, ArrowLeftRight, Search, X, Dog } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { Car, Copy, Check, Plus, Trash2, ArrowRight, ArrowLeft, ArrowLeftRight, Search, X, Dog, Save, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 
 type TaxiDirection = 'ida' | 'volta' | 'ida_volta';
@@ -16,6 +18,12 @@ interface TaxiEntry {
   dogName: string;
   tutorName: string;
   direction: TaxiDirection;
+}
+
+interface TaxiGroup {
+  id: string;
+  name: string;
+  entries: TaxiEntry[];
 }
 
 const DIRECTION_LABELS: Record<TaxiDirection, string> = {
@@ -59,6 +67,48 @@ const TaxiTab: React.FC = () => {
   const [showSelector, setShowSelector] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
+  // Fixed groups
+  const [groups, setGroups] = useState<TaxiGroup[]>([]);
+  const [saveGroupName, setSaveGroupName] = useState('');
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [loadDialogOpen, setLoadDialogOpen] = useState(false);
+
+  const fetchGroups = useCallback(async () => {
+    const { data } = await supabase.from('taxi_groups').select('*').order('name');
+    if (data) setGroups(data.map((g: any) => ({ id: g.id, name: g.name, entries: g.entries as TaxiEntry[] })));
+  }, []);
+
+  useEffect(() => { fetchGroups(); }, [fetchGroups]);
+
+  const handleSaveGroup = async () => {
+    if (!saveGroupName.trim() || taxiList.length === 0) {
+      toast.error('Dê um nome e tenha pelo menos 1 pet na lista');
+      return;
+    }
+    try {
+      await supabase.from('taxi_groups').insert({ name: saveGroupName.trim(), entries: taxiList as any });
+      toast.success(`Grupo "${saveGroupName}" salvo!`);
+      setSaveGroupName('');
+      setSaveDialogOpen(false);
+      fetchGroups();
+    } catch { toast.error('Erro ao salvar grupo'); }
+  };
+
+  const handleLoadGroup = (group: TaxiGroup) => {
+    setTaxiList(group.entries);
+    saveTaxiList(group.entries);
+    setLoadDialogOpen(false);
+    toast.success(`Grupo "${group.name}" carregado!`);
+  };
+
+  const handleDeleteGroup = async (groupId: string) => {
+    try {
+      await supabase.from('taxi_groups').delete().eq('id', groupId);
+      toast.success('Grupo removido');
+      fetchGroups();
+    } catch { toast.error('Erro ao remover'); }
+  };
+
   const availableClients = useMemo(() => {
     const usedIds = new Set(taxiList.map(e => e.clientId));
     return clients.filter(c => !usedIds.has(c.id));
@@ -80,7 +130,6 @@ const TaxiTab: React.FC = () => {
   const handleAdd = (clientId: string) => {
     const client = clients.find(c => c.id === clientId);
     if (!client) return;
-
     const entry: TaxiEntry = {
       id: crypto.randomUUID(),
       clientId: client.id,
@@ -88,7 +137,6 @@ const TaxiTab: React.FC = () => {
       tutorName: client.tutorName,
       direction: selectedDirection,
     };
-
     const updated = [...taxiList, entry];
     setTaxiList(updated);
     saveTaxiList(updated);
@@ -114,12 +162,10 @@ const TaxiTab: React.FC = () => {
       const dir = DIRECTION_LABELS[e.direction];
       return `🐾 ${e.dogName} (${e.tutorName}) — ${dir}`;
     });
-
     const header = `🚕 Lista Táxi Dog — ${filteredList.length} pets\n${'─'.repeat(30)}`;
     const idaCount = filteredList.filter(e => e.direction === 'ida' || e.direction === 'ida_volta').length;
     const voltaCount = filteredList.filter(e => e.direction === 'volta' || e.direction === 'ida_volta').length;
     const summary = `\n${'─'.repeat(30)}\n📊 Ida: ${idaCount} | Volta: ${voltaCount}`;
-
     const text = `${header}\n${lines.join('\n')}${summary}`;
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
@@ -155,6 +201,60 @@ const TaxiTab: React.FC = () => {
           <p className="text-lg font-bold text-green-600 dark:text-green-400">{counts.ida_volta}</p>
           <p className="text-[10px] text-muted-foreground">Ida/Volta</p>
         </button>
+      </div>
+
+      {/* Fixed groups bar */}
+      <div className="flex gap-2">
+        <Dialog open={loadDialogOpen} onOpenChange={setLoadDialogOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs flex-1 h-9">
+              <FolderOpen size={14} /> Grupos Fixos
+              {groups.length > 0 && <Badge variant="secondary" className="text-[9px] px-1 py-0">{groups.length}</Badge>}
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="text-base">Grupos Fixos de Táxi</DialogTitle>
+            </DialogHeader>
+            {groups.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">Nenhum grupo salvo. Salve a lista atual como grupo fixo.</p>
+            ) : (
+              <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                {groups.map(g => (
+                  <div key={g.id} className="flex items-center justify-between p-3 rounded-xl border border-border bg-card">
+                    <button onClick={() => handleLoadGroup(g)} className="flex-1 text-left min-w-0">
+                      <p className="font-semibold text-sm truncate">{g.name}</p>
+                      <p className="text-[10px] text-muted-foreground">{g.entries.length} pets</p>
+                    </button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDeleteGroup(g.id)}>
+                      <Trash2 size={14} />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs h-9" disabled={taxiList.length === 0}>
+              <Save size={14} /> Salvar Grupo
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="text-base">Salvar como Grupo Fixo</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <Input placeholder="Nome do grupo (ex: Segunda-feira)" value={saveGroupName} onChange={e => setSaveGroupName(e.target.value)} className="h-10" />
+              <p className="text-xs text-muted-foreground">{taxiList.length} pet(s) na lista atual</p>
+              <Button className="w-full" onClick={handleSaveGroup} disabled={!saveGroupName.trim()}>
+                <Save size={14} className="mr-1.5" /> Salvar
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Direction selector */}
@@ -194,7 +294,6 @@ const TaxiTab: React.FC = () => {
           )}
         </div>
 
-        {/* Pet cards grid */}
         {showSelector && (
           <div className="space-y-1.5">
             {filteredClients.length === 0 ? (
