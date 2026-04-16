@@ -22,17 +22,19 @@ interface QrEntry {
 
 const FrequencyAnalytics: React.FC = () => {
   const [entries, setEntries] = useState<QrEntry[]>([]);
+  const [dailyRecords, setDailyRecords] = useState<Array<{ dog: string; date: string; ate: boolean }>>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
   useEffect(() => {
     const fetchEntries = async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('qr_entries')
-        .select('*')
-        .order('data_hora', { ascending: false });
-      if (!error && data) setEntries(data as any as QrEntry[]);
+      const [entriesRes, recordsRes] = await Promise.all([
+        supabase.from('qr_entries').select('*').order('data_hora', { ascending: false }),
+        supabase.from('daily_records').select('dog, date, ate'),
+      ]);
+      if (!entriesRes.error && entriesRes.data) setEntries(entriesRes.data as any as QrEntry[]);
+      if (!recordsRes.error && recordsRes.data) setDailyRecords(recordsRes.data as any);
       setLoading(false);
     };
     fetchEntries();
@@ -85,8 +87,13 @@ const FrequencyAnalytics: React.FC = () => {
     if (selectedDateSummary.length === 0) return;
     const total = selectedDateSummary.reduce((s, d) => s + d.count, 0);
     const dateStr = format(selectedDate!, 'dd/MM/yyyy');
+    const dayRecords = dailyRecords.filter(r => r.date === format(selectedDate!, 'yyyy-MM-dd'));
     const header = `\`CRECHE ${dateStr}:\``;
-    const lines = selectedDateSummary.map((d, i) => `${i + 1}. ${d.dog.toUpperCase()}`);
+    const lines = selectedDateSummary.map((d, i) => {
+      const record = dayRecords.find(r => r.dog.toLowerCase() === d.dog.split(' (')[0].toLowerCase());
+      const ateStatus = record ? (record.ate ? '✅' : '❌') : '⏳';
+      return `${i + 1}. ${d.dog.toUpperCase()} ${ateStatus}`;
+    });
     const footer = `\`TOTAL:${total}\``;
     navigator.clipboard.writeText(`${header}\n\n${lines.join('\n\n')}\n\n${footer}`);
     toast.success('Lista copiada no formato WhatsApp!');

@@ -21,8 +21,9 @@ interface MedItem {
   recurrence: string;
   notes: string;
   dog_name: string;
-  source: 'hotel';
+  source: 'hotel' | 'standalone';
   stay_id: string;
+  client_id: string | null;
 }
 
 const MEDICATION_TYPES = [
@@ -67,6 +68,7 @@ const MedicationTab: React.FC = () => {
 
   // Add medication form
   const [selectedStayId, setSelectedStayId] = useState('');
+  const [selectedClientId, setSelectedClientId] = useState('');
   const [newMedName, setNewMedName] = useState('');
   const [newMedType, setNewMedType] = useState('comprimido');
   const [newMedTime, setNewMedTime] = useState('');
@@ -86,19 +88,19 @@ const MedicationTab: React.FC = () => {
         .from('hotel_stays')
         .select('id, dog_name, tutor_name, client_id')
         .eq('active', true);
-      if (!stays || stays.length === 0) { setMeds([]); setActiveStays([]); return; }
 
-      setActiveStays(stays.map((s: any) => ({ id: s.id, dog_name: s.dog_name, tutor_name: s.tutor_name, client_id: s.client_id })));
-      const stayMap = new Map(stays.map((s: any) => [s.id, s.dog_name]));
-      const stayIds = stays.map((s: any) => s.id);
+      const staysList = stays || [];
+      setActiveStays(staysList.map((s: any) => ({ id: s.id, dog_name: s.dog_name, tutor_name: s.tutor_name, client_id: s.client_id })));
+      const stayMap = new Map(staysList.map((s: any) => [s.id, s.dog_name]));
+      const clientMap = new Map(clients.map(c => [c.id, c.name]));
 
-      const { data: hotelMeds } = await supabase
+      // Fetch ALL medications (hotel + standalone)
+      const { data: allMeds } = await supabase
         .from('hotel_medications')
         .select('*')
-        .in('hotel_stay_id', stayIds)
         .order('scheduled_time', { ascending: true });
 
-      const items: MedItem[] = (hotelMeds || []).map((m: any) => ({
+      const items: MedItem[] = (allMeds || []).map((m: any) => ({
         id: m.id,
         medication_name: m.medication_name,
         medication_type: m.medication_type || 'comprimido',
@@ -107,16 +109,17 @@ const MedicationTab: React.FC = () => {
         administered_at: m.administered_at || null,
         recurrence: m.recurrence || 'once',
         notes: m.notes || '',
-        dog_name: stayMap.get(m.hotel_stay_id) || 'Dog',
-        source: 'hotel',
-        stay_id: m.hotel_stay_id,
+        dog_name: m.hotel_stay_id ? (stayMap.get(m.hotel_stay_id) || 'Dog') : (m.client_id ? (clientMap.get(m.client_id) || 'Dog') : 'Dog'),
+        source: m.hotel_stay_id ? 'hotel' : 'standalone',
+        stay_id: m.hotel_stay_id || '',
+        client_id: m.client_id || null,
       }));
 
       setMeds(items);
     } catch (err) {
       console.error(err);
     }
-  }, []);
+  }, [clients]);
 
   // Fetch daycare dogs for today
   const fetchDaycareDogs = useCallback(async () => {
@@ -186,13 +189,14 @@ const MedicationTab: React.FC = () => {
   };
 
   const handleAddMedication = async () => {
-    if (!selectedStayId || !newMedName || !newMedTime) {
+    if ((!selectedStayId && !selectedClientId) || !newMedName || !newMedTime) {
       toast.error('Preencha todos os campos');
       return;
     }
     try {
       await supabase.from('hotel_medications').insert({
-        hotel_stay_id: selectedStayId,
+        hotel_stay_id: selectedStayId || null,
+        client_id: selectedClientId || null,
         medication_name: newMedName,
         medication_type: newMedType,
         scheduled_time: newMedTime,
@@ -248,6 +252,7 @@ const MedicationTab: React.FC = () => {
     setNewMedRecurrence('once');
     setNewMedNotes('');
     setSelectedStayId('');
+    setSelectedClientId('');
     setStaySearch('');
     setDogSearch('');
   };
@@ -485,15 +490,17 @@ const MedicationTab: React.FC = () => {
                         onClick={() => {
                           if (dog.hotelStayId) {
                             setSelectedStayId(dog.hotelStayId);
+                            setSelectedClientId(dog.id);
                           } else {
-                            toast.error('Este dog não está hospedado. Faça o check-in primeiro.');
-                            return;
+                            setSelectedStayId('');
+                            setSelectedClientId(dog.id);
                           }
                         }}
                         className={cn(
                           "flex flex-col items-center p-2 rounded-xl border-2 transition-all text-center relative",
-                          dog.hotelStayId && selectedStayId === dog.hotelStayId ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/40 bg-card',
-                          !dog.hotelStayId && !dog.isDaycare && 'opacity-40'
+                          (dog.hotelStayId && selectedStayId === dog.hotelStayId) || (!dog.hotelStayId && selectedClientId === dog.id)
+                            ? 'border-primary bg-primary/10'
+                            : 'border-border hover:border-primary/40 bg-card'
                         )}
                       >
                         {dog.photo ? (
@@ -516,13 +523,13 @@ const MedicationTab: React.FC = () => {
                     ))}
                   </div>
                   {/* Daycare warning */}
-                  {selectedStayId && (() => {
-                    const stay = activeStays.find(s => s.id === selectedStayId);
-                    if (stay && daycareDogNames.has(stay.dog_name.toLowerCase())) {
+                  {selectedClientId && (() => {
+                    const dog = clients.find(c => c.id === selectedClientId);
+                    if (dog && daycareDogNames.has(dog.name.toLowerCase())) {
                       return (
                         <div className="mt-2 p-2 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-300 text-amber-700 dark:text-amber-400 text-xs flex items-center gap-2">
                           <PawPrint size={14} />
-                          <span><strong>{stay.dog_name}</strong> está presente na creche hoje! Confira antes de aplicar.</span>
+                          <span><strong>{dog.name}</strong> está presente na creche hoje! Confira antes de aplicar.</span>
                         </div>
                       );
                     }
@@ -532,7 +539,7 @@ const MedicationTab: React.FC = () => {
 
                 <MedFormFields />
 
-                <Button className="w-full gap-1.5" onClick={handleAddMedication} disabled={!selectedStayId || !newMedName || !newMedTime}>
+                <Button className="w-full gap-1.5" onClick={handleAddMedication} disabled={(!selectedStayId && !selectedClientId) || !newMedName || !newMedTime}>
                   <Plus size={14} /> Adicionar Medicamento
                 </Button>
               </div>

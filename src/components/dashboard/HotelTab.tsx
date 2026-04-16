@@ -69,9 +69,18 @@ const RECURRENCE_OPTIONS = [
 ];
 
 const MEAL_TYPES = [
-  { key: 'almoco', label: 'Almoço', icon: '🌤️' },
-  { key: 'janta', label: 'Janta', icon: '🌙' },
+  { key: 'almoco', label: 'Almoço' },
+  { key: 'janta', label: 'Janta' },
 ];
+
+const getMealForCurrentTime = () => {
+  const now = new Date();
+  const hours = now.getHours();
+  const minutes = now.getMinutes();
+  const totalMinutes = hours * 60 + minutes;
+  // Until 18:30 show lunch, after that show dinner
+  return totalMinutes <= 18 * 60 + 30 ? 'almoco' : 'janta';
+};
 
 const HotelTab: React.FC = () => {
   const { clients } = useClients();
@@ -762,39 +771,53 @@ const HotelTab: React.FC = () => {
                         <span>📅 {format(new Date(stay.check_in), 'dd/MM')} → {stay.expected_checkout ? format(new Date(stay.expected_checkout), 'dd/MM') : '?'}</span>
                         <Badge variant="secondary" className="text-[8px] px-1 py-0">{daysElapsed}/{totalDays}d</Badge>
                       </div>
-                      {/* Today's meal buttons directly on card */}
-                      <div className="space-y-1.5">
-                        {MEAL_TYPES.map(mt => {
-                          const ateVal = todayMeals.find(m => m.key === mt.key)?.ate ?? null;
-                          return (
-                            <div key={mt.key} className="flex items-center gap-1.5">
-                              <span className="text-xs w-5 text-center">{mt.icon}</span>
-                              <button
-                                onClick={(e) => { e.stopPropagation(); handleSetMeal(stay.id, todayStr, mt.key, true); }}
-                                className={cn(
-                                  "flex-1 py-1.5 rounded-lg text-[10px] font-semibold border transition-all active:scale-95",
-                                  ateVal === true
-                                    ? "bg-primary border-primary text-primary-foreground"
-                                    : "bg-card border-border hover:border-primary/40 text-muted-foreground"
-                                )}
-                              >
-                                ✅ Comeu
-                              </button>
-                              <button
-                                onClick={(e) => { e.stopPropagation(); handleSetMeal(stay.id, todayStr, mt.key, false); }}
-                                className={cn(
-                                  "flex-1 py-1.5 rounded-lg text-[10px] font-semibold border transition-all active:scale-95",
-                                  ateVal === false
-                                    ? "bg-destructive border-destructive text-destructive-foreground"
-                                    : "bg-card border-border hover:border-destructive/40 text-muted-foreground"
-                                )}
-                              >
-                                ❌ Não
-                              </button>
+                      {/* Today's meal button - time based */}
+                      {(() => {
+                        const currentMealKey = getMealForCurrentTime();
+                        const currentMeal = MEAL_TYPES.find(mt => mt.key === currentMealKey)!;
+                        const ateVal = todayMeals.find(m => m.key === currentMealKey)?.ate ?? null;
+                        const isLunch = currentMealKey === 'almoco';
+                        return (
+                          <div className="space-y-1.5">
+                            <div className={cn(
+                              "rounded-lg p-1 transition-all",
+                              isLunch
+                                ? "bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-950/30 dark:to-orange-950/30"
+                                : "bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-950/30 dark:to-purple-950/30"
+                            )}>
+                              <p className={cn("text-[9px] font-bold text-center mb-1",
+                                isLunch ? "text-amber-700 dark:text-amber-400" : "text-indigo-700 dark:text-indigo-400"
+                              )}>
+                                {currentMeal.label}
+                              </p>
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleSetMeal(stay.id, todayStr, currentMealKey, true); }}
+                                  className={cn(
+                                    "flex-1 py-1.5 rounded-md text-[10px] font-semibold border transition-all active:scale-95",
+                                    ateVal === true
+                                      ? "bg-primary border-primary text-primary-foreground"
+                                      : "bg-card border-border hover:border-primary/40 text-muted-foreground"
+                                  )}
+                                >
+                                  ✅ Comeu
+                                </button>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleSetMeal(stay.id, todayStr, currentMealKey, false); }}
+                                  className={cn(
+                                    "flex-1 py-1.5 rounded-md text-[10px] font-semibold border transition-all active:scale-95",
+                                    ateVal === false
+                                      ? "bg-destructive border-destructive text-destructive-foreground"
+                                      : "bg-card border-border hover:border-destructive/40 text-muted-foreground"
+                                  )}
+                                >
+                                  ❌ Não
+                                </button>
+                              </div>
                             </div>
-                          );
-                        })}
-                      </div>
+                          </div>
+                        );
+                      })()}
                       <div className="flex items-center gap-1.5">
                         <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
                           <div className={cn("h-full rounded-full transition-all", mealPercent >= 70 ? "bg-[hsl(var(--status-ok))]" : mealPercent >= 40 ? "bg-[hsl(var(--status-warning))]" : "bg-destructive")} style={{ width: `${mealPercent}%` }} />
@@ -867,7 +890,7 @@ const HotelTab: React.FC = () => {
                             return (
                               <div key={mt.key} className="space-y-2">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-xl">{mt.icon}</span>
+                                  <span className="text-xl">{mt.key === 'almoco' ? '☀️' : '🌙'}</span>
                                   <span className="text-sm font-bold text-foreground">{mt.label}</span>
                                   {ateVal === null && (
                                     <Badge variant="outline" className="text-[9px] text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-950/30 animate-pulse">
@@ -915,7 +938,7 @@ const HotelTab: React.FC = () => {
                                 <th className="text-left p-1.5 font-semibold text-muted-foreground border border-border sticky left-0 bg-muted/50 z-10">Data</th>
                                 {MEAL_TYPES.map(mt => (
                                   <th key={mt.key} className="text-center p-1.5 font-semibold text-muted-foreground border border-border min-w-[100px]">
-                                    {mt.icon} {mt.label}
+                                    {mt.key === 'almoco' ? '☀️' : '🌙'} {mt.label}
                                   </th>
                                 ))}
                               </tr>
