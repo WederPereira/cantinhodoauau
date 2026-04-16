@@ -147,6 +147,7 @@ const DaycarePresence: React.FC = () => {
       setTimeout(() => setCopied(false), 2000);
     });
   };
+  const filteredEntries = useMemo(() => {
     let list = entries;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
