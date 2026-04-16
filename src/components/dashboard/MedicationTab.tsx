@@ -490,15 +490,17 @@ const MedicationTab: React.FC = () => {
                         onClick={() => {
                           if (dog.hotelStayId) {
                             setSelectedStayId(dog.hotelStayId);
+                            setSelectedClientId(dog.id);
                           } else {
-                            toast.error('Este dog não está hospedado. Faça o check-in primeiro.');
-                            return;
+                            setSelectedStayId('');
+                            setSelectedClientId(dog.id);
                           }
                         }}
                         className={cn(
                           "flex flex-col items-center p-2 rounded-xl border-2 transition-all text-center relative",
-                          dog.hotelStayId && selectedStayId === dog.hotelStayId ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/40 bg-card',
-                          !dog.hotelStayId && !dog.isDaycare && 'opacity-40'
+                          (dog.hotelStayId && selectedStayId === dog.hotelStayId) || (!dog.hotelStayId && selectedClientId === dog.id)
+                            ? 'border-primary bg-primary/10'
+                            : 'border-border hover:border-primary/40 bg-card'
                         )}
                       >
                         {dog.photo ? (
@@ -521,13 +523,13 @@ const MedicationTab: React.FC = () => {
                     ))}
                   </div>
                   {/* Daycare warning */}
-                  {selectedStayId && (() => {
-                    const stay = activeStays.find(s => s.id === selectedStayId);
-                    if (stay && daycareDogNames.has(stay.dog_name.toLowerCase())) {
+                  {selectedClientId && (() => {
+                    const dog = clients.find(c => c.id === selectedClientId);
+                    if (dog && daycareDogNames.has(dog.name.toLowerCase())) {
                       return (
                         <div className="mt-2 p-2 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-300 text-amber-700 dark:text-amber-400 text-xs flex items-center gap-2">
                           <PawPrint size={14} />
-                          <span><strong>{stay.dog_name}</strong> está presente na creche hoje! Confira antes de aplicar.</span>
+                          <span><strong>{dog.name}</strong> está presente na creche hoje! Confira antes de aplicar.</span>
                         </div>
                       );
                     }
@@ -537,7 +539,7 @@ const MedicationTab: React.FC = () => {
 
                 <MedFormFields />
 
-                <Button className="w-full gap-1.5" onClick={handleAddMedication} disabled={!selectedStayId || !newMedName || !newMedTime}>
+                <Button className="w-full gap-1.5" onClick={handleAddMedication} disabled={(!selectedStayId && !selectedClientId) || !newMedName || !newMedTime}>
                   <Plus size={14} /> Adicionar Medicamento
                 </Button>
               </div>
