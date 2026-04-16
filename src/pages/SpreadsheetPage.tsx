@@ -380,13 +380,17 @@ const SpreadsheetPage: React.FC = () => {
               <QrCode size={12} />
               <span className="hidden sm:inline">{generatingAll ? 'Gerando...' : `QR (${clients.filter(c => !generatedQrIds.has(c.id)).length})`}</span>
             </Button>
-            <input type="file" ref={fileInputRef} accept=".csv,.xlsx,.xls,.ods,.txt" onChange={handleFileUpload} className="hidden" />
-            <Button variant="outline" size="sm" className="gap-1 h-7 text-[10px] px-2" onClick={() => fileInputRef.current?.click()}>
-              <Upload size={12} /><span className="hidden sm:inline">Importar</span>
-            </Button>
-            <Button variant="outline" size="sm" className="gap-1 h-7 text-[10px] px-2" onClick={exportToCSV}>
-              <Download size={12} /><span className="hidden sm:inline">CSV</span>
-            </Button>
+            {canSeeSensitive && (
+              <>
+                <input type="file" ref={fileInputRef} accept=".csv,.xlsx,.xls,.ods,.txt" onChange={handleFileUpload} className="hidden" />
+                <Button variant="outline" size="sm" className="gap-1 h-7 text-[10px] px-2" onClick={() => fileInputRef.current?.click()}>
+                  <Upload size={12} /><span className="hidden sm:inline">Importar</span>
+                </Button>
+                <Button variant="outline" size="sm" className="gap-1 h-7 text-[10px] px-2" onClick={exportToCSV}>
+                  <Download size={12} /><span className="hidden sm:inline">CSV</span>
+                </Button>
+              </>
+            )}
           </div>
         </div>
         <div className="relative mt-1.5">
