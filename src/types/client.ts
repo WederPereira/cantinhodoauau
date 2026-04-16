@@ -39,8 +39,6 @@ export interface Client {
   tutorAddress: string;
   tutorNeighborhood: string;
   tutorCpf: string;
-  tutorPhoto?: string;
-  tutorBirthDate?: Date;
   name: string;
   breed: string;
   petSize?: PetSize;
@@ -71,8 +69,6 @@ export const getProfileCompleteness = (client: Client): { percent: number; level
     !!client.gender,
     client.castrated !== undefined && client.castrated !== null,
     !!client.birthDate,
-    !!client.tutorPhoto,
-    !!client.tutorBirthDate,
     
   ];
   const filled = fields.filter(Boolean).length;

@@ -72,8 +72,6 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
     if (!client.tutorEmail) missing.push({ label: 'Email', field: 'tutorEmail', type: 'text' });
     if (!client.tutorCpf) missing.push({ label: 'CPF', field: 'tutorCpf', type: 'text' });
     if (!client.tutorAddress) missing.push({ label: 'Endereço', field: 'tutorAddress', type: 'text' });
-    if (!client.tutorPhoto) missing.push({ label: 'Foto Tutor', field: 'tutorPhoto', type: 'text' });
-    if (!client.tutorBirthDate) missing.push({ label: 'Aniv. Tutor', field: 'tutorBirthDate', type: 'date' });
     return missing;
   }, [client]);
 
@@ -277,16 +275,10 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
                   </div>
                 </div>
               )}
-               {fillingField === 'birthDate' && (
+              {fillingField === 'birthDate' && (
                 <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 animate-in fade-in">
-                  <p className="text-[10px] text-primary font-medium mb-1">🎂 Data de Nascimento (Pet)</p>
+                  <p className="text-[10px] text-primary font-medium mb-1">🎂 Data de Nascimento</p>
                   <Calendar mode="single" selected={undefined} onSelect={(d) => { if (d) inlineUpdate('birthDate', d); }} className="pointer-events-auto mx-auto" locale={ptBR} />
-                </div>
-              )}
-              {fillingField === 'tutorBirthDate' && (
-                <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 animate-in fade-in">
-                  <p className="text-[10px] text-primary font-medium mb-1">🎂 Aniversário do Tutor</p>
-                  <Calendar mode="single" selected={undefined} onSelect={(d) => { if (d) inlineUpdate('tutorBirthDate', d); }} className="pointer-events-auto mx-auto" locale={ptBR} />
                 </div>
               )}
 
@@ -389,15 +381,6 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
                   <User size={13} /> Tutor
                 </h3>
                 <div className="bg-card border border-border rounded-xl overflow-hidden divide-y divide-border/50">
-                  <div className="p-3 flex justify-center bg-muted/20">
-                    <div className="w-16 h-16">
-                      <PhotoUpload
-                        photo={client.tutorPhoto}
-                        onPhotoChange={(photo) => inlineUpdate('tutorPhoto', photo ?? null)}
-                        size="sm"
-                      />
-                    </div>
-                  </div>
                   <InlineEditField icon={<User size={14} />} label="Nome" value={client.tutorName} onSave={canSeeSensitive ? (v) => inlineUpdate('tutorName', v) : undefined} placeholder="Nome do tutor" />
                   {canSeeSensitive ? (
                     <InlineEditField icon={<FileText size={14} />} label="CPF" value={client.tutorCpf || ''} onSave={(v) => inlineUpdate('tutorCpf', v)} placeholder="000.000.000-00" />
@@ -447,23 +430,6 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
                       <div className="flex-1"><p className="text-[9px] text-muted-foreground uppercase tracking-wider">Endereço</p><p className="text-sm font-medium text-muted-foreground">{maskAddress(client.tutorAddress)}</p></div>
                     </div>
                   )}
-                  <div className="flex items-center gap-3 p-2.5 group hover:bg-muted/30 transition-all">
-                    <span className="text-muted-foreground">🎂</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Aniversário do Tutor</p>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <button className="text-sm font-medium text-left hover:text-primary transition-colors">
-                            {client.tutorBirthDate ? format(new Date(client.tutorBirthDate), "dd/MM/yyyy", { locale: ptBR }) : <span className="text-muted-foreground/50 italic">Selecionar data</span>}
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar mode="single" selected={client.tutorBirthDate ? new Date(client.tutorBirthDate) : undefined}
-                            onSelect={(d) => inlineUpdate('tutorBirthDate', d)} initialFocus className="pointer-events-auto" locale={ptBR} />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                  </div>
                 </div>
               </div>
 
