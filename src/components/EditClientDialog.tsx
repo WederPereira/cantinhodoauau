@@ -215,6 +215,9 @@ export const EditClientDialog: React.FC<EditClientDialogProps> = ({ client, open
           </TabsContent>
 
           <TabsContent value="tutor" className="space-y-4 mt-0">
+            <div className="flex justify-center">
+              <PhotoUpload photo={tutorPhoto} onPhotoChange={setTutorPhoto} size="lg" />
+            </div>
             <div className="space-y-2">
               <Label>Nome do Tutor</Label>
               <Input value={tutorName} onChange={(e) => setTutorName(e.target.value)} placeholder="Nome completo" />
@@ -240,6 +243,20 @@ export const EditClientDialog: React.FC<EditClientDialogProps> = ({ client, open
             <div className="space-y-2">
               <Label>Bairro</Label>
               <Input value={tutorNeighborhood} onChange={(e) => setTutorNeighborhood(e.target.value)} placeholder="Bairro" />
+            </div>
+            <div className="space-y-2">
+              <Label>Data de Nascimento do Tutor</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !tutorBirthDate && "text-muted-foreground")}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {tutorBirthDate ? format(tutorBirthDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecionar data"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={tutorBirthDate} onSelect={(d) => setTutorBirthDate(d)} initialFocus className="pointer-events-auto" locale={ptBR} />
+                </PopoverContent>
+              </Popover>
             </div>
           </TabsContent>
         </Tabs>
