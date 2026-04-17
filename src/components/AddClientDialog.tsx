@@ -87,6 +87,8 @@ export const AddClientDialog: React.FC<AddClientDialogProps> = ({ trigger }) => 
       tutorAddress: tutorAddress.trim(),
       tutorNeighborhood: tutorNeighborhood.trim(),
       tutorCpf: tutorCpf.trim(),
+      tutorPhoto,
+      tutorBirthDate,
       name: name.trim(),
       breed: breed.trim(),
       petSize,
@@ -95,12 +97,7 @@ export const AddClientDialog: React.FC<AddClientDialogProps> = ({ trigger }) => 
       birthDate,
       gender,
       castrated,
-    } as any);
-    // Update tutor extras after creation - context will handle on next refresh
-    if (tutorPhoto || tutorBirthDate) {
-      // store via update later through realtime; for simplicity, attach on context call
-      (addClient as any)._lastExtras = { tutorPhoto, tutorBirthDate };
-    }
+    });
     toast.success(`${name} adicionado com sucesso!`);
     resetForm();
     setOpen(false);
@@ -109,6 +106,7 @@ export const AddClientDialog: React.FC<AddClientDialogProps> = ({ trigger }) => 
   const resetForm = () => {
     setTutorName(''); setTutorPhone(''); setTutorEmail('');
     setTutorAddress(''); setTutorNeighborhood(''); setTutorCpf('');
+    setTutorPhoto(undefined); setTutorBirthDate(undefined);
     setName(''); setBreed(''); setPetSize(undefined); setBirthDate(undefined);
     setPhoto(undefined); setVaccines({ ...DEFAULT_VACCINES });
     setGender(undefined); setCastrated(false);
