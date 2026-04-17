@@ -207,7 +207,7 @@ const generateQrSvg = async (client: Client): Promise<string> => {
   return svgToPngDataUrl(el, 600);
 };
 
-const downloadPngForClient = async (client: Client) => {
+export const downloadCardForClient = async (client: Client) => {
   const qrDataUrl = await generateQrSvg(client);
   const front = await renderFrontCanvas(client, qrDataUrl);
   const back = await renderBackCanvas(client);
@@ -222,6 +222,8 @@ const downloadPngForClient = async (client: Client) => {
   await new Promise(r => setTimeout(r, 250));
   dl(back, 'verso');
 };
+
+const downloadPngForClient = downloadCardForClient;
 
 /** Build a multi-page PDF: 6 cards per page (3x2), front+back alternating pages */
 const generatePdf = async (clients: Client[]): Promise<Blob> => {
