@@ -204,6 +204,9 @@ export const AddClientDialog: React.FC<AddClientDialogProps> = ({ trigger }) => 
             </TabsContent>
 
             <TabsContent value="tutor" className="space-y-4 mt-0">
+              <div className="flex justify-center">
+                <PhotoUpload photo={tutorPhoto} onPhotoChange={setTutorPhoto} size="lg" />
+              </div>
               <div className="space-y-2 relative">
                 <Label>Nome do Tutor</Label>
                 <Input value={tutorName} onChange={(e) => setTutorName(e.target.value)} placeholder="Nome completo" className="h-11" />
