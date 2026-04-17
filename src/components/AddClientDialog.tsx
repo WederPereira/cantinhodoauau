@@ -35,6 +35,8 @@ export const AddClientDialog: React.FC<AddClientDialogProps> = ({ trigger }) => 
   const [petSize, setPetSize] = useState<PetSize | undefined>(undefined);
   const [birthDate, setBirthDate] = useState<Date | undefined>(undefined);
   const [photo, setPhoto] = useState<string | undefined>(undefined);
+  const [tutorPhoto, setTutorPhoto] = useState<string | undefined>(undefined);
+  const [tutorBirthDate, setTutorBirthDate] = useState<Date | undefined>(undefined);
   const [gender, setGender] = useState<PetGender | undefined>(undefined);
   const [castrated, setCastrated] = useState(false);
   const [vaccines, setVaccines] = useState<Vaccines>({ ...DEFAULT_VACCINES });
@@ -58,6 +60,8 @@ export const AddClientDialog: React.FC<AddClientDialogProps> = ({ trigger }) => 
     setTutorAddress(selectedTutor.tutorAddress || '');
     setTutorNeighborhood(selectedTutor.tutorNeighborhood || '');
     setTutorCpf(selectedTutor.tutorCpf || '');
+    setTutorPhoto(selectedTutor.tutorPhoto);
+    setTutorBirthDate(selectedTutor.tutorBirthDate ? new Date(selectedTutor.tutorBirthDate) : undefined);
     toast.success(`Dados do tutor ${selectedTutor.tutorName} preenchidos!`);
   };
 
@@ -83,6 +87,8 @@ export const AddClientDialog: React.FC<AddClientDialogProps> = ({ trigger }) => 
       tutorAddress: tutorAddress.trim(),
       tutorNeighborhood: tutorNeighborhood.trim(),
       tutorCpf: tutorCpf.trim(),
+      tutorPhoto,
+      tutorBirthDate,
       name: name.trim(),
       breed: breed.trim(),
       petSize,
@@ -100,6 +106,7 @@ export const AddClientDialog: React.FC<AddClientDialogProps> = ({ trigger }) => 
   const resetForm = () => {
     setTutorName(''); setTutorPhone(''); setTutorEmail('');
     setTutorAddress(''); setTutorNeighborhood(''); setTutorCpf('');
+    setTutorPhoto(undefined); setTutorBirthDate(undefined);
     setName(''); setBreed(''); setPetSize(undefined); setBirthDate(undefined);
     setPhoto(undefined); setVaccines({ ...DEFAULT_VACCINES });
     setGender(undefined); setCastrated(false);
@@ -197,6 +204,9 @@ export const AddClientDialog: React.FC<AddClientDialogProps> = ({ trigger }) => 
             </TabsContent>
 
             <TabsContent value="tutor" className="space-y-4 mt-0">
+              <div className="flex justify-center">
+                <PhotoUpload photo={tutorPhoto} onPhotoChange={setTutorPhoto} size="lg" />
+              </div>
               <div className="space-y-2 relative">
                 <Label>Nome do Tutor</Label>
                 <Input value={tutorName} onChange={(e) => setTutorName(e.target.value)} placeholder="Nome completo" className="h-11" />
@@ -239,6 +249,20 @@ export const AddClientDialog: React.FC<AddClientDialogProps> = ({ trigger }) => 
               <div className="space-y-2">
                 <Label>Bairro</Label>
                 <Input value={tutorNeighborhood} onChange={(e) => setTutorNeighborhood(e.target.value)} placeholder="Bairro" className="h-11" />
+              </div>
+              <div className="space-y-2">
+                <Label>Data de Nascimento do Tutor</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal h-11", !tutorBirthDate && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {tutorBirthDate ? format(tutorBirthDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecionar data"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={tutorBirthDate} onSelect={(d) => setTutorBirthDate(d)} initialFocus className="pointer-events-auto" locale={ptBR} />
+                  </PopoverContent>
+                </Popover>
               </div>
             </TabsContent>
 
