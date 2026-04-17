@@ -14,6 +14,8 @@ interface ClientContextType {
     tutorAddress?: string;
     tutorNeighborhood?: string;
     tutorCpf?: string;
+    tutorPhoto?: string;
+    tutorBirthDate?: Date;
     name: string;
     breed: string;
     petSize?: Client['petSize'];
@@ -125,6 +127,8 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     tutorAddress?: string;
     tutorNeighborhood?: string;
     tutorCpf?: string;
+    tutorPhoto?: string;
+    tutorBirthDate?: Date;
     name: string;
     breed: string;
     petSize?: Client['petSize'];
@@ -142,6 +146,8 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       tutor_address: data.tutorAddress || '',
       tutor_neighborhood: data.tutorNeighborhood || '',
       tutor_cpf: data.tutorCpf || '',
+      tutor_photo: data.tutorPhoto || null,
+      tutor_birth_date: data.tutorBirthDate?.toISOString() || null,
       name: data.name,
       breed: data.breed,
       pet_size: data.petSize || null,
@@ -151,7 +157,7 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       birth_date: data.birthDate?.toISOString() || null,
       gender: data.gender || null,
       castrated: data.castrated ?? false,
-    }).select().single();
+    } as any).select().single();
 
     if (error) { console.error('Error adding client:', error); return; }
     logAction('add_client', 'client', inserted.id, { dog_name: data.name, tutor_name: data.tutorName });
