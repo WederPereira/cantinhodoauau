@@ -52,6 +52,8 @@ export const EditClientDialog: React.FC<EditClientDialogProps> = ({ client, open
     setTutorAddress(client.tutorAddress || '');
     setTutorNeighborhood(client.tutorNeighborhood || '');
     setTutorCpf(client.tutorCpf || '');
+    setTutorPhoto(client.tutorPhoto);
+    setTutorBirthDate(client.tutorBirthDate ? new Date(client.tutorBirthDate) : undefined);
     setName(client.name);
     setBreed(client.breed || '');
     setPetSize(client.petSize);
@@ -83,6 +85,8 @@ export const EditClientDialog: React.FC<EditClientDialogProps> = ({ client, open
       tutorAddress: tutorAddress.trim(),
       tutorNeighborhood: tutorNeighborhood.trim(),
       tutorCpf: tutorCpf.trim(),
+      tutorPhoto: tutorPhoto || undefined,
+      tutorBirthDate,
       name: name.trim(),
       breed: breed.trim(),
       petSize,
