@@ -14,6 +14,8 @@ interface ClientContextType {
     tutorAddress?: string;
     tutorNeighborhood?: string;
     tutorCpf?: string;
+    tutorPhoto?: string;
+    tutorBirthDate?: Date;
     name: string;
     breed: string;
     petSize?: Client['petSize'];
@@ -52,6 +54,8 @@ const dbRowToClient = (row: any, vaccineRecords: any[] = [], fleaRecords: any[] 
   tutorAddress: row.tutor_address || '',
   tutorNeighborhood: row.tutor_neighborhood || '',
   tutorCpf: row.tutor_cpf || '',
+  tutorPhoto: row.tutor_photo || undefined,
+  tutorBirthDate: row.tutor_birth_date ? new Date(row.tutor_birth_date) : undefined,
   name: row.name,
   breed: row.breed || '',
   petSize: row.pet_size as Client['petSize'],
@@ -123,6 +127,8 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     tutorAddress?: string;
     tutorNeighborhood?: string;
     tutorCpf?: string;
+    tutorPhoto?: string;
+    tutorBirthDate?: Date;
     name: string;
     breed: string;
     petSize?: Client['petSize'];
@@ -140,6 +146,8 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       tutor_address: data.tutorAddress || '',
       tutor_neighborhood: data.tutorNeighborhood || '',
       tutor_cpf: data.tutorCpf || '',
+      tutor_photo: data.tutorPhoto || null,
+      tutor_birth_date: data.tutorBirthDate?.toISOString() || null,
       name: data.name,
       breed: data.breed,
       pet_size: data.petSize || null,
@@ -149,7 +157,7 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       birth_date: data.birthDate?.toISOString() || null,
       gender: data.gender || null,
       castrated: data.castrated ?? false,
-    }).select().single();
+    } as any).select().single();
 
     if (error) { console.error('Error adding client:', error); return; }
     logAction('add_client', 'client', inserted.id, { dog_name: data.name, tutor_name: data.tutorName });
@@ -206,6 +214,8 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     if (updates.tutorAddress !== undefined) dbUpdates.tutor_address = updates.tutorAddress;
     if (updates.tutorNeighborhood !== undefined) dbUpdates.tutor_neighborhood = updates.tutorNeighborhood;
     if (updates.tutorCpf !== undefined) dbUpdates.tutor_cpf = updates.tutorCpf;
+    if (updates.tutorPhoto !== undefined) dbUpdates.tutor_photo = updates.tutorPhoto || null;
+    if (updates.tutorBirthDate !== undefined) dbUpdates.tutor_birth_date = updates.tutorBirthDate ? new Date(updates.tutorBirthDate).toISOString() : null;
     if (updates.name !== undefined) dbUpdates.name = updates.name;
     if (updates.breed !== undefined) dbUpdates.breed = updates.breed;
     if (updates.petSize !== undefined) dbUpdates.pet_size = updates.petSize;
