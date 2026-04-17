@@ -52,6 +52,8 @@ const dbRowToClient = (row: any, vaccineRecords: any[] = [], fleaRecords: any[] 
   tutorAddress: row.tutor_address || '',
   tutorNeighborhood: row.tutor_neighborhood || '',
   tutorCpf: row.tutor_cpf || '',
+  tutorPhoto: row.tutor_photo || undefined,
+  tutorBirthDate: row.tutor_birth_date ? new Date(row.tutor_birth_date) : undefined,
   name: row.name,
   breed: row.breed || '',
   petSize: row.pet_size as Client['petSize'],
@@ -206,6 +208,8 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     if (updates.tutorAddress !== undefined) dbUpdates.tutor_address = updates.tutorAddress;
     if (updates.tutorNeighborhood !== undefined) dbUpdates.tutor_neighborhood = updates.tutorNeighborhood;
     if (updates.tutorCpf !== undefined) dbUpdates.tutor_cpf = updates.tutorCpf;
+    if (updates.tutorPhoto !== undefined) dbUpdates.tutor_photo = updates.tutorPhoto || null;
+    if (updates.tutorBirthDate !== undefined) dbUpdates.tutor_birth_date = updates.tutorBirthDate ? new Date(updates.tutorBirthDate).toISOString() : null;
     if (updates.name !== undefined) dbUpdates.name = updates.name;
     if (updates.breed !== undefined) dbUpdates.breed = updates.breed;
     if (updates.petSize !== undefined) dbUpdates.pet_size = updates.petSize;
