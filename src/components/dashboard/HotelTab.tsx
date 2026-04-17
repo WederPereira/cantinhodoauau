@@ -124,7 +124,6 @@ const HotelTab: React.FC = () => {
   const [uploadLabels, setUploadLabels] = useState<Record<string, string>>({});
   const [pendingFiles, setPendingFiles] = useState<{ stayId: string; files: File[] } | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -206,22 +205,6 @@ const HotelTab: React.FC = () => {
     const q = activeSearch.toLowerCase();
     return stays.filter(s => s.dog_name.toLowerCase().includes(q) || s.tutor_name.toLowerCase().includes(q));
   }, [stays, activeSearch]);
-
-  const handleCopyStays = () => {
-    const lines = filteredActiveStays.map((s, i) => {
-      const checkin = format(new Date(s.check_in), 'dd/MM');
-      const checkout = s.expected_checkout ? format(new Date(s.expected_checkout), 'dd/MM') : 'Indet.';
-      return `${i + 1}. 🏨 ${s.dog_name} (${s.tutor_name}) — Entrou: ${checkin} | Saída: ${checkout}`;
-    });
-    const header = `📋 Dogs no Hotel — ${format(new Date(), 'dd/MM/yyyy')}\n${'─'.repeat(30)}`;
-    const text = `${header}\n${lines.join('\n')}`;
-    
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(true);
-      toast.success('Lista copiada!');
-      setTimeout(() => setCopied(false), 2000);
-    });
-  };
 
   const datesWithStays = useMemo(() => {
     const set = new Set<string>();
@@ -701,8 +684,12 @@ const HotelTab: React.FC = () => {
                   className="pl-9 h-9 text-sm rounded-xl"
                 />
               </div>
-              <Button onClick={handleCopyStays} variant="outline" size="icon" className="h-9 w-9 shrink-0 rounded-xl">
-                {copied ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
+              <Button variant="outline" size="icon" onClick={() => {
+                const list = filteredActiveStays.map((s, idx) => `${idx + 1}. ${s.dog_name} (${s.tutor_name})`).join('\n');
+                navigator.clipboard.writeText(list);
+                toast.success('Lista do hotel copiada!');
+              }} className="h-9 w-9 shrink-0" title="Copiar lista">
+                <Copy size={16} />
               </Button>
             </div>
           )}

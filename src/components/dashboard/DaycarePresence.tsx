@@ -3,7 +3,7 @@ import { useClients } from '@/context/ClientContext';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Utensils, UtensilsCrossed, Dog, RefreshCw, Calendar, Search, Copy, Check } from 'lucide-react';
+import { Utensils, UtensilsCrossed, Dog, RefreshCw, Calendar, Search, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -29,7 +29,6 @@ const DaycarePresence: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'ate' | 'not_ate'>('all');
-  const [copied, setCopied] = useState(false);
   const today = format(new Date(), 'yyyy-MM-dd');
   const todayDisplay = format(new Date(), "EEEE, dd 'de' MMMM", { locale: ptBR });
 
@@ -133,20 +132,6 @@ const DaycarePresence: React.FC = () => {
   const ateCount = entries.filter(e => e.ate === true).length;
   const notAteCount = entries.filter(e => e.ate === false).length;
 
-  const handleCopy = () => {
-    const lines = filteredEntries.map((e, i) => {
-      const status = e.ate === true ? (e.notes === 'tudo' ? '✅ Comeu Tudo' : '🟡 Comeu Metade') : (e.ate === false ? '❌ Não Comeu' : '⚪ Pendente');
-      return `${i + 1}. 🐾 ${e.dog} — ${status}`;
-    });
-    const header = `📋 Presença Creche — ${todayDisplay}\n${'─'.repeat(30)}`;
-    const text = `${header}\n${lines.join('\n')}`;
-    
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(true);
-      toast.success('Lista copiada!');
-      setTimeout(() => setCopied(false), 2000);
-    });
-  };
   const filteredEntries = useMemo(() => {
     let list = entries;
     if (searchQuery) {
@@ -154,9 +139,14 @@ const DaycarePresence: React.FC = () => {
       list = list.filter(e => e.dog.toLowerCase().includes(q) || e.tutor.toLowerCase().includes(q));
     }
     if (statusFilter === 'ate') list = list.filter(e => e.ate);
-    if (statusFilter === 'not_ate') list = list.filter(e => !e.ate);
     return list;
   }, [entries, searchQuery, statusFilter]);
+
+  const copyList = () => {
+    const list = filteredEntries.map((e, idx) => `${idx + 1}. ${e.dog} (${e.tutor})`).join('\n');
+    navigator.clipboard.writeText(list);
+    toast.success('Lista copiada!');
+  };
 
   return (
     <div className="space-y-4">
@@ -209,8 +199,8 @@ const DaycarePresence: React.FC = () => {
             <SelectItem value="not_ate">Não comeram</SelectItem>
           </SelectContent>
         </Select>
-        <Button onClick={handleCopy} variant="outline" size="icon" className="h-9 w-9 shrink-0">
-          {copied ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
+        <Button variant="outline" size="icon" onClick={copyList} className="h-9 w-9 shrink-0" title="Copiar lista">
+          <Copy size={16} />
         </Button>
       </div>
 
@@ -250,7 +240,7 @@ const DaycarePresence: React.FC = () => {
                       <Dog size={36} className="text-muted-foreground/30 mb-2" />
                     </div>
                   )}
-                  <div className="absolute top-2 left-2 bg-black/60 rounded-full w-5 h-5 flex items-center justify-center text-[10px] text-white font-mono font-bold" title="Ordem de Entrada">
+                  <div className="absolute top-2 left-2 bg-black/60 rounded-full w-5 h-5 flex items-center justify-center text-[10px] text-white font-mono font-bold">
                     {idx + 1}
                   </div>
                   <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2.5 pt-8">
