@@ -27,6 +27,21 @@ const SectionLoader = () => (
   </div>
 );
 
+// Prefetch heavy tab modules during idle time so switching tabs is instant
+const prefetchTabModules = () => {
+  const idle = (cb: () => void) =>
+    typeof (window as any).requestIdleCallback === 'function'
+      ? (window as any).requestIdleCallback(cb, { timeout: 2000 })
+      : setTimeout(cb, 800);
+  idle(() => {
+    import('@/components/dashboard/DaycareTab');
+    import('@/components/dashboard/TaxiTab');
+    import('@/components/dashboard/HotelTab');
+    import('@/components/dashboard/MedicationTab');
+    import('@/components/dashboard/HealthControlTab');
+  });
+};
+
 const Dashboard: React.FC = () => {
   const { clients, getClientById } = useClients();
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
@@ -36,6 +51,7 @@ const Dashboard: React.FC = () => {
   const selectedClient = selectedClientId ? clients.find(c => c.id === selectedClientId) || null : null;
 
   useEffect(() => {
+    prefetchTabModules();
     const handler = (e: Event) => {
       const id = (e as CustomEvent).detail;
       setSelectedClientId(id);
