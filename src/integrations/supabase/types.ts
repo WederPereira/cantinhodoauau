@@ -61,11 +61,13 @@ export type Database = {
           pet_size: string | null
           photo: string | null
           tutor_address: string
+          tutor_birth_date: string | null
           tutor_cpf: string
           tutor_email: string
           tutor_name: string
           tutor_neighborhood: string
           tutor_phone: string
+          tutor_photo: string | null
           updated_at: string
           vaccines: Json
           weight: number | null
@@ -83,11 +85,13 @@ export type Database = {
           pet_size?: string | null
           photo?: string | null
           tutor_address?: string
+          tutor_birth_date?: string | null
           tutor_cpf?: string
           tutor_email?: string
           tutor_name?: string
           tutor_neighborhood?: string
           tutor_phone?: string
+          tutor_photo?: string | null
           updated_at?: string
           vaccines?: Json
           weight?: number | null
@@ -105,11 +109,13 @@ export type Database = {
           pet_size?: string | null
           photo?: string | null
           tutor_address?: string
+          tutor_birth_date?: string | null
           tutor_cpf?: string
           tutor_email?: string
           tutor_name?: string
           tutor_neighborhood?: string
           tutor_phone?: string
+          tutor_photo?: string | null
           updated_at?: string
           vaccines?: Json
           weight?: number | null

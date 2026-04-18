@@ -111,9 +111,9 @@ const Dashboard: React.FC = () => {
             {[
               { value: 'overview', icon: LayoutDashboard, label: 'Geral' },
               { value: 'daycare', icon: PawPrint, label: 'Creche' },
-              { value: 'taxi', icon: Car, label: 'Táxi' },
               { value: 'hotel', icon: Hotel, label: 'Hotel' },
               { value: 'health', icon: HeartPulse, label: 'Saúde' },
+              { value: 'taxi', icon: Car, label: 'Táxi' },
             ].map(({ value, icon: Icon, label }) => (
               <TabsTrigger
                 key={value}
