@@ -8,20 +8,19 @@ import { Download, Search, FileText, Filter, Loader2 } from 'lucide-react';
 import { Client } from '@/types/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import logoSrc from '@/assets/logo-cantinho.png';
+import logoFullSrc from '@/assets/logo-cantinho-full.png';
 import jsPDF from 'jspdf';
 
-// Vertical card aspect (similar to the PDF model: ~6.5 x 8.5 cm)
+// Vertical card aspect (similar to the PDF model: ~6.5 x 9 cm)
 const CARD_W_MM = 65;
 const CARD_H_MM = 90;
 
 const COLORS = {
   bg: '#0f1830',
   bgGradEnd: '#0a1226',
-  accent: '#f5a623',  // amber for name
+  accent: '#f5a623',
   white: '#ffffff',
   muted: '#cbd5e1',
-  logoOrange: '#e7691f',
-  logoBlue: '#2c8acf',
 };
 
 const loadImage = (src: string): Promise<HTMLImageElement> =>
@@ -32,6 +31,21 @@ const loadImage = (src: string): Promise<HTMLImageElement> =>
     img.onerror = () => reject(new Error('img'));
     img.src = src;
   });
+
+// Pre-load logo once for use inside QR codes (so it embeds in PDF/canvas)
+let cachedLogoImg: HTMLImageElement | null = null;
+const getLogoImg = async (): Promise<HTMLImageElement> => {
+  if (cachedLogoImg) return cachedLogoImg;
+  cachedLogoImg = await loadImage(logoSrc);
+  return cachedLogoImg;
+};
+
+let cachedFullLogoImg: HTMLImageElement | null = null;
+const getFullLogoImg = async (): Promise<HTMLImageElement> => {
+  if (cachedFullLogoImg) return cachedFullLogoImg;
+  cachedFullLogoImg = await loadImage(logoFullSrc);
+  return cachedFullLogoImg;
+};
 
 const svgToPngDataUrl = (svgEl: SVGElement, sizePx: number): Promise<string> =>
   new Promise((resolve, reject) => {
@@ -48,6 +62,41 @@ const svgToPngDataUrl = (svgEl: SVGElement, sizePx: number): Promise<string> =>
     img.onerror = () => reject(new Error('svg'));
     img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
   });
+
+/** Render a QR code as PNG with the logo composited in the center (works reliably in PDF) */
+const renderQrWithLogo = async (client: Client, sizePx = 600): Promise<string> => {
+  // Find the hidden SVG element rendered for this client
+  const el = document.querySelector(`[data-card-qr="${client.id}"] svg`) as SVGElement | null;
+  let baseDataUrl = '';
+  if (el) {
+    baseDataUrl = await svgToPngDataUrl(el, sizePx);
+  }
+  if (!baseDataUrl) return '';
+
+  // Composite logo on top of QR
+  const canvas = document.createElement('canvas');
+  canvas.width = sizePx;
+  canvas.height = sizePx;
+  const ctx = canvas.getContext('2d')!;
+  const qrImg = await loadImage(baseDataUrl);
+  ctx.drawImage(qrImg, 0, 0, sizePx, sizePx);
+
+  try {
+    const logo = await getLogoImg();
+    const logoSize = sizePx * 0.22;
+    const lx = (sizePx - logoSize) / 2;
+    const ly = (sizePx - logoSize) / 2;
+    // White rounded background behind logo
+    const pad = logoSize * 0.08;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(lx - pad, ly - pad, logoSize + pad * 2, logoSize + pad * 2);
+    ctx.drawImage(logo, lx, ly, logoSize, logoSize);
+  } catch {
+    // ignore — QR remains valid without logo
+  }
+
+  return canvas.toDataURL('image/png');
+};
 
 const roundedRectPath = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) => {
   ctx.beginPath();
@@ -72,24 +121,9 @@ const drawCardBackground = (ctx: CanvasRenderingContext2D, w: number, h: number)
   ctx.fill();
 };
 
-const drawLogoText = (ctx: CanvasRenderingContext2D, cx: number, cy: number, scale = 1) => {
-  // "CANTINHO" orange
-  ctx.font = `900 ${22 * scale}px 'Arial Black', 'Arial', sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.fillStyle = COLORS.logoOrange;
-  ctx.fillText('CANTINHO', cx, cy);
-  // "DO AUAU" blue
-  ctx.fillStyle = COLORS.logoBlue;
-  ctx.fillText('DO AUAU', cx, cy + 22 * scale);
-  // tagline
-  ctx.font = `600 ${5.5 * scale}px 'Arial', sans-serif`;
-  ctx.fillStyle = '#9aa9c5';
-  ctx.fillText('AQUI O SEU DOGUINHO É MAIS FELIZ', cx, cy + 32 * scale);
-};
-
 /** FRONT card: QR + name + breed + tutor */
 const renderFrontCanvas = async (client: Client, qrDataUrl: string, scale = 4): Promise<HTMLCanvasElement> => {
-  const W = CARD_W_MM * scale * 3;  // mm -> px conversion approximation
+  const W = CARD_W_MM * scale * 3;
   const H = CARD_H_MM * scale * 3;
   const canvas = document.createElement('canvas');
   canvas.width = W;
@@ -104,8 +138,10 @@ const renderFrontCanvas = async (client: Client, qrDataUrl: string, scale = 4): 
   ctx.fillStyle = COLORS.white;
   roundedRectPath(ctx, qrX - 10, qrY - 10, qrSize + 20, qrSize + 20, 12);
   ctx.fill();
-  const qrImg = await loadImage(qrDataUrl);
-  ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
+  if (qrDataUrl) {
+    const qrImg = await loadImage(qrDataUrl);
+    ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
+  }
 
   // Name (amber)
   ctx.fillStyle = COLORS.accent;
@@ -145,7 +181,7 @@ const renderFrontCanvas = async (client: Client, qrDataUrl: string, scale = 4): 
   return canvas;
 };
 
-/** BACK card: photo + Cantinho do AuAu logo */
+/** BACK card: photo + Cantinho do AuAu logo image */
 const renderBackCanvas = async (client: Client, scale = 4): Promise<HTMLCanvasElement> => {
   const W = CARD_W_MM * scale * 3;
   const H = CARD_H_MM * scale * 3;
@@ -158,7 +194,7 @@ const renderBackCanvas = async (client: Client, scale = 4): Promise<HTMLCanvasEl
   // Photo box
   const boxSize = W * 0.7;
   const boxX = (W - boxSize) / 2;
-  const boxY = H * 0.12;
+  const boxY = H * 0.1;
   ctx.fillStyle = '#000';
   roundedRectPath(ctx, boxX, boxY, boxSize, boxSize, 12);
   ctx.fill();
@@ -169,7 +205,6 @@ const renderBackCanvas = async (client: Client, scale = 4): Promise<HTMLCanvasEl
       ctx.save();
       roundedRectPath(ctx, boxX, boxY, boxSize, boxSize, 12);
       ctx.clip();
-      // cover fit
       const ir = img.width / img.height;
       const br = 1;
       let sx = 0, sy = 0, sw = img.width, sh = img.height;
@@ -190,25 +225,30 @@ const renderBackCanvas = async (client: Client, scale = 4): Promise<HTMLCanvasEl
     ctx.fillText('Sem foto', W / 2, boxY + boxSize / 2);
   }
 
-  // Logo text below photo
-  const logoY = boxY + boxSize + H * 0.07;
-  drawLogoText(ctx, W / 2, logoY, scale);
+  // Logo image below photo
+  try {
+    const logo = await getFullLogoImg();
+    const availableH = H - (boxY + boxSize) - H * 0.04;
+    const maxW = W * 0.78;
+    const ratio = logo.width / logo.height;
+    let lw = maxW;
+    let lh = lw / ratio;
+    if (lh > availableH) {
+      lh = availableH;
+      lw = lh * ratio;
+    }
+    const lx = (W - lw) / 2;
+    const ly = boxY + boxSize + (availableH - lh) / 2 + H * 0.02;
+    ctx.drawImage(logo, lx, ly, lw, lh);
+  } catch {
+    // ignore
+  }
 
   return canvas;
 };
 
-const generateQrSvg = async (client: Client): Promise<string> => {
-  // Find the hidden SVG element rendered for this client
-  const el = document.querySelector(`[data-card-qr="${client.id}"] svg`) as SVGElement | null;
-  if (!el) {
-    // Fallback: render via offscreen
-    return '';
-  }
-  return svgToPngDataUrl(el, 600);
-};
-
 export const downloadCardForClient = async (client: Client) => {
-  const qrDataUrl = await generateQrSvg(client);
+  const qrDataUrl = await renderQrWithLogo(client);
   const front = await renderFrontCanvas(client, qrDataUrl);
   const back = await renderBackCanvas(client);
 
@@ -225,39 +265,60 @@ export const downloadCardForClient = async (client: Client) => {
 
 const downloadPngForClient = downloadCardForClient;
 
-/** Build a multi-page PDF: 6 cards per page (3x2), front+back alternating pages */
+/**
+ * Build a multi-page PDF: 6 cards per page (2 cols x 3 rows).
+ * Each "card slot" has FRONT on top half and BACK rotated 180° on bottom half,
+ * so when printed and folded in half horizontally, you get a finished 2-sided card (RG style).
+ *
+ * Layout per slot (CARD_W_MM x CARD_H_MM*2):
+ *   [ FRONT (upright) ]
+ *   [ BACK (upside down, photo will be at the fold so it appears upright after folding) ]
+ */
 const generatePdf = async (clients: Client[]): Promise<Blob> => {
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageW = 210;
   const pageH = 297;
-  const cols = 3;
+  const cols = 2;
   const rows = 3;
   const perPage = cols * rows;
-  const marginX = (pageW - cols * CARD_W_MM) / (cols + 1);
-  const marginY = (pageH - rows * CARD_H_MM) / (rows + 1);
+  const slotW = CARD_W_MM;
+  const slotH = CARD_H_MM * 2; // front + back stacked
+  const marginX = (pageW - cols * slotW) / (cols + 1);
+  const marginY = (pageH - rows * slotH) / (rows + 1);
 
-  const drawSheet = async (batch: Client[], side: 'front' | 'back') => {
-    for (let i = 0; i < batch.length; i++) {
-      const client = batch[i];
-      const col = i % cols;
-      const row = Math.floor(i / cols);
-      const x = marginX + col * (CARD_W_MM + marginX);
-      const y = marginY + row * (CARD_H_MM + marginY);
-      const qrDataUrl = side === 'front' ? await generateQrSvg(client) : '';
-      const canvas = side === 'front'
-        ? await renderFrontCanvas(client, qrDataUrl)
-        : await renderBackCanvas(client);
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
-      pdf.addImage(dataUrl, 'JPEG', x, y, CARD_W_MM, CARD_H_MM);
-    }
-  };
+  for (let i = 0; i < clients.length; i++) {
+    const slotIndex = i % perPage;
+    if (slotIndex === 0 && i > 0) pdf.addPage();
 
-  for (let i = 0; i < clients.length; i += perPage) {
-    const batch = clients.slice(i, i + perPage);
-    if (i > 0) pdf.addPage();
-    await drawSheet(batch, 'front');
-    pdf.addPage();
-    await drawSheet(batch, 'back');
+    const client = clients[i];
+    const col = slotIndex % cols;
+    const row = Math.floor(slotIndex / cols);
+    const x = marginX + col * (slotW + marginX);
+    const y = marginY + row * (slotH + marginY);
+
+    const qrDataUrl = await renderQrWithLogo(client);
+    const frontCanvas = await renderFrontCanvas(client, qrDataUrl);
+    const backCanvas = await renderBackCanvas(client);
+
+    const frontUrl = frontCanvas.toDataURL('image/jpeg', 0.92);
+    pdf.addImage(frontUrl, 'JPEG', x, y, CARD_W_MM, CARD_H_MM);
+
+    // Rotate BACK 180° before placing it below front
+    const rotatedBack = document.createElement('canvas');
+    rotatedBack.width = backCanvas.width;
+    rotatedBack.height = backCanvas.height;
+    const rctx = rotatedBack.getContext('2d')!;
+    rctx.translate(rotatedBack.width / 2, rotatedBack.height / 2);
+    rctx.rotate(Math.PI);
+    rctx.drawImage(backCanvas, -backCanvas.width / 2, -backCanvas.height / 2);
+    const backUrl = rotatedBack.toDataURL('image/jpeg', 0.92);
+    pdf.addImage(backUrl, 'JPEG', x, y + CARD_H_MM, CARD_W_MM, CARD_H_MM);
+
+    // Fold line (dashed)
+    pdf.setLineDashPattern([1, 1], 0);
+    pdf.setDrawColor(180, 180, 180);
+    pdf.line(x, y + CARD_H_MM, x + CARD_W_MM, y + CARD_H_MM);
+    pdf.setLineDashPattern([], 0);
   }
 
   return pdf.output('blob');
@@ -294,7 +355,6 @@ const DogIdCard: React.FC = () => {
     setGenerating(true);
     try {
       toast.info(`Gerando PDF de ${filtered.length} carteirinha(s)...`);
-      // Wait a tick to ensure QR SVGs are mounted
       await new Promise(r => setTimeout(r, 100));
       const blob = await generatePdf(filtered);
       const url = URL.createObjectURL(blob);
@@ -387,7 +447,7 @@ const DogIdCard: React.FC = () => {
       {/* Actions */}
       <div className="flex justify-between items-center gap-2 flex-wrap">
         <p className="text-xs text-muted-foreground">
-          {filtered.length} carteirinha(s) — frente + verso
+          {filtered.length} carteirinha(s) — 6 por página, dobrável (frente + verso)
         </p>
         <Button onClick={handleDownloadAllPdf} disabled={generating || filtered.length === 0} size="sm" className="gap-1.5 text-xs">
           {generating ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />}
@@ -419,7 +479,7 @@ const DogIdCard: React.FC = () => {
 
               {/* Back preview */}
               <div className="rounded-2xl overflow-hidden shadow-xl border border-border" style={{ width: 180, height: 248, background: COLORS.bg }}>
-                <div className="relative w-full h-full bg-gradient-to-b from-[#0f1830] to-[#0a1226] p-3 flex flex-col items-center">
+                <div className="relative w-full h-full bg-gradient-to-b from-[#0f1830] to-[#0a1226] p-3 flex flex-col items-center justify-start">
                   <div className="w-[130px] h-[130px] bg-black rounded-md overflow-hidden mt-3">
                     {client.photo ? (
                       <img src={client.photo} alt={client.name} className="w-full h-full object-cover" />
@@ -427,11 +487,7 @@ const DogIdCard: React.FC = () => {
                       <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-400">Sem foto</div>
                     )}
                   </div>
-                  <div className="mt-4 text-center leading-none">
-                    <div className="text-[#e7691f] font-black text-[16px] tracking-tight">CANTINHO</div>
-                    <div className="text-[#2c8acf] font-black text-[16px] tracking-tight">DO AUAU</div>
-                    <div className="text-[6px] text-slate-400 font-semibold mt-1 tracking-wider">AQUI O SEU DOGUINHO É MAIS FELIZ</div>
-                  </div>
+                  <img src={logoFullSrc} alt="Cantinho do AuAu" className="mt-4 max-w-[140px] object-contain" />
                 </div>
               </div>
             </div>
