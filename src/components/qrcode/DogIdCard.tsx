@@ -183,7 +183,7 @@ const renderFrontCanvas = async (client: Client, qrDataUrl: string, scale = 4): 
   return canvas;
 };
 
-/** BACK card: photo + Cantinho do AuAu logo image */
+/** BACK card: photo + Cantinho do AuAu logo image (logo always fully visible) */
 const renderBackCanvas = async (client: Client, scale = 4): Promise<HTMLCanvasElement> => {
   const W = CARD_W_MM * scale * 3;
   const H = CARD_H_MM * scale * 3;
@@ -193,10 +193,16 @@ const renderBackCanvas = async (client: Client, scale = 4): Promise<HTMLCanvasEl
   const ctx = canvas.getContext('2d')!;
   drawCardBackground(ctx, W, H);
 
-  // Photo box
-  const boxSize = W * 0.7;
+  // Reserve a fixed bottom strip for the logo so it never gets cut
+  const logoStripH = H * 0.22;
+  const padTop = H * 0.06;
+  const padX = W * 0.08;
+  const photoMaxH = H - logoStripH - padTop - H * 0.04;
+  const photoMaxW = W - padX * 2;
+  const boxSize = Math.min(photoMaxH, photoMaxW);
   const boxX = (W - boxSize) / 2;
-  const boxY = H * 0.1;
+  const boxY = padTop;
+
   ctx.fillStyle = '#000';
   roundedRectPath(ctx, boxX, boxY, boxSize, boxSize, 12);
   ctx.fill();
@@ -227,20 +233,21 @@ const renderBackCanvas = async (client: Client, scale = 4): Promise<HTMLCanvasEl
     ctx.fillText('Sem foto', W / 2, boxY + boxSize / 2);
   }
 
-  // Logo image below photo
+  // Logo strip at the bottom — always fully visible
   try {
     const logo = await getFullLogoImg();
-    const availableH = H - (boxY + boxSize) - H * 0.04;
-    const maxW = W * 0.78;
+    const stripY = H - logoStripH;
+    const maxW = W * 0.82;
+    const maxH = logoStripH * 0.78;
     const ratio = logo.width / logo.height;
     let lw = maxW;
     let lh = lw / ratio;
-    if (lh > availableH) {
-      lh = availableH;
+    if (lh > maxH) {
+      lh = maxH;
       lw = lh * ratio;
     }
     const lx = (W - lw) / 2;
-    const ly = boxY + boxSize + (availableH - lh) / 2 + H * 0.02;
+    const ly = stripY + (logoStripH - lh) / 2;
     ctx.drawImage(logo, lx, ly, lw, lh);
   } catch {
     // ignore
