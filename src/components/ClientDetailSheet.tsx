@@ -72,8 +72,6 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
     if (!client.tutorEmail) missing.push({ label: 'Email', field: 'tutorEmail', type: 'text' });
     if (!client.tutorCpf) missing.push({ label: 'CPF', field: 'tutorCpf', type: 'text' });
     if (!client.tutorAddress) missing.push({ label: 'Endereço', field: 'tutorAddress', type: 'text' });
-    if (!client.tutorPhoto) missing.push({ label: 'Foto Tutor', field: 'tutorPhoto', type: 'text' });
-    if (!client.tutorBirthDate) missing.push({ label: 'Aniv. Tutor', field: 'tutorBirthDate', type: 'date' });
     return missing;
   }, [client]);
 
@@ -283,12 +281,8 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
                   <Calendar mode="single" selected={undefined} onSelect={(d) => { if (d) inlineUpdate('birthDate', d); }} className="pointer-events-auto mx-auto" locale={ptBR} />
                 </div>
               )}
-              {fillingField === 'tutorBirthDate' && (
-                <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 animate-in fade-in">
-                  <p className="text-[10px] text-primary font-medium mb-1">🎂 Aniversário do Tutor</p>
-                  <Calendar mode="single" selected={undefined} onSelect={(d) => { if (d) inlineUpdate('tutorBirthDate', d); }} className="pointer-events-auto mx-auto" locale={ptBR} />
-                </div>
-              )}
+
+
 
               {/* Pet Info */}
               <div className="space-y-1">
