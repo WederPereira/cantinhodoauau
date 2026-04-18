@@ -266,24 +266,23 @@ export const downloadCardForClient = async (client: Client) => {
 const downloadPngForClient = downloadCardForClient;
 
 /**
- * Build a multi-page PDF: 6 cards per page (3 cols x 2 rows of folding pairs).
- * Each "slot" stacks: FRONT (QR) ROTATED 180° on top + BACK (photo+logo) UPRIGHT on bottom.
- * When printed and folded horizontally between the two halves, both sides appear upright -
- * a finished double-sided card like an RG/ID document.
+ * Build a multi-page PDF: 6 cards per page (2 cols x 3 rows).
+ * Each "card slot" has FRONT on top half and BACK rotated 180° on bottom half,
+ * so when printed and folded in half horizontally, you get a finished 2-sided card (RG style).
  *
- *   [ FRONT QR  (upside down) ]   ← top half
- *   ───────── fold ─────────
- *   [ BACK photo (upright)   ]   ← bottom half
+ * Layout per slot (CARD_W_MM x CARD_H_MM*2):
+ *   [ FRONT (upright) ]
+ *   [ BACK (upside down, photo will be at the fold so it appears upright after folding) ]
  */
 const generatePdf = async (clients: Client[]): Promise<Blob> => {
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageW = 210;
   const pageH = 297;
-  const cols = 3;
-  const rows = 2;
+  const cols = 2;
+  const rows = 3;
   const perPage = cols * rows;
   const slotW = CARD_W_MM;
-  const slotH = CARD_H_MM * 2;
+  const slotH = CARD_H_MM * 2; // front + back stacked
   const marginX = (pageW - cols * slotW) / (cols + 1);
   const marginY = (pageH - rows * slotH) / (rows + 1);
 
@@ -301,20 +300,21 @@ const generatePdf = async (clients: Client[]): Promise<Blob> => {
     const frontCanvas = await renderFrontCanvas(client, qrDataUrl);
     const backCanvas = await renderBackCanvas(client);
 
-    // FRONT (QR) on TOP, rotated 180° so when folded down it becomes upright on the back side
-    const rotatedFront = document.createElement('canvas');
-    rotatedFront.width = frontCanvas.width;
-    rotatedFront.height = frontCanvas.height;
-    const fctx = rotatedFront.getContext('2d')!;
-    fctx.translate(rotatedFront.width / 2, rotatedFront.height / 2);
-    fctx.rotate(Math.PI);
-    fctx.drawImage(frontCanvas, -frontCanvas.width / 2, -frontCanvas.height / 2);
-    pdf.addImage(rotatedFront.toDataURL('image/jpeg', 0.92), 'JPEG', x, y, CARD_W_MM, CARD_H_MM);
+    const frontUrl = frontCanvas.toDataURL('image/jpeg', 0.92);
+    pdf.addImage(frontUrl, 'JPEG', x, y, CARD_W_MM, CARD_H_MM);
 
-    // BACK (photo + logo) on BOTTOM, upright
-    pdf.addImage(backCanvas.toDataURL('image/jpeg', 0.92), 'JPEG', x, y + CARD_H_MM, CARD_W_MM, CARD_H_MM);
+    // Rotate BACK 180° before placing it below front
+    const rotatedBack = document.createElement('canvas');
+    rotatedBack.width = backCanvas.width;
+    rotatedBack.height = backCanvas.height;
+    const rctx = rotatedBack.getContext('2d')!;
+    rctx.translate(rotatedBack.width / 2, rotatedBack.height / 2);
+    rctx.rotate(Math.PI);
+    rctx.drawImage(backCanvas, -backCanvas.width / 2, -backCanvas.height / 2);
+    const backUrl = rotatedBack.toDataURL('image/jpeg', 0.92);
+    pdf.addImage(backUrl, 'JPEG', x, y + CARD_H_MM, CARD_W_MM, CARD_H_MM);
 
-    // Fold line (dashed, horizontal between the two halves)
+    // Fold line (dashed)
     pdf.setLineDashPattern([1, 1], 0);
     pdf.setDrawColor(180, 180, 180);
     pdf.line(x, y + CARD_H_MM, x + CARD_W_MM, y + CARD_H_MM);
