@@ -288,29 +288,29 @@ const generatePdf = async (clients: Client[]): Promise<Blob> => {
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageW = 210;
   const pageH = 297;
-  const cols = 3;
-  const rows = 2;
-  const perPage = cols * rows;
-  const slotW = CARD_W_MM;
-  const slotH = CARD_H_MM * 2;
-  const marginX = (pageW - cols * slotW) / (cols + 1);
-  const marginY = (pageH - rows * slotH) / (rows + 1);
+  const COLS = 3;
+  const ROWS = 2;
+  const perPage = COLS * ROWS;
+  const pairH = CARD_H_MM * 2 + PAIR_GAP_MM;
+  const startX = (pageW - COLS * CARD_W_MM - (COLS - 1) * PAGE_GAP_MM) / 2;
+  const startY = (pageH - ROWS * pairH - (ROWS - 1) * PAGE_GAP_MM) / 2;
 
   for (let i = 0; i < clients.length; i++) {
     const slotIndex = i % perPage;
     if (slotIndex === 0 && i > 0) pdf.addPage();
 
     const client = clients[i];
-    const col = slotIndex % cols;
-    const row = Math.floor(slotIndex / cols);
-    const x = marginX + col * (slotW + marginX);
-    const y = marginY + row * (slotH + marginY);
+    const col = slotIndex % COLS;
+    const row = Math.floor(slotIndex / COLS);
+    const x = startX + col * (CARD_W_MM + PAGE_GAP_MM);
+    const yFront = startY + row * (pairH + PAGE_GAP_MM);
+    const yBack = yFront + CARD_H_MM + PAIR_GAP_MM;
 
     const qrDataUrl = await renderQrWithLogo(client);
     const frontCanvas = await renderFrontCanvas(client, qrDataUrl);
     const backCanvas = await renderBackCanvas(client);
 
-    // FRONT (QR) on TOP, rotated 180° so when folded down it becomes upright on the back side
+    // FRONT (QR) on TOP, rotated 180° so it becomes upright after folding
     const rotatedFront = document.createElement('canvas');
     rotatedFront.width = frontCanvas.width;
     rotatedFront.height = frontCanvas.height;
@@ -318,15 +318,16 @@ const generatePdf = async (clients: Client[]): Promise<Blob> => {
     fctx.translate(rotatedFront.width / 2, rotatedFront.height / 2);
     fctx.rotate(Math.PI);
     fctx.drawImage(frontCanvas, -frontCanvas.width / 2, -frontCanvas.height / 2);
-    pdf.addImage(rotatedFront.toDataURL('image/jpeg', 0.92), 'JPEG', x, y, CARD_W_MM, CARD_H_MM);
+    pdf.addImage(rotatedFront.toDataURL('image/jpeg', 0.92), 'JPEG', x, yFront, CARD_W_MM, CARD_H_MM);
 
     // BACK (photo + logo) on BOTTOM, upright
-    pdf.addImage(backCanvas.toDataURL('image/jpeg', 0.92), 'JPEG', x, y + CARD_H_MM, CARD_W_MM, CARD_H_MM);
+    pdf.addImage(backCanvas.toDataURL('image/jpeg', 0.92), 'JPEG', x, yBack, CARD_W_MM, CARD_H_MM);
 
-    // Fold line (dashed, horizontal between the two halves)
+    // Fold line (dashed) in the 2mm gap between front and back
+    const foldY = yFront + CARD_H_MM + PAIR_GAP_MM / 2;
     pdf.setLineDashPattern([1, 1], 0);
     pdf.setDrawColor(180, 180, 180);
-    pdf.line(x, y + CARD_H_MM, x + CARD_W_MM, y + CARD_H_MM);
+    pdf.line(x, foldY, x + CARD_W_MM, foldY);
     pdf.setLineDashPattern([], 0);
   }
 
