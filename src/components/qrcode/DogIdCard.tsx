@@ -11,11 +11,9 @@ import logoSrc from '@/assets/logo-cantinho.png';
 import logoFullSrc from '@/assets/logo-cantinho-full.png';
 import jsPDF from 'jspdf';
 
-// Foldable ID card dimensions (matches user-provided spec)
-const CARD_W_MM = 55;
-const CARD_H_MM = 62;
-const PAIR_GAP_MM = 2; // fold line gap between front and back
-const PAGE_GAP_MM = 4; // gap between pairs on the page
+// Vertical card aspect (similar to the PDF model: ~6.5 x 9 cm)
+const CARD_W_MM = 65;
+const CARD_H_MM = 90;
 
 const COLORS = {
   bg: '#0f1830',
@@ -183,7 +181,7 @@ const renderFrontCanvas = async (client: Client, qrDataUrl: string, scale = 4): 
   return canvas;
 };
 
-/** BACK card: photo + Cantinho do AuAu logo image (logo always fully visible) */
+/** BACK card: photo + Cantinho do AuAu logo image */
 const renderBackCanvas = async (client: Client, scale = 4): Promise<HTMLCanvasElement> => {
   const W = CARD_W_MM * scale * 3;
   const H = CARD_H_MM * scale * 3;
@@ -193,16 +191,10 @@ const renderBackCanvas = async (client: Client, scale = 4): Promise<HTMLCanvasEl
   const ctx = canvas.getContext('2d')!;
   drawCardBackground(ctx, W, H);
 
-  // Reserve a fixed bottom strip for the logo so it never gets cut
-  const logoStripH = H * 0.22;
-  const padTop = H * 0.06;
-  const padX = W * 0.08;
-  const photoMaxH = H - logoStripH - padTop - H * 0.04;
-  const photoMaxW = W - padX * 2;
-  const boxSize = Math.min(photoMaxH, photoMaxW);
+  // Photo box
+  const boxSize = W * 0.7;
   const boxX = (W - boxSize) / 2;
-  const boxY = padTop;
-
+  const boxY = H * 0.1;
   ctx.fillStyle = '#000';
   roundedRectPath(ctx, boxX, boxY, boxSize, boxSize, 12);
   ctx.fill();
@@ -233,21 +225,20 @@ const renderBackCanvas = async (client: Client, scale = 4): Promise<HTMLCanvasEl
     ctx.fillText('Sem foto', W / 2, boxY + boxSize / 2);
   }
 
-  // Logo strip at the bottom — always fully visible
+  // Logo image below photo
   try {
     const logo = await getFullLogoImg();
-    const stripY = H - logoStripH;
-    const maxW = W * 0.82;
-    const maxH = logoStripH * 0.78;
+    const availableH = H - (boxY + boxSize) - H * 0.04;
+    const maxW = W * 0.78;
     const ratio = logo.width / logo.height;
     let lw = maxW;
     let lh = lw / ratio;
-    if (lh > maxH) {
-      lh = maxH;
+    if (lh > availableH) {
+      lh = availableH;
       lw = lh * ratio;
     }
     const lx = (W - lw) / 2;
-    const ly = stripY + (logoStripH - lh) / 2;
+    const ly = boxY + boxSize + (availableH - lh) / 2 + H * 0.02;
     ctx.drawImage(logo, lx, ly, lw, lh);
   } catch {
     // ignore
@@ -288,29 +279,29 @@ const generatePdf = async (clients: Client[]): Promise<Blob> => {
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageW = 210;
   const pageH = 297;
-  const COLS = 3;
-  const ROWS = 2;
-  const perPage = COLS * ROWS;
-  const pairH = CARD_H_MM * 2 + PAIR_GAP_MM;
-  const startX = (pageW - COLS * CARD_W_MM - (COLS - 1) * PAGE_GAP_MM) / 2;
-  const startY = (pageH - ROWS * pairH - (ROWS - 1) * PAGE_GAP_MM) / 2;
+  const cols = 3;
+  const rows = 2;
+  const perPage = cols * rows;
+  const slotW = CARD_W_MM;
+  const slotH = CARD_H_MM * 2;
+  const marginX = (pageW - cols * slotW) / (cols + 1);
+  const marginY = (pageH - rows * slotH) / (rows + 1);
 
   for (let i = 0; i < clients.length; i++) {
     const slotIndex = i % perPage;
     if (slotIndex === 0 && i > 0) pdf.addPage();
 
     const client = clients[i];
-    const col = slotIndex % COLS;
-    const row = Math.floor(slotIndex / COLS);
-    const x = startX + col * (CARD_W_MM + PAGE_GAP_MM);
-    const yFront = startY + row * (pairH + PAGE_GAP_MM);
-    const yBack = yFront + CARD_H_MM + PAIR_GAP_MM;
+    const col = slotIndex % cols;
+    const row = Math.floor(slotIndex / cols);
+    const x = marginX + col * (slotW + marginX);
+    const y = marginY + row * (slotH + marginY);
 
     const qrDataUrl = await renderQrWithLogo(client);
     const frontCanvas = await renderFrontCanvas(client, qrDataUrl);
     const backCanvas = await renderBackCanvas(client);
 
-    // FRONT (QR) on TOP, rotated 180° so it becomes upright after folding
+    // FRONT (QR) on TOP, rotated 180° so when folded down it becomes upright on the back side
     const rotatedFront = document.createElement('canvas');
     rotatedFront.width = frontCanvas.width;
     rotatedFront.height = frontCanvas.height;
@@ -318,16 +309,15 @@ const generatePdf = async (clients: Client[]): Promise<Blob> => {
     fctx.translate(rotatedFront.width / 2, rotatedFront.height / 2);
     fctx.rotate(Math.PI);
     fctx.drawImage(frontCanvas, -frontCanvas.width / 2, -frontCanvas.height / 2);
-    pdf.addImage(rotatedFront.toDataURL('image/jpeg', 0.92), 'JPEG', x, yFront, CARD_W_MM, CARD_H_MM);
+    pdf.addImage(rotatedFront.toDataURL('image/jpeg', 0.92), 'JPEG', x, y, CARD_W_MM, CARD_H_MM);
 
     // BACK (photo + logo) on BOTTOM, upright
-    pdf.addImage(backCanvas.toDataURL('image/jpeg', 0.92), 'JPEG', x, yBack, CARD_W_MM, CARD_H_MM);
+    pdf.addImage(backCanvas.toDataURL('image/jpeg', 0.92), 'JPEG', x, y + CARD_H_MM, CARD_W_MM, CARD_H_MM);
 
-    // Fold line (dashed) in the 2mm gap between front and back
-    const foldY = yFront + CARD_H_MM + PAIR_GAP_MM / 2;
+    // Fold line (dashed, horizontal between the two halves)
     pdf.setLineDashPattern([1, 1], 0);
     pdf.setDrawColor(180, 180, 180);
-    pdf.line(x, foldY, x + CARD_W_MM, foldY);
+    pdf.line(x, y + CARD_H_MM, x + CARD_W_MM, y + CARD_H_MM);
     pdf.setLineDashPattern([], 0);
   }
 
