@@ -35,12 +35,12 @@ const loadImage = (src: string): Promise<HTMLImageElement> =>
     img.src = src;
   });
 
-// Pre-load logo once for use inside QR codes (so it embeds in PDF/canvas)
-let cachedLogoImg: HTMLImageElement | null = null;
-const getLogoImg = async (): Promise<HTMLImageElement> => {
-  if (cachedLogoImg) return cachedLogoImg;
-  cachedLogoImg = await loadImage(logoSrc);
-  return cachedLogoImg;
+// Pre-load the small QR-center mark (transparent paw, no square frame)
+let cachedQrMarkImg: HTMLImageElement | null = null;
+const getQrMarkImg = async (): Promise<HTMLImageElement> => {
+  if (cachedQrMarkImg) return cachedQrMarkImg;
+  cachedQrMarkImg = await loadImage(qrLogoMarkSrc);
+  return cachedQrMarkImg;
 };
 
 let cachedFullLogoImg: HTMLImageElement | null = null;
@@ -85,14 +85,11 @@ const renderQrWithLogo = async (client: Client, sizePx = 600): Promise<string> =
   ctx.drawImage(qrImg, 0, 0, sizePx, sizePx);
 
   try {
-    const logo = await getLogoImg();
-    const logoSize = sizePx * 0.22;
+    const logo = await getQrMarkImg();
+    const logoSize = sizePx * 0.18;
     const lx = (sizePx - logoSize) / 2;
     const ly = (sizePx - logoSize) / 2;
-    // White rounded background behind logo
-    const pad = logoSize * 0.08;
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(lx - pad, ly - pad, logoSize + pad * 2, logoSize + pad * 2);
+    // Draw transparent paw mark directly on QR (no white square frame)
     ctx.drawImage(logo, lx, ly, logoSize, logoSize);
   } catch {
     // ignore — QR remains valid without logo
