@@ -415,11 +415,11 @@ const DogIdCard: React.FC = () => {
               size={300}
               level="H"
               imageSettings={{
-                src: logoSrc,
+                src: qrLogoMarkSrc,
                 x: undefined,
                 y: undefined,
-                height: 60,
-                width: 60,
+                height: 50,
+                width: 50,
                 excavate: true,
               }}
             />
@@ -476,7 +476,7 @@ const DogIdCard: React.FC = () => {
                       value={qrValue(client)}
                       size={100}
                       level="H"
-                      imageSettings={{ src: logoSrc, height: 22, width: 22, excavate: true, x: undefined, y: undefined }}
+                      imageSettings={{ src: qrLogoMarkSrc, height: 18, width: 18, excavate: true, x: undefined, y: undefined }}
                     />
                   </div>
                   <h3 className="text-[#f5a623] text-[15px] font-bold mt-3 text-center leading-tight">{client.name}</h3>
