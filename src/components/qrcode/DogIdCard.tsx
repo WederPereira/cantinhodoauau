@@ -11,9 +11,11 @@ import logoSrc from '@/assets/logo-cantinho.png';
 import logoFullSrc from '@/assets/logo-cantinho-full.png';
 import jsPDF from 'jspdf';
 
-// Vertical card aspect (similar to the PDF model: ~6.5 x 9 cm)
-const CARD_W_MM = 65;
-const CARD_H_MM = 90;
+// Foldable ID card dimensions (matches user-provided spec)
+const CARD_W_MM = 55;
+const CARD_H_MM = 62;
+const PAIR_GAP_MM = 2; // fold line gap between front and back
+const PAGE_GAP_MM = 4; // gap between pairs on the page
 
 const COLORS = {
   bg: '#0f1830',
