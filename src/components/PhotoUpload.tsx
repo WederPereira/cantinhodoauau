@@ -187,32 +187,6 @@ export const PhotoUpload: React.FC<PhotoUploadProps> = ({
     }
   };
 
-  const handleReframe = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!photo) return;
-    try {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      await new Promise<void>((res, rej) => {
-        img.onload = () => res();
-        img.onerror = () => rej(new Error('load'));
-        img.src = photo;
-      });
-      const canvas = document.createElement('canvas');
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      const ctx = canvas.getContext('2d')!;
-      ctx.drawImage(img, 0, 0);
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
-      setImageSrc(dataUrl);
-      setCrop({ x: 0, y: 0 });
-      setZoom(1);
-      setCropOpen(true);
-    } catch {
-      toast.error('Não foi possível carregar a foto para enquadrar');
-    }
-  };
-
   return (
     <div className={cn('relative', className)}>
       <input
@@ -242,18 +216,6 @@ export const PhotoUpload: React.FC<PhotoUploadProps> = ({
           <Camera className="text-muted-foreground" size={size === 'sm' ? 20 : size === 'md' ? 28 : 36} />
         )}
       </div>
-      {photo && !uploading && !disableCrop && (
-        <Button
-          type="button"
-          variant="secondary"
-          size="icon"
-          className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full shadow-md"
-          onClick={handleReframe}
-          title="Reenquadrar foto"
-        >
-          <RotateCcw size={12} />
-        </Button>
-      )}
       {photo && !uploading && (
         <Button
           type="button"
