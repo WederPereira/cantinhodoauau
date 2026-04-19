@@ -237,8 +237,8 @@ const renderBackCanvas = async (client: Client, scale = 4): Promise<HTMLCanvasEl
   try {
     const logo = await getFullLogoImg();
     const stripY = H - logoStripH;
-    const maxW = W * 0.82;
-    const maxH = logoStripH * 0.78;
+    const maxW = W * 0.92;
+    const maxH = logoStripH * 0.92;
     const ratio = logo.width / logo.height;
     let lw = maxW;
     let lh = lw / ratio;
