@@ -9,6 +9,7 @@ import { Client } from '@/types/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import logoSrc from '@/assets/logo-cantinho.png';
 import logoFullSrc from '@/assets/logo-cantinho-full.png';
+import qrLogoMarkSrc from '@/assets/qr-logo-mark.png';
 import jsPDF from 'jspdf';
 
 // Foldable ID card dimensions (matches user-provided spec)
@@ -34,12 +35,12 @@ const loadImage = (src: string): Promise<HTMLImageElement> =>
     img.src = src;
   });
 
-// Pre-load logo once for use inside QR codes (so it embeds in PDF/canvas)
-let cachedLogoImg: HTMLImageElement | null = null;
-const getLogoImg = async (): Promise<HTMLImageElement> => {
-  if (cachedLogoImg) return cachedLogoImg;
-  cachedLogoImg = await loadImage(logoSrc);
-  return cachedLogoImg;
+// Pre-load the small QR-center mark (transparent paw, no square frame)
+let cachedQrMarkImg: HTMLImageElement | null = null;
+const getQrMarkImg = async (): Promise<HTMLImageElement> => {
+  if (cachedQrMarkImg) return cachedQrMarkImg;
+  cachedQrMarkImg = await loadImage(qrLogoMarkSrc);
+  return cachedQrMarkImg;
 };
 
 let cachedFullLogoImg: HTMLImageElement | null = null;
@@ -84,14 +85,11 @@ const renderQrWithLogo = async (client: Client, sizePx = 600): Promise<string> =
   ctx.drawImage(qrImg, 0, 0, sizePx, sizePx);
 
   try {
-    const logo = await getLogoImg();
-    const logoSize = sizePx * 0.22;
+    const logo = await getQrMarkImg();
+    const logoSize = sizePx * 0.18;
     const lx = (sizePx - logoSize) / 2;
     const ly = (sizePx - logoSize) / 2;
-    // White rounded background behind logo
-    const pad = logoSize * 0.08;
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(lx - pad, ly - pad, logoSize + pad * 2, logoSize + pad * 2);
+    // Draw transparent paw mark directly on QR (no white square frame)
     ctx.drawImage(logo, lx, ly, logoSize, logoSize);
   } catch {
     // ignore — QR remains valid without logo
@@ -193,10 +191,10 @@ const renderBackCanvas = async (client: Client, scale = 4): Promise<HTMLCanvasEl
   const ctx = canvas.getContext('2d')!;
   drawCardBackground(ctx, W, H);
 
-  // Reserve a fixed bottom strip for the logo so it never gets cut
-  const logoStripH = H * 0.22;
+  // Reserve a larger bottom strip for the logo (per user: smaller photo, bigger logo)
+  const logoStripH = H * 0.32;
   const padTop = H * 0.06;
-  const padX = W * 0.08;
+  const padX = W * 0.12;
   const photoMaxH = H - logoStripH - padTop - H * 0.04;
   const photoMaxW = W - padX * 2;
   const boxSize = Math.min(photoMaxH, photoMaxW);
@@ -233,12 +231,12 @@ const renderBackCanvas = async (client: Client, scale = 4): Promise<HTMLCanvasEl
     ctx.fillText('Sem foto', W / 2, boxY + boxSize / 2);
   }
 
-  // Logo strip at the bottom — always fully visible
+  // Logo strip at the bottom — bigger, always fully visible
   try {
     const logo = await getFullLogoImg();
     const stripY = H - logoStripH;
-    const maxW = W * 0.82;
-    const maxH = logoStripH * 0.78;
+    const maxW = W * 0.94;
+    const maxH = logoStripH * 0.95;
     const ratio = logo.width / logo.height;
     let lw = maxW;
     let lh = lw / ratio;
@@ -417,11 +415,11 @@ const DogIdCard: React.FC = () => {
               size={300}
               level="H"
               imageSettings={{
-                src: logoSrc,
+                src: qrLogoMarkSrc,
                 x: undefined,
                 y: undefined,
-                height: 60,
-                width: 60,
+                height: 50,
+                width: 50,
                 excavate: true,
               }}
             />
@@ -478,7 +476,7 @@ const DogIdCard: React.FC = () => {
                       value={qrValue(client)}
                       size={100}
                       level="H"
-                      imageSettings={{ src: logoSrc, height: 22, width: 22, excavate: true, x: undefined, y: undefined }}
+                      imageSettings={{ src: qrLogoMarkSrc, height: 18, width: 18, excavate: true, x: undefined, y: undefined }}
                     />
                   </div>
                   <h3 className="text-[#f5a623] text-[15px] font-bold mt-3 text-center leading-tight">{client.name}</h3>
