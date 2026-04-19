@@ -323,10 +323,15 @@ const generatePdf = async (clients: Client[]): Promise<Blob> => {
     // BACK (photo + logo) on BOTTOM, upright
     pdf.addImage(backCanvas.toDataURL('image/jpeg', 0.92), 'JPEG', x, yBack, CARD_W_MM, CARD_H_MM);
 
-    // Fold line (dashed) in the 2mm gap between front and back
+    // Fill the 2mm gap with the card background color (no white strip)
+    pdf.setFillColor(15, 24, 48); // matches COLORS.bg #0f1830
+    pdf.rect(x, yFront + CARD_H_MM, CARD_W_MM, PAIR_GAP_MM, 'F');
+
+    // Dashed fold line centered in the gap
     const foldY = yFront + CARD_H_MM + PAIR_GAP_MM / 2;
-    pdf.setLineDashPattern([1, 1], 0);
-    pdf.setDrawColor(180, 180, 180);
+    pdf.setLineDashPattern([0.8, 0.8], 0);
+    pdf.setDrawColor(245, 166, 35); // amber accent for visibility on dark bg
+    pdf.setLineWidth(0.2);
     pdf.line(x, foldY, x + CARD_W_MM, foldY);
     pdf.setLineDashPattern([], 0);
   }
