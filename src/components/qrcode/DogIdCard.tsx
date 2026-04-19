@@ -193,10 +193,10 @@ const renderBackCanvas = async (client: Client, scale = 4): Promise<HTMLCanvasEl
   const ctx = canvas.getContext('2d')!;
   drawCardBackground(ctx, W, H);
 
-  // Reserve a fixed bottom strip for the logo so it never gets cut
-  const logoStripH = H * 0.22;
+  // Reserve a larger bottom strip for the logo (logo bigger, photo smaller)
+  const logoStripH = H * 0.32;
   const padTop = H * 0.06;
-  const padX = W * 0.08;
+  const padX = W * 0.14;
   const photoMaxH = H - logoStripH - padTop - H * 0.04;
   const photoMaxW = W - padX * 2;
   const boxSize = Math.min(photoMaxH, photoMaxW);
@@ -237,8 +237,8 @@ const renderBackCanvas = async (client: Client, scale = 4): Promise<HTMLCanvasEl
   try {
     const logo = await getFullLogoImg();
     const stripY = H - logoStripH;
-    const maxW = W * 0.82;
-    const maxH = logoStripH * 0.78;
+    const maxW = W * 0.92;
+    const maxH = logoStripH * 0.92;
     const ratio = logo.width / logo.height;
     let lw = maxW;
     let lh = lw / ratio;
