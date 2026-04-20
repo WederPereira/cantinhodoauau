@@ -161,6 +161,14 @@
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .safe-top-offset {
+    top: calc(env(safe-area-inset-top, 0px) + 0.75rem);
+  }
+
   .calendar-popover {
     max-width: calc(100vw - 2rem);
   }
