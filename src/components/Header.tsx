@@ -21,11 +21,11 @@ export const Header: React.FC = () => {
   const { getBadge } = useNotificationBadges();
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-background/80 backdrop-blur-xl border-b border-border/50">
-      <div className="container flex h-14 items-center justify-between px-4 max-w-6xl mx-auto">
+    <header className="sticky top-0 z-50 w-full bg-background/80 backdrop-blur-xl border-b border-border/50 safe-area-top">
+      <div className="container flex h-16 lg:h-14 items-center justify-between px-4 max-w-6xl mx-auto">
         <div className="flex items-center gap-2.5">
-          <img src="/app-icon.png" alt="Cantinho do AuAu" className="w-8 h-8 rounded-lg" />
-          <span className="font-bold text-sm text-foreground tracking-tight">Cantinho do AuAu</span>
+          <img src="/app-icon.png" alt="Cantinho do AuAu" className="w-10 h-10 lg:w-8 lg:h-8 rounded-lg" />
+          <span className="font-bold text-base lg:text-sm text-foreground tracking-tight">Cantinho do AuAu</span>
         </div>
 
         <nav className="hidden lg:flex items-center gap-0.5">
