@@ -1,7 +1,9 @@
 import React, { lazy, Suspense, useState, useMemo, useEffect } from 'react';
 import { useClients } from '@/context/ClientContext';
 import { Client, getHealthAlerts } from '@/types/client';
-import { LayoutDashboard, HeartPulse, PawPrint, Hotel, Camera, Car, Loader2, Pill } from 'lucide-react';
+import { LayoutDashboard, HeartPulse, PawPrint, Hotel, Camera, Car, Loader2, Pill, Users } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -47,6 +49,8 @@ const Dashboard: React.FC = () => {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
+  const [todayDaycare, setTodayDaycare] = useState(0);
+  const [todayHotel, setTodayHotel] = useState(0);
 
   const selectedClient = selectedClientId ? clients.find(c => c.id === selectedClientId) || null : null;
 
@@ -61,7 +65,36 @@ const Dashboard: React.FC = () => {
     return () => window.removeEventListener('openClientDetail', handler);
   }, []);
 
+  const fetchPresence = async () => {
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+    try {
+      const [{ count: qrCount }, { data: hotelData }] = await Promise.all([
+        supabase.from('qr_entries').select('*', { count: 'exact', head: true })
+          .gte('data_hora', startOfDay.toISOString())
+          .lte('data_hora', endOfDay.toISOString()),
+        supabase.from('hotel_stays').select('id').eq('active', true),
+      ]);
+      setTodayDaycare(qrCount || 0);
+      setTodayHotel((hotelData || []).length);
+    } catch (err) {
+      console.error('Erro ao carregar presenças', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchPresence();
+    const channel = supabase
+      .channel('dashboard-presence')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'qr_entries' }, fetchPresence)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'hotel_stays' }, fetchPresence)
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
   const healthAlerts = useMemo(() => getHealthAlerts(clients), [clients]);
+  const totalPresent = todayDaycare + todayHotel;
 
   const handleClientClick = (client: Client) => {
     setSelectedClientId(client.id);
@@ -130,6 +163,40 @@ const Dashboard: React.FC = () => {
             <Suspense fallback={<SectionLoader />}>
               <EmployeeTasksBanner />
             </Suspense>
+
+            {/* Presentes Hoje — card detalhado com breakdown */}
+            <div className="bg-gradient-to-br from-primary/10 via-card to-card border border-primary/20 rounded-2xl p-4 shadow-sm">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center">
+                    <Users size={18} className="text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Presentes Hoje</p>
+                    <p className="text-3xl font-bold text-foreground leading-none mt-0.5">{totalPresent}</p>
+                  </div>
+                </div>
+                <div className="text-right text-[10px] text-muted-foreground">
+                  {format(new Date(), "dd/MM")}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2 mt-3">
+                <div className="bg-card/60 border border-border rounded-xl p-2.5 flex items-center gap-2">
+                  <PawPrint size={16} className="text-primary shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium leading-none">Creche</p>
+                    <p className="text-lg font-bold text-foreground leading-tight">{todayDaycare}</p>
+                  </div>
+                </div>
+                <div className="bg-card/60 border border-border rounded-xl p-2.5 flex items-center gap-2">
+                  <Hotel size={16} className="text-primary shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium leading-none">Hotel</p>
+                    <p className="text-lg font-bold text-foreground leading-tight">{todayHotel}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-card border border-border rounded-xl p-4">

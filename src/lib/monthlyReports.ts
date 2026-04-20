@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
+// @ts-ignore - jspdf-autotable types may not resolve in some setups
 import autoTable from "jspdf-autotable";
 
 export interface MonthlyData {
