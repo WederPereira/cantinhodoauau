@@ -19,11 +19,19 @@ interface StayData {
   check_out: string | null;
   expected_checkout: string | null;
   active: boolean;
+  client_id: string;
 }
 
 interface MealData {
   hotel_stay_id: string;
   ate: boolean;
+  date?: string;
+}
+
+interface ClientBreed {
+  id: string;
+  name: string;
+  breed: string;
 }
 
 interface MedData {
@@ -37,20 +45,23 @@ const HotelAnalyticsTab: React.FC = () => {
   const [stays, setStays] = useState<StayData[]>([]);
   const [meals, setMeals] = useState<MealData[]>([]);
   const [meds, setMeds] = useState<MedData[]>([]);
+  const [clientsBreed, setClientsBreed] = useState<ClientBreed[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [staysRes, mealsRes, medsRes] = await Promise.all([
-        supabase.from('hotel_stays').select('id, dog_name, tutor_name, check_in, check_out, expected_checkout, active').order('check_in', { ascending: false }),
-        supabase.from('hotel_meals').select('hotel_stay_id, ate'),
+      const [staysRes, mealsRes, medsRes, clientsRes] = await Promise.all([
+        supabase.from('hotel_stays').select('id, dog_name, tutor_name, check_in, check_out, expected_checkout, active, client_id').order('check_in', { ascending: false }),
+        supabase.from('hotel_meals').select('hotel_stay_id, ate, date'),
         supabase.from('hotel_medications').select('hotel_stay_id, administered'),
+        supabase.from('clients').select('id, name, breed'),
       ]);
-      setStays(staysRes.data || []);
+      setStays((staysRes.data || []) as any);
       setMeals(mealsRes.data || []);
       setMeds(medsRes.data || []);
+      setClientsBreed((clientsRes.data || []) as any);
     } catch (err) {
       console.error(err);
     } finally {
@@ -116,8 +127,24 @@ const HotelAnalyticsTab: React.FC = () => {
   const copySelectedDateHotel = () => {
     if (staysForSelectedDate.length === 0) return;
     const dateStr = format(selectedDate!, 'dd/MM/yyyy');
+    const dayKey = format(selectedDate!, 'yyyy-MM-dd');
     const header = `\`HOTEL ${dateStr}:\``;
-    const lines = staysForSelectedDate.map((s, i) => `${i + 1}. ${s.dog_name.toUpperCase()}`);
+    const lines = staysForSelectedDate.map((s, i) => {
+      const breed = clientsBreed.find(c => c.id === (s as any).client_id)?.breed
+        || clientsBreed.find(c => c.name.toLowerCase() === s.dog_name.toLowerCase())?.breed
+        || '';
+      const dayMeals = meals.filter(m => m.hotel_stay_id === s.id && (m.date || '').startsWith(dayKey));
+      let ateStatus = '📋 Sem registro';
+      if (dayMeals.length > 0) {
+        const ateAny = dayMeals.some(m => m.ate === true);
+        const refusedAny = dayMeals.some(m => m.ate === false);
+        if (ateAny && !refusedAny) ateStatus = '✅ Comeu';
+        else if (!ateAny && refusedAny) ateStatus = '❌ Não comeu';
+        else ateStatus = '⚠️ Parcial';
+      }
+      const breedTxt = breed ? ` (${breed})` : '';
+      return `${i + 1}. ${s.dog_name.toUpperCase()}${breedTxt} - ${ateStatus}`;
+    });
     const footer = `\`TOTAL:${staysForSelectedDate.length}\``;
     navigator.clipboard.writeText(`${header}\n\n${lines.join('\n\n')}\n\n${footer}`);
     toast.success('Lista copiada!');
