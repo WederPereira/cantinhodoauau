@@ -49,6 +49,8 @@ const Dashboard: React.FC = () => {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
+  const [todayDaycare, setTodayDaycare] = useState(0);
+  const [todayHotel, setTodayHotel] = useState(0);
 
   const selectedClient = selectedClientId ? clients.find(c => c.id === selectedClientId) || null : null;
 
@@ -63,7 +65,36 @@ const Dashboard: React.FC = () => {
     return () => window.removeEventListener('openClientDetail', handler);
   }, []);
 
+  const fetchPresence = async () => {
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+    try {
+      const [{ count: qrCount }, { data: hotelData }] = await Promise.all([
+        supabase.from('qr_entries').select('*', { count: 'exact', head: true })
+          .gte('data_hora', startOfDay.toISOString())
+          .lte('data_hora', endOfDay.toISOString()),
+        supabase.from('hotel_stays').select('id').eq('active', true),
+      ]);
+      setTodayDaycare(qrCount || 0);
+      setTodayHotel((hotelData || []).length);
+    } catch (err) {
+      console.error('Erro ao carregar presenças', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchPresence();
+    const channel = supabase
+      .channel('dashboard-presence')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'qr_entries' }, fetchPresence)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'hotel_stays' }, fetchPresence)
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
   const healthAlerts = useMemo(() => getHealthAlerts(clients), [clients]);
+  const totalPresent = todayDaycare + todayHotel;
 
   const handleClientClick = (client: Client) => {
     setSelectedClientId(client.id);
