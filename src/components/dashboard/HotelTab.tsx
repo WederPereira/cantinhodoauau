@@ -918,12 +918,25 @@ const HotelTab: React.FC = () => {
                       <div>
                         <h2 className="text-xl font-bold text-foreground">{stay.dog_name}</h2>
                         <p className="text-sm text-muted-foreground">{stay.tutor_name}</p>
-                        <div className="flex items-center gap-2 mt-1">
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
                           <Badge variant="secondary" className="text-[10px]">
-                            📅 {format(new Date(stay.check_in), 'dd/MM')} → {stay.expected_checkout ? format(new Date(stay.expected_checkout), 'dd/MM') : '?'}
+                            📅 {format(new Date(stay.check_in), 'dd/MM')} → {stay.expected_checkout ? format(new Date(stay.expected_checkout), 'dd/MM') : '∞'}
                           </Badge>
-                          <Badge variant="outline" className="text-[10px]">{daysElapsed}/{totalDays} dias</Badge>
+                          <Badge variant="outline" className="text-[10px]">{stay.expected_checkout ? `${daysElapsed}/${totalDays} dias` : `${daysElapsed} dias · ∞`}</Badge>
                         </div>
+                        {client && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="mt-2 w-full gap-1.5 h-9 text-xs rounded-xl"
+                            onClick={() => {
+                              setSheetStayId(null);
+                              window.dispatchEvent(new CustomEvent('openClientDetail', { detail: client.id }));
+                            }}
+                          >
+                            <Dog size={14} /> Ver perfil cadastral
+                          </Button>
+                        )}
                       </div>
 
 
