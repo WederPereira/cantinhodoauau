@@ -1,7 +1,9 @@
 import React, { lazy, Suspense, useState, useMemo, useEffect } from 'react';
 import { useClients } from '@/context/ClientContext';
 import { Client, getHealthAlerts } from '@/types/client';
-import { LayoutDashboard, HeartPulse, PawPrint, Hotel, Camera, Car, Loader2, Pill } from 'lucide-react';
+import { LayoutDashboard, HeartPulse, PawPrint, Hotel, Camera, Car, Loader2, Pill, Users } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
