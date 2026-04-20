@@ -1112,6 +1112,17 @@ const HotelTab: React.FC = () => {
                                 } catch { toast.error('Erro ao prolongar'); }
                               }}
                               locale={ptBR} className="pointer-events-auto" />
+                            <div className="p-2 border-t">
+                              <Button variant="ghost" size="sm" className="w-full text-xs gap-1" onClick={async () => {
+                                try {
+                                  await supabase.from('hotel_stays').update({ expected_checkout: null }).eq('id', stay.id);
+                                  toast.success('Estadia indeterminada ∞');
+                                  fetchData();
+                                } catch { toast.error('Erro ao atualizar'); }
+                              }}>
+                                <Timer size={12} /> Tempo indeterminado
+                              </Button>
+                            </div>
                           </PopoverContent>
                         </Popover>
                         {deleteConfirmId === stay.id ? (
