@@ -780,8 +780,44 @@ const HotelTab: React.FC = () => {
                     {/* Info + meal buttons below photo */}
                     <div className="p-2.5 space-y-2">
                       <div className="flex items-center justify-between text-[9px] text-muted-foreground">
-                        <span>📅 {format(new Date(stay.check_in), 'dd/MM')} → {stay.expected_checkout ? format(new Date(stay.expected_checkout), 'dd/MM') : '?'}</span>
-                        <Badge variant="secondary" className="text-[8px] px-1 py-0">{daysElapsed}/{totalDays}d</Badge>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button onClick={(e) => e.stopPropagation()} className="hover:text-primary transition-colors">
+                              📅 {format(new Date(stay.check_in), 'dd/MM')} → {stay.expected_checkout ? format(new Date(stay.expected_checkout), 'dd/MM') : '∞'}
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start" onClick={(e) => e.stopPropagation()}>
+                            <Calendar mode="single" selected={stay.expected_checkout ? new Date(stay.expected_checkout) : undefined}
+                              onSelect={async (d) => {
+                                if (!d) return;
+                                try {
+                                  await supabase.from('hotel_stays').update({ expected_checkout: d.toISOString() }).eq('id', stay.id);
+                                  const oldEnd = stay.expected_checkout ? startOfDay(new Date(stay.expected_checkout)) : startOfDay(new Date());
+                                  const newEnd = startOfDay(d);
+                                  if (newEnd > oldEnd) {
+                                    const newDays = eachDayOfInterval({ start: addDays(oldEnd, 1), end: newEnd });
+                                    const newMealRows = newDays.flatMap(day => MEAL_TYPES.map(mt => ({ hotel_stay_id: stay.id, date: format(day, 'yyyy-MM-dd'), meal_type: mt.key, ate: null })));
+                                    if (newMealRows.length > 0) await supabase.from('hotel_meals').insert(newMealRows);
+                                  }
+                                  toast.success(`Saída prevista: ${format(d, 'dd/MM')}`);
+                                  fetchData();
+                                } catch { toast.error('Erro ao atualizar'); }
+                              }}
+                              locale={ptBR} className="pointer-events-auto" />
+                            <div className="p-2 border-t">
+                              <Button variant="ghost" size="sm" className="w-full text-xs gap-1" onClick={async () => {
+                                try {
+                                  await supabase.from('hotel_stays').update({ expected_checkout: null }).eq('id', stay.id);
+                                  toast.success('Estadia marcada como indeterminada ∞');
+                                  fetchData();
+                                } catch { toast.error('Erro ao atualizar'); }
+                              }}>
+                                <Timer size={12} /> Tempo indeterminado
+                              </Button>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                        <Badge variant="secondary" className="text-[8px] px-1 py-0">{stay.expected_checkout ? `${daysElapsed}/${totalDays}d` : `${daysElapsed}d ∞`}</Badge>
                       </div>
                       {/* Today's meal button - time based */}
                       {(() => {
