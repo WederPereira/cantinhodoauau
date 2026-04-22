@@ -159,6 +159,32 @@ const Dashboard: React.FC = () => {
               <EmployeeTasksBanner />
             </Suspense>
 
+            <div className="bg-gradient-to-br from-primary/10 via-card to-card border border-primary/30 rounded-xl p-4 shadow-soft">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Users size={16} className="text-primary" />
+                  <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Presentes Hoje</p>
+                </div>
+                <p className="text-3xl font-bold text-primary leading-none">{presence.daycare + presence.hotel}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-background/60 border border-border/60 rounded-lg p-2.5 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <PawPrint size={13} className="text-primary shrink-0" />
+                    <span className="text-[11px] font-medium text-muted-foreground">Creche</span>
+                  </div>
+                  <span className="text-base font-bold text-foreground">{presence.daycare}</span>
+                </div>
+                <div className="bg-background/60 border border-border/60 rounded-lg p-2.5 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <Hotel size={13} className="text-primary shrink-0" />
+                    <span className="text-[11px] font-medium text-muted-foreground">Hotel</span>
+                  </div>
+                  <span className="text-base font-bold text-foreground">{presence.hotel}</span>
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-card border border-border rounded-xl p-4">
                 <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Total Pets</p>
