@@ -685,7 +685,23 @@ const HotelTab: React.FC = () => {
                 />
               </div>
               <Button variant="outline" size="icon" onClick={() => {
-                const list = filteredActiveStays.map((s, idx) => `${idx + 1}. ${s.dog_name} (${s.tutor_name})`).join('\n');
+                const today = format(new Date(), 'yyyy-MM-dd');
+                const dateStr = format(new Date(), 'dd/MM/yyyy');
+                const lines = filteredActiveStays.map((s, idx) => {
+                  const client = clients.find(c => c.id === s.client_id);
+                  const breed = client?.breed || s.dog_name;
+                  const todayMeals = getMealsForStay(s.id).filter(m => m.date === today && m.ate !== null);
+                  let status = '📋 Sem registro';
+                  if (todayMeals.length > 0) {
+                    const ateCount = todayMeals.filter(m => m.ate === true).length;
+                    const notAteCount = todayMeals.filter(m => m.ate === false).length;
+                    if (ateCount > 0 && notAteCount === 0) status = '✅ Comeu';
+                    else if (notAteCount > 0 && ateCount === 0) status = '❌ Não comeu';
+                    else status = '⚠️ Parcial';
+                  }
+                  return `${idx + 1}. ${s.dog_name} (${breed}) - ${status}`;
+                }).join('\n');
+                const list = `HOTEL ${dateStr}:\n${lines}`;
                 navigator.clipboard.writeText(list);
                 toast.success('Lista do hotel copiada!');
               }} className="h-9 w-9 shrink-0" title="Copiar lista">
