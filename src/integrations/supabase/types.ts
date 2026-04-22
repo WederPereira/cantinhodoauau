@@ -47,48 +47,6 @@ export type Database = {
         }
         Relationships: []
       }
-      backup_history: {
-        Row: {
-          created_at: string
-          file_path: string
-          file_size_bytes: number
-          id: string
-          notes: string | null
-          source: string
-          total_clients: number | null
-          total_photos: number | null
-          total_records: number | null
-          triggered_by: string | null
-          triggered_by_name: string | null
-        }
-        Insert: {
-          created_at?: string
-          file_path: string
-          file_size_bytes?: number
-          id?: string
-          notes?: string | null
-          source?: string
-          total_clients?: number | null
-          total_photos?: number | null
-          total_records?: number | null
-          triggered_by?: string | null
-          triggered_by_name?: string | null
-        }
-        Update: {
-          created_at?: string
-          file_path?: string
-          file_size_bytes?: number
-          id?: string
-          notes?: string | null
-          source?: string
-          total_clients?: number | null
-          total_photos?: number | null
-          total_records?: number | null
-          triggered_by?: string | null
-          triggered_by_name?: string | null
-        }
-        Relationships: []
-      }
       clients: {
         Row: {
           birth_date: string | null

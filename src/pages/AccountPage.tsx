@@ -9,11 +9,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { LogOut, User, Mail, Shield, Loader2, Save, KeyRound, Users, History, ClipboardList, Download, RefreshCw, Database } from "lucide-react";
+import { LogOut, User, Mail, Shield, Loader2, Save, KeyRound, Users, History, ClipboardList, Download, RefreshCw } from "lucide-react";
 import EmployeeManager from "@/components/account/EmployeeManager";
 import ActionHistory from "@/components/account/ActionHistory";
 import WorkTaskManager from "@/components/account/WorkTaskManager";
-import BackupAndReports from "@/components/account/BackupAndReports";
 
 const AccountPage = () => {
   const { session, signOut } = useAuth();
@@ -116,7 +115,7 @@ const AccountPage = () => {
       {/* Tasks Section - visible to all */}
       <Separator />
       <Tabs defaultValue={isAdmin ? "employees" : "tasks"} className="w-full">
-        <TabsList className={`w-full grid ${isAdmin ? "grid-cols-4" : "grid-cols-1"}`}>
+        <TabsList className={`w-full grid ${isAdmin ? "grid-cols-3" : "grid-cols-1"}`}>
           {isAdmin && (
             <TabsTrigger value="employees" className="gap-1 text-xs">
               <Users className="w-3.5 h-3.5" /> Equipe
@@ -128,11 +127,6 @@ const AccountPage = () => {
           {isAdmin && (
             <TabsTrigger value="history" className="gap-1 text-xs">
               <History className="w-3.5 h-3.5" /> Histórico
-            </TabsTrigger>
-          )}
-          {isAdmin && (
-            <TabsTrigger value="backup" className="gap-1 text-xs">
-              <Database className="w-3.5 h-3.5" /> Backup
             </TabsTrigger>
           )}
         </TabsList>
@@ -147,11 +141,6 @@ const AccountPage = () => {
         {isAdmin && (
           <TabsContent value="history" className="mt-3">
             <ActionHistory />
-          </TabsContent>
-        )}
-        {isAdmin && (
-          <TabsContent value="backup" className="mt-3">
-            <BackupAndReports />
           </TabsContent>
         )}
       </Tabs>
