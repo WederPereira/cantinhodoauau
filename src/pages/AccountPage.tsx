@@ -14,6 +14,7 @@ import EmployeeManager from "@/components/account/EmployeeManager";
 import ActionHistory from "@/components/account/ActionHistory";
 import WorkTaskManager from "@/components/account/WorkTaskManager";
 import BackupAndReports from "@/components/account/BackupAndReports";
+import ThemeColorPicker from "@/components/account/ThemeColorPicker";
 
 const AccountPage = () => {
   const { session, signOut } = useAuth();
@@ -112,6 +113,9 @@ const AccountPage = () => {
           </Button>
         </CardContent>
       </Card>
+
+      {/* Theme color picker */}
+      <ThemeColorPicker />
 
       {/* Tasks Section - visible to all */}
       <Separator />
