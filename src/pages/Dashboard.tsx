@@ -49,19 +49,45 @@ const Dashboard: React.FC = () => {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
+  const [presence, setPresence] = useState({ daycare: 0, hotel: 0 });
 
   const selectedClient = selectedClientId ? clients.find(c => c.id === selectedClientId) || null : null;
 
+  const fetchPresence = useCallback(async () => {
+    try {
+      const today = format(new Date(), 'yyyy-MM-dd');
+      const [{ data: qrToday }, { data: stays }] = await Promise.all([
+        supabase.from('qr_entries').select('dog,tutor').gte('data_hora', `${today}T00:00:00`).lte('data_hora', `${today}T23:59:59`),
+        supabase.from('hotel_stays').select('id').eq('active', true),
+      ]);
+      const uniqueDaycare = new Set((qrToday || []).map((q: any) => `${q.dog}|${q.tutor}`));
+      setPresence({ daycare: uniqueDaycare.size, hotel: (stays || []).length });
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
   useEffect(() => {
     prefetchTabModules();
+    fetchPresence();
     const handler = (e: Event) => {
       const id = (e as CustomEvent).detail;
       setSelectedClientId(id);
       setSheetOpen(true);
     };
     window.addEventListener('openClientDetail', handler);
-    return () => window.removeEventListener('openClientDetail', handler);
-  }, []);
+
+    const channel = supabase
+      .channel('dashboard-presence')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'qr_entries' }, fetchPresence)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'hotel_stays' }, fetchPresence)
+      .subscribe();
+
+    return () => {
+      window.removeEventListener('openClientDetail', handler);
+      supabase.removeChannel(channel);
+    };
+  }, [fetchPresence]);
 
   const healthAlerts = useMemo(() => getHealthAlerts(clients), [clients]);
 
