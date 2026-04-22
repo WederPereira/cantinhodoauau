@@ -1,7 +1,9 @@
-import React, { lazy, Suspense, useState, useMemo, useEffect } from 'react';
+import React, { lazy, Suspense, useState, useMemo, useEffect, useCallback } from 'react';
 import { useClients } from '@/context/ClientContext';
 import { Client, getHealthAlerts } from '@/types/client';
-import { LayoutDashboard, HeartPulse, PawPrint, Hotel, Camera, Car, Loader2, Pill } from 'lucide-react';
+import { LayoutDashboard, HeartPulse, PawPrint, Hotel, Camera, Car, Loader2, Pill, Users } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -47,19 +49,45 @@ const Dashboard: React.FC = () => {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
+  const [presence, setPresence] = useState({ daycare: 0, hotel: 0 });
 
   const selectedClient = selectedClientId ? clients.find(c => c.id === selectedClientId) || null : null;
 
+  const fetchPresence = useCallback(async () => {
+    try {
+      const today = format(new Date(), 'yyyy-MM-dd');
+      const [{ data: qrToday }, { data: stays }] = await Promise.all([
+        supabase.from('qr_entries').select('dog,tutor').gte('data_hora', `${today}T00:00:00`).lte('data_hora', `${today}T23:59:59`),
+        supabase.from('hotel_stays').select('id').eq('active', true),
+      ]);
+      const uniqueDaycare = new Set((qrToday || []).map((q: any) => `${q.dog}|${q.tutor}`));
+      setPresence({ daycare: uniqueDaycare.size, hotel: (stays || []).length });
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
   useEffect(() => {
     prefetchTabModules();
+    fetchPresence();
     const handler = (e: Event) => {
       const id = (e as CustomEvent).detail;
       setSelectedClientId(id);
       setSheetOpen(true);
     };
     window.addEventListener('openClientDetail', handler);
-    return () => window.removeEventListener('openClientDetail', handler);
-  }, []);
+
+    const channel = supabase
+      .channel('dashboard-presence')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'qr_entries' }, fetchPresence)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'hotel_stays' }, fetchPresence)
+      .subscribe();
+
+    return () => {
+      window.removeEventListener('openClientDetail', handler);
+      supabase.removeChannel(channel);
+    };
+  }, [fetchPresence]);
 
   const healthAlerts = useMemo(() => getHealthAlerts(clients), [clients]);
 
@@ -130,6 +158,32 @@ const Dashboard: React.FC = () => {
             <Suspense fallback={<SectionLoader />}>
               <EmployeeTasksBanner />
             </Suspense>
+
+            <div className="bg-gradient-to-br from-primary/10 via-card to-card border border-primary/30 rounded-xl p-4 shadow-soft">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Users size={16} className="text-primary" />
+                  <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Presentes Hoje</p>
+                </div>
+                <p className="text-3xl font-bold text-primary leading-none">{presence.daycare + presence.hotel}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-background/60 border border-border/60 rounded-lg p-2.5 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <PawPrint size={13} className="text-primary shrink-0" />
+                    <span className="text-[11px] font-medium text-muted-foreground">Creche</span>
+                  </div>
+                  <span className="text-base font-bold text-foreground">{presence.daycare}</span>
+                </div>
+                <div className="bg-background/60 border border-border/60 rounded-lg p-2.5 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <Hotel size={13} className="text-primary shrink-0" />
+                    <span className="text-[11px] font-medium text-muted-foreground">Hotel</span>
+                  </div>
+                  <span className="text-base font-bold text-foreground">{presence.hotel}</span>
+                </div>
+              </div>
+            </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-card border border-border rounded-xl p-4">
