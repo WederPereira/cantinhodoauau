@@ -83,7 +83,7 @@ const HotelFeedingAlerts: React.FC = () => {
         </h3>
         <Badge variant="destructive" className="text-xs">
           <AlertTriangle size={12} className="mr-1" />
-          {alerts.length} dog(s) sem comer
+          {alerts.length} dog(s) sem comer 3+ vezes
         </Badge>
       </div>
       <div className="space-y-1.5">
