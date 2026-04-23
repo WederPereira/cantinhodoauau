@@ -7,7 +7,7 @@ import { Client } from '@/types/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, X, Dog, Filter } from 'lucide-react';
+import { Search, X, Dog, Filter, ImageOff } from 'lucide-react';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select';
@@ -19,6 +19,7 @@ const ClientsPage: React.FC = () => {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [breedFilter, setBreedFilter] = useState('all');
+  const [noPhotoOnly, setNoPhotoOnly] = useState(false);
 
   const selectedClient = selectedClientId ? clients.find(c => c.id === selectedClientId) || null : null;
 
@@ -42,6 +43,11 @@ const ClientsPage: React.FC = () => {
     return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
   }, [clients]);
 
+  const noPhotoCount = useMemo(
+    () => clients.filter(c => !c.photo || !c.photo.trim()).length,
+    [clients]
+  );
+
   const filteredClients = useMemo(() => {
     return clients.filter((client) => {
       if (searchQuery) {
@@ -54,9 +60,10 @@ const ClientsPage: React.FC = () => {
         const clientBreed = normalizeBreedName(client.breed) || 'Sem raça';
         if (clientBreed !== breedFilter) return false;
       }
+      if (noPhotoOnly && client.photo && client.photo.trim()) return false;
       return true;
     });
-  }, [clients, searchQuery, breedFilter]);
+  }, [clients, searchQuery, breedFilter, noPhotoOnly]);
 
   const handleClientClick = (client: Client) => {
     setSelectedClientId(client.id);
@@ -119,11 +126,27 @@ const ClientsPage: React.FC = () => {
             )}
           </div>
 
-          {breedFilter !== 'all' && (
-            <Badge variant="secondary" className="text-xs">
-              {breedFilter}: {filteredClients.length} dog{filteredClients.length !== 1 ? 's' : ''}
-            </Badge>
-          )}
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant={noPhotoOnly ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setNoPhotoOnly(v => !v)}
+              className="h-8 gap-1.5 text-xs rounded-full"
+            >
+              <ImageOff size={13} />
+              Sem foto
+              <Badge variant={noPhotoOnly ? 'secondary' : 'outline'} className="ml-0.5 h-4 px-1.5 text-[10px]">
+                {noPhotoCount}
+              </Badge>
+            </Button>
+
+            {breedFilter !== 'all' && (
+              <Badge variant="secondary" className="text-xs">
+                {breedFilter}: {filteredClients.length} dog{filteredClients.length !== 1 ? 's' : ''}
+              </Badge>
+            )}
+          </div>
         </div>
 
         {/* Grid */}
@@ -138,10 +161,10 @@ const ClientsPage: React.FC = () => {
         ) : (
           <div className="text-center py-20">
             <p className="text-sm text-muted-foreground">
-              {searchQuery || breedFilter !== 'all' ? 'Nenhum resultado encontrado' : 'Nenhum dog cadastrado'}
+              {searchQuery || breedFilter !== 'all' || noPhotoOnly ? 'Nenhum resultado encontrado' : 'Nenhum dog cadastrado'}
             </p>
-            {(searchQuery || breedFilter !== 'all') && (
-              <Button variant="ghost" size="sm" onClick={() => { setSearchQuery(''); setBreedFilter('all'); }} className="mt-2 text-xs">
+            {(searchQuery || breedFilter !== 'all' || noPhotoOnly) && (
+              <Button variant="ghost" size="sm" onClick={() => { setSearchQuery(''); setBreedFilter('all'); setNoPhotoOnly(false); }} className="mt-2 text-xs">
                 Limpar filtros
               </Button>
             )}
