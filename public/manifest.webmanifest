@@ -1,0 +1,26 @@
+{
+  "name": "Cantinho do AuAu",
+  "short_name": "AuAu",
+  "description": "Gestão de creche e hotel para pets",
+  "start_url": "/",
+  "id": "/",
+  "display": "standalone",
+  "background_color": "#f8fafb",
+  "theme_color": "#1a9e8f",
+  "orientation": "portrait-primary",
+  "categories": ["business", "lifestyle"],
+  "icons": [
+    {
+      "src": "/app-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/app-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
