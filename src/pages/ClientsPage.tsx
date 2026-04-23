@@ -161,10 +161,10 @@ const ClientsPage: React.FC = () => {
         ) : (
           <div className="text-center py-20">
             <p className="text-sm text-muted-foreground">
-              {searchQuery || breedFilter !== 'all' ? 'Nenhum resultado encontrado' : 'Nenhum dog cadastrado'}
+              {searchQuery || breedFilter !== 'all' || noPhotoOnly ? 'Nenhum resultado encontrado' : 'Nenhum dog cadastrado'}
             </p>
-            {(searchQuery || breedFilter !== 'all') && (
-              <Button variant="ghost" size="sm" onClick={() => { setSearchQuery(''); setBreedFilter('all'); }} className="mt-2 text-xs">
+            {(searchQuery || breedFilter !== 'all' || noPhotoOnly) && (
+              <Button variant="ghost" size="sm" onClick={() => { setSearchQuery(''); setBreedFilter('all'); setNoPhotoOnly(false); }} className="mt-2 text-xs">
                 Limpar filtros
               </Button>
             )}
