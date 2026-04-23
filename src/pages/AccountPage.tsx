@@ -23,6 +23,7 @@ const AccountPage = () => {
   const [newPassword, setNewPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [savingName, setSavingName] = useState(false);
+  const [refreshingApp, setRefreshingApp] = useState(false);
 
   const ROLE_LABELS: Record<string, string> = {
     admin: "Administrador",
@@ -58,11 +59,43 @@ const AccountPage = () => {
     toast.success("Você saiu da conta");
   };
 
+  const handleRefreshApp = async () => {
+    if (refreshingApp) return;
+
+    setRefreshingApp(true);
+    toast.loading("Abrindo a versão mais recente...", { id: "update" });
+
+    try {
+      if ("serviceWorker" in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map((registration) => registration.unregister()));
+      }
+
+      if ("caches" in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map((cacheName) => caches.delete(cacheName)));
+      }
+    } catch {
+      // ignore and continue with forced reload
+    }
+
+    const url = new URL(window.location.href);
+    url.searchParams.set("refresh", Date.now().toString());
+    toast.success("Recarregando agora...", { id: "update" });
+
+    window.setTimeout(() => {
+      window.location.replace(url.toString());
+    }, 150);
+
+    window.setTimeout(() => {
+      setRefreshingApp(false);
+    }, 4000);
+  };
+
   return (
     <div className="container max-w-lg mx-auto px-4 py-6 space-y-4 animate-fade-in-up">
       <h1 className="text-xl font-bold text-foreground">Minha Conta</h1>
 
-      {/* Profile Info */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
@@ -98,7 +131,6 @@ const AccountPage = () => {
         </CardContent>
       </Card>
 
-      {/* Change Password */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
@@ -114,10 +146,8 @@ const AccountPage = () => {
         </CardContent>
       </Card>
 
-      {/* Theme color picker */}
       <ThemeColorPicker />
 
-      {/* Tasks Section - visible to all */}
       <Separator />
       <Tabs defaultValue={isAdmin ? "employees" : "tasks"} className="w-full">
         <TabsList className={`w-full grid ${isAdmin ? "grid-cols-4" : "grid-cols-1"}`}>
@@ -160,7 +190,6 @@ const AccountPage = () => {
         )}
       </Tabs>
 
-      {/* App Actions */}
       <Separator />
       <div className="grid grid-cols-2 gap-3">
         <Button
@@ -182,31 +211,11 @@ const AccountPage = () => {
         <Button
           variant="outline"
           className="w-full"
-          onClick={async () => {
-            toast.loading("Buscando versão mais recente...", { id: "update" });
-
-            if ("serviceWorker" in navigator) {
-              const registrations = await navigator.serviceWorker.getRegistrations();
-              for (const reg of registrations) {
-                await reg.update();
-                if (reg.waiting) {
-                  reg.waiting.postMessage({ type: "SKIP_WAITING" });
-                }
-              }
-            }
-
-            if ("caches" in window) {
-              const names = await caches.keys();
-              await Promise.all(names.map((name) => caches.delete(name)));
-            }
-
-            toast.success("Versão mais recente carregando...", { id: "update" });
-            const url = new URL(window.location.href);
-            url.searchParams.set("refresh", Date.now().toString());
-            setTimeout(() => window.location.replace(url.toString()), 500);
-          }}
+          onClick={handleRefreshApp}
+          disabled={refreshingApp}
         >
-          <RefreshCw className="mr-2 w-4 h-4" /> Atualizar App
+          {refreshingApp ? <Loader2 className="mr-2 w-4 h-4 animate-spin" /> : <RefreshCw className="mr-2 w-4 h-4" />}
+          Atualizar App
         </Button>
       </div>
 
