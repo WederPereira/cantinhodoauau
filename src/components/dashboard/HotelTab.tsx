@@ -83,7 +83,7 @@ const getMealForCurrentTime = () => {
 };
 
 const HotelTab: React.FC = () => {
-  const { activeClients } = useClients();
+  const { clients, activeClients } = useClients();
   const [stays, setStays] = useState<HotelStay[]>([]);
   const [allStays, setAllStays] = useState<HotelStay[]>([]);
   const [medications, setMedications] = useState<Medication[]>([]);

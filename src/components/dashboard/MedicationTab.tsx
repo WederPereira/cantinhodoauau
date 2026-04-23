@@ -57,7 +57,7 @@ const getMedTypeLabel = (type: string) => MEDICATION_TYPES.find(t => t.value ===
 const getMedTypeIcon = (type: string) => MEDICATION_TYPES.find(t => t.value === type)?.icon || '💊';
 
 const MedicationTab: React.FC = () => {
-  const { activeClients } = useClients();
+  const { clients, activeClients } = useClients();
   const [meds, setMeds] = useState<MedItem[]>([]);
   const [now, setNow] = useState(new Date());
   const [search, setSearch] = useState('');
