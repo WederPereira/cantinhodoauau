@@ -51,6 +51,7 @@ export interface Client {
   castrated?: boolean;
   healthRestrictions?: string;
   entryDate: Date;
+  isActive: boolean;
   vaccines: Vaccines;
   vaccineHistory: VaccineRecord[];
   fleaHistory: FleaRecord[];

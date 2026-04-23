@@ -7,7 +7,8 @@ import { Client } from '@/types/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, X, Dog, Filter, ImageOff } from 'lucide-react';
+import { Search, X, Dog, Filter, ImageOff, User } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select';
@@ -20,6 +21,7 @@ const ClientsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [breedFilter, setBreedFilter] = useState('all');
   const [noPhotoOnly, setNoPhotoOnly] = useState(false);
+  const [showInactive, setShowInactive] = useState(false);
 
   const selectedClient = selectedClientId ? clients.find(c => c.id === selectedClientId) || null : null;
 
@@ -61,9 +63,17 @@ const ClientsPage: React.FC = () => {
         if (clientBreed !== breedFilter) return false;
       }
       if (noPhotoOnly && client.photo && client.photo.trim()) return false;
+      
+      // Filter by active status
+      if (showInactive) {
+        if (client.isActive !== false) return false;
+      } else {
+        if (client.isActive === false) return false;
+      }
+      
       return true;
     });
-  }, [clients, searchQuery, breedFilter, noPhotoOnly]);
+  }, [clients, searchQuery, breedFilter, noPhotoOnly, showInactive]);
 
   const handleClientClick = (client: Client) => {
     setSelectedClientId(client.id);
@@ -138,6 +148,23 @@ const ClientsPage: React.FC = () => {
               Sem foto
               <Badge variant={noPhotoOnly ? 'secondary' : 'outline'} className="ml-0.5 h-4 px-1.5 text-[10px]">
                 {noPhotoCount}
+              </Badge>
+            </Button>
+
+            <Button
+              type="button"
+              variant={showInactive ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setShowInactive(v => !v)}
+              className={cn(
+                "h-8 gap-1.5 text-xs rounded-full",
+                showInactive && "bg-destructive hover:bg-destructive/90 text-destructive-foreground border-destructive"
+              )}
+            >
+              <User size={13} className={showInactive ? "opacity-50" : ""} />
+              {showInactive ? "Inativos" : "Ativos"}
+              <Badge variant={showInactive ? 'secondary' : 'outline'} className="ml-0.5 h-4 px-1.5 text-[10px]">
+                {clients.filter(c => showInactive ? c.isActive === false : c.isActive !== false).length}
               </Badge>
             </Button>
 

@@ -33,7 +33,7 @@ interface ClientContextType {
     petSize?: Client['petSize'];
     photo?: string;
   }>) => Promise<void>;
-  updateClient: (id: string, updates: Partial<Client>) => Promise<void>;
+  updateClient: (id: string, updates: Partial<Client>) => Promise<boolean>;
   deleteClient: (id: string) => Promise<void>;
   getClientById: (id: string) => Client | undefined;
   addVaccineRecord: (clientId: string, type: VaccineType, date: string, notes?: string) => Promise<void>;
@@ -66,6 +66,7 @@ const dbRowToClient = (row: any, vaccineRecords: any[] = [], fleaRecords: any[] 
   castrated: row.castrated ?? false,
   healthRestrictions: row.health_restrictions || '',
   entryDate: new Date(row.entry_date),
+  isActive: (row.vaccines as any)?.isActive ?? true,
   vaccines: (row.vaccines as Vaccines) || { ...DEFAULT_VACCINES },
   vaccineHistory: vaccineRecords
     .filter(r => r.client_id === row.id)
@@ -138,6 +139,7 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     birthDate?: Date;
     gender?: PetGender;
     castrated?: boolean;
+    isActive?: boolean;
   }) => {
     const { data: inserted, error } = await supabase.from('clients').insert({
       tutor_name: data.tutorName,
@@ -157,9 +159,14 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       birth_date: data.birthDate?.toISOString() || null,
       gender: data.gender || null,
       castrated: data.castrated ?? false,
+      vaccines: { ...(data.vaccines || DEFAULT_VACCINES), isActive: data.isActive ?? true } as any,
     } as any).select().single();
 
-    if (error) { console.error('Error adding client:', error); return; }
+    if (error) { 
+      console.error('Error adding client:', error); 
+      toast.error("Erro ao adicionar cliente.");
+      return; 
+    }
     logAction('add_client', 'client', inserted.id, { dog_name: data.name, tutor_name: data.tutorName });
     await fetchClients();
   }, [fetchClients]);
@@ -181,6 +188,7 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     entryDate?: Date;
     weight?: number;
     vaccines?: Vaccines;
+    isActive?: boolean;
   }>) => {
     const rows = newClients.map(c => ({
       tutor_name: c.tutorName || '',
@@ -198,7 +206,7 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       birth_date: c.birthDate?.toISOString() || null,
       entry_date: c.entryDate?.toISOString() || null,
       weight: c.weight || null,
-      vaccines: (c.vaccines || DEFAULT_VACCINES) as any,
+      vaccines: { ...(c.vaccines || DEFAULT_VACCINES), isActive: c.isActive ?? true } as any,
     }));
 
     const { error } = await supabase.from('clients').insert(rows);
@@ -225,12 +233,21 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     if (updates.gender !== undefined) dbUpdates.gender = updates.gender;
     if (updates.castrated !== undefined) dbUpdates.castrated = updates.castrated;
     if (updates.entryDate !== undefined) dbUpdates.entry_date = new Date(updates.entryDate).toISOString();
-    if (updates.vaccines !== undefined) dbUpdates.vaccines = updates.vaccines as any;
     if (updates.healthRestrictions !== undefined) dbUpdates.health_restrictions = updates.healthRestrictions;
 
     const client = clients.find(c => c.id === id);
+    
+    if (updates.isActive !== undefined && client) {
+      dbUpdates.vaccines = { ...client.vaccines, isActive: updates.isActive } as any;
+    } else if (updates.vaccines !== undefined) {
+      dbUpdates.vaccines = updates.vaccines as any;
+    }
     const { error } = await supabase.from('clients').update(dbUpdates).eq('id', id);
-    if (error) { console.error('Error updating client:', error); return; }
+    if (error) { 
+      console.error('Error updating client:', error); 
+      toast.error("Erro ao atualizar cliente.");
+      return false; 
+    }
     if (client) {
       // Store previous values for undo
       const prevData: Record<string, any> = { dog_name: client.name, tutor_name: client.tutorName };
@@ -254,6 +271,7 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       logAction('edit_client', 'client', id, prevData);
     }
     await fetchClients();
+    return true;
   }, [clients, fetchClients]);
 
   const deleteClient = useCallback(async (id: string) => {

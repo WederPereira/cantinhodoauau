@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Client, PetSize, PetGender, formatDate, VACCINE_LABELS, Vaccines, formatVaccineDate, getVaccineExpiryDate, isExpired, isExpiringSoon, VaccineType, DEFAULT_VACCINES, getProfileCompleteness } from '@/types/client';
 import { useClients } from '@/context/ClientContext';
 import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
 import { Trash2, Pencil, Dog, Heart, User, MapPin, Phone, Mail, FileText, Home, X, Shield, AlertCircle } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -42,6 +43,27 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
   const [activeTab, setActiveTab] = useState('info');
   const [editingBreed, setEditingBreed] = useState(false);
   const [fillingField, setFillingField] = useState<string | null>(null);
+  const touchStartX = React.useRef<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const currentX = e.touches[0].clientX;
+    const diff = currentX - touchStartX.current;
+    
+    // If swiping right (diff > 0) and the sheet is on the right
+    if (diff > 80) {
+      onOpenChange(false);
+      touchStartX.current = null;
+    }
+  };
+
+  const handleTouchEnd = () => {
+    touchStartX.current = null;
+  };
 
   const healthSummary = useMemo(() => {
     if (!client) return { upToDate: 0, expiring: 0, expired: 0, total: 4 };
@@ -72,8 +94,6 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
     if (!client.tutorEmail) missing.push({ label: 'Email', field: 'tutorEmail', type: 'text' });
     if (!client.tutorCpf) missing.push({ label: 'CPF', field: 'tutorCpf', type: 'text' });
     if (!client.tutorAddress) missing.push({ label: 'Endereço', field: 'tutorAddress', type: 'text' });
-    if (!client.tutorPhoto) missing.push({ label: 'Foto Tutor', field: 'tutorPhoto', type: 'text' });
-    if (!client.tutorBirthDate) missing.push({ label: 'Aniv. Tutor', field: 'tutorBirthDate', type: 'date' });
     return missing;
   }, [client]);
 
@@ -82,8 +102,10 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
   if (!client) return null;
 
   const inlineUpdate = async (field: string, value: any) => {
-    await updateClient(client.id, { [field]: value });
-    toast.success('Atualizado!');
+    const success = await updateClient(client.id, { [field]: value });
+    if (success) {
+      toast.success('Atualizado!');
+    }
     setFillingField(null);
   };
 
@@ -127,11 +149,24 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="p-0 flex flex-col overflow-hidden">
+      <SheetContent 
+        className="p-0 flex flex-col overflow-hidden"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         {/* Profile Header */}
         <SheetHeader className="p-4 pb-3 border-b border-border bg-gradient-to-br from-primary/5 via-transparent to-accent/5">
           <div className="flex items-start gap-3">
-            <div className="relative flex-shrink-0 overflow-visible">
+            <div className="relative flex-shrink-0">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="absolute -left-2 -top-2 h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm border border-border shadow-sm z-10 sm:hidden"
+                onClick={() => onOpenChange(false)}
+              >
+                <X size={14} />
+              </Button>
               <div className="w-[72px] h-[72px] p-[4px]">
                 <PhotoUpload
                   photo={client.photo}
@@ -164,6 +199,9 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
                       className="text-[10px] text-[hsl(142,70%,40%)] bg-[hsl(142,70%,45%)]/10 px-1.5 py-0.5 rounded font-medium hover:bg-[hsl(142,70%,45%)]/20 transition-colors">
                       WhatsApp
                     </button>
+                  )}
+                  {client.isActive === false && (
+                    <Badge variant="destructive" className="text-[9px] h-4 px-1.5 py-0 uppercase">Inativo</Badge>
                   )}
                 </div>
               )}
@@ -389,15 +427,6 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
                   <User size={13} /> Tutor
                 </h3>
                 <div className="bg-card border border-border rounded-xl overflow-hidden divide-y divide-border/50">
-                  <div className="p-3 flex justify-center bg-muted/20">
-                    <div className="w-16 h-16">
-                      <PhotoUpload
-                        photo={client.tutorPhoto}
-                        onPhotoChange={(photo) => inlineUpdate('tutorPhoto', photo ?? null)}
-                        size="sm"
-                      />
-                    </div>
-                  </div>
                   <InlineEditField icon={<User size={14} />} label="Nome" value={client.tutorName} onSave={canSeeSensitive ? (v) => inlineUpdate('tutorName', v) : undefined} placeholder="Nome do tutor" />
                   {canSeeSensitive ? (
                     <InlineEditField icon={<FileText size={14} />} label="CPF" value={client.tutorCpf || ''} onSave={(v) => inlineUpdate('tutorCpf', v)} placeholder="000.000.000-00" />
@@ -447,23 +476,6 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
                       <div className="flex-1"><p className="text-[9px] text-muted-foreground uppercase tracking-wider">Endereço</p><p className="text-sm font-medium text-muted-foreground">{maskAddress(client.tutorAddress)}</p></div>
                     </div>
                   )}
-                  <div className="flex items-center gap-3 p-2.5 group hover:bg-muted/30 transition-all">
-                    <span className="text-muted-foreground">🎂</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Aniversário do Tutor</p>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <button className="text-sm font-medium text-left hover:text-primary transition-colors">
-                            {client.tutorBirthDate ? format(new Date(client.tutorBirthDate), "dd/MM/yyyy", { locale: ptBR }) : <span className="text-muted-foreground/50 italic">Selecionar data</span>}
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar mode="single" selected={client.tutorBirthDate ? new Date(client.tutorBirthDate) : undefined}
-                            onSelect={(d) => inlineUpdate('tutorBirthDate', d)} initialFocus className="pointer-events-auto" locale={ptBR} />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                  </div>
                 </div>
               </div>
 
@@ -560,6 +572,19 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
                         onSelect={(d) => { if (d) inlineUpdate('entryDate', d); }} initialFocus className="pointer-events-auto" locale={ptBR} />
                     </PopoverContent>
                   </Popover>
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-xl bg-muted/20 border border-transparent hover:border-border transition-all">
+                  <div className="flex items-center gap-2">
+                    <div className={cn("w-2 h-2 rounded-full", client.isActive !== false ? "bg-[hsl(142,70%,45%)]" : "bg-destructive")} />
+                    <div>
+                      <p className="text-xs font-semibold">{client.isActive !== false ? 'Cliente Ativo' : 'Cliente Inativo'}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {client.isActive !== false ? 'Exibido na lista principal' : 'Oculto (visível em Inativos)'}
+                      </p>
+                    </div>
+                  </div>
+                  <Switch checked={client.isActive !== false} onCheckedChange={(v) => inlineUpdate('isActive', v)} />
                 </div>
               </div>
 
