@@ -15,7 +15,7 @@ import {
 import { normalizeBreedName } from '@/utils/breedNormalizer';
 
 const ClientsPage: React.FC = () => {
-  const { clients } = useClients();
+  const { clients: allClients } = useClients();
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -23,7 +23,7 @@ const ClientsPage: React.FC = () => {
   const [noPhotoOnly, setNoPhotoOnly] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
 
-  const selectedClient = selectedClientId ? clients.find(c => c.id === selectedClientId) || null : null;
+  const selectedClient = selectedClientId ? allClients.find(c => c.id === selectedClientId) || null : null;
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -38,20 +38,20 @@ const ClientsPage: React.FC = () => {
   // Get unique breeds with counts
   const breedStats = useMemo(() => {
     const map = new Map<string, number>();
-    clients.forEach(c => {
+    allClients.forEach(c => {
       const breed = normalizeBreedName(c.breed) || 'Sem raça';
       map.set(breed, (map.get(breed) || 0) + 1);
     });
     return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
-  }, [clients]);
+  }, [allClients]);
 
   const noPhotoCount = useMemo(
-    () => clients.filter(c => !c.photo || !c.photo.trim()).length,
-    [clients]
+    () => allClients.filter(c => !c.photo || !c.photo.trim()).length,
+    [allClients]
   );
 
   const filteredClients = useMemo(() => {
-    return clients.filter((client) => {
+    return allClients.filter((client) => {
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
         if (!client.name.toLowerCase().includes(q) && !(client.tutorName || '').toLowerCase().includes(q) && !(client.breed || '').toLowerCase().includes(q)) {
@@ -73,7 +73,7 @@ const ClientsPage: React.FC = () => {
       
       return true;
     });
-  }, [clients, searchQuery, breedFilter, noPhotoOnly, showInactive]);
+  }, [allClients, searchQuery, breedFilter, noPhotoOnly, showInactive]);
 
   const handleClientClick = (client: Client) => {
     setSelectedClientId(client.id);
@@ -90,7 +90,7 @@ const ClientsPage: React.FC = () => {
             <div>
               <h1 className="text-xl font-bold text-foreground tracking-tight">Dogs</h1>
               <p className="text-xs text-muted-foreground">
-                {filteredClients.length} de {clients.length} dog{clients.length !== 1 ? 's' : ''}
+                {filteredClients.length} de {allClients.length} dog{allClients.length !== 1 ? 's' : ''}
               </p>
             </div>
           </div>
@@ -121,7 +121,7 @@ const ClientsPage: React.FC = () => {
                 <SelectValue placeholder="Filtrar por raça" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all" className="text-xs">Todas as raças ({clients.length})</SelectItem>
+                <SelectItem value="all" className="text-xs">Todas as raças ({allClients.length})</SelectItem>
                 {breedStats.map(([breed, count]) => (
                   <SelectItem key={breed} value={breed} className="text-xs">
                     {breed} ({count})
@@ -164,7 +164,7 @@ const ClientsPage: React.FC = () => {
               <User size={13} className={showInactive ? "opacity-50" : ""} />
               {showInactive ? "Inativos" : "Ativos"}
               <Badge variant={showInactive ? 'secondary' : 'outline'} className="ml-0.5 h-4 px-1.5 text-[10px]">
-                {clients.filter(c => showInactive ? c.isActive === false : c.isActive !== false).length}
+                {allClients.filter(c => showInactive ? c.isActive === false : c.isActive !== false).length}
               </Badge>
             </Button>
 
