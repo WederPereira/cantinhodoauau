@@ -59,7 +59,7 @@ const Dashboard: React.FC = () => {
       const today = format(new Date(), 'yyyy-MM-dd');
       const [{ data: qrToday }, { data: stays }] = await Promise.all([
         supabase.from('qr_entries').select('dog,tutor').gte('data_hora', `${today}T00:00:00`).lte('data_hora', `${today}T23:59:59`),
-        supabase.from('hotel_stays').select('id').eq('active', true),
+        supabase.from('hotel_stays').select('id, client_id').eq('active', true),
       ]);
       const uniqueDaycare = (qrToday || []).filter((q: any) => 
         activeClients.some(c => c.name === q.dog && c.tutorName === q.tutor)
