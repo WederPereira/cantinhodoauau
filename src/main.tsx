@@ -1,10 +1,10 @@
 import { createRoot } from "react-dom/client";
-import { registerSW } from "virtual:pwa-register";
 import App from "./App.tsx";
 import "./index.css";
 import { applyThemeColor } from "./hooks/useThemeColor";
 
 const rootElement = document.getElementById("root");
+const LEGACY_CACHE_CLEANUP_KEY = "legacy-sw-cleanup-v1";
 
 const applySavedThemeColor = () => {
   try {
@@ -15,69 +15,25 @@ const applySavedThemeColor = () => {
   }
 };
 
-const isInIframe = (() => {
+const cleanupLegacyCaches = async () => {
+  if (!("serviceWorker" in navigator)) return;
+
   try {
-    return window.self !== window.top;
-  } catch {
-    return true;
-  }
-})();
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(registrations.map((registration) => registration.unregister()));
 
-const isPreviewHost =
-  window.location.hostname.includes("id-preview--") ||
-  window.location.hostname.includes("lovableproject.com");
-
-const forceFreshReload = () => {
-  const url = new URL(window.location.href);
-  url.searchParams.set("refresh", Date.now().toString());
-  window.location.replace(url.toString());
-};
-
-const setupAutoUpdates = () => {
-  if (!("serviceWorker" in navigator) || isPreviewHost || isInIframe || import.meta.env.DEV) {
-    navigator.serviceWorker?.getRegistrations?.().then((registrations) => {
-      registrations.forEach((registration) => registration.unregister());
-    });
-    return;
-  }
-
-  let refreshing = false;
-  const reloadOnce = () => {
-    if (refreshing) return;
-    refreshing = true;
-    forceFreshReload();
-  };
-
-  navigator.serviceWorker.addEventListener("controllerchange", reloadOnce);
-
-  const checkForUpdates = () => {
-    navigator.serviceWorker.ready
-      .then((registration) => registration.update())
-      .catch(() => undefined);
-  };
-
-  const updateSW = registerSW({
-    immediate: true,
-    onRegisteredSW: (_swUrl, registration) => {
-      registration?.update();
-      window.setInterval(() => registration?.update(), 60_000);
-    },
-    onNeedRefresh: () => {
-      updateSW(true);
-    },
-    onOfflineReady: () => undefined,
-  });
-
-  window.addEventListener("focus", checkForUpdates);
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") {
-      checkForUpdates();
+    if ("caches" in window && !sessionStorage.getItem(LEGACY_CACHE_CLEANUP_KEY)) {
+      const cacheNames = await caches.keys();
+      await Promise.all(cacheNames.map((cacheName) => caches.delete(cacheName)));
+      sessionStorage.setItem(LEGACY_CACHE_CLEANUP_KEY, "true");
     }
-  });
+  } catch {
+    // ignore
+  }
 };
 
 applySavedThemeColor();
-setupAutoUpdates();
+cleanupLegacyCaches();
 
 if (rootElement) {
   createRoot(rootElement).render(<App />);
