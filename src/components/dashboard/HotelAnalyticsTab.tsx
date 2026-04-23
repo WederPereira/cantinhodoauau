@@ -42,6 +42,7 @@ interface MedData {
 const DAY_NAMES = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
 const HotelAnalyticsTab: React.FC = () => {
+  const { activeClients } = useClients();
   const [stays, setStays] = useState<StayData[]>([]);
   const [meals, setMeals] = useState<MealData[]>([]);
   const [meds, setMeds] = useState<MedData[]>([]);
@@ -71,23 +72,28 @@ const HotelAnalyticsTab: React.FC = () => {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  const filteredStays = useMemo(() => {
+    const activeIds = new Set(activeClients.map(c => c.id));
+    return stays.filter(s => activeIds.has(s.client_id));
+  }, [stays, activeClients]);
+
   const stats = useMemo(() => {
-    const totalStays = stays.length;
-    const activeStays = stays.filter(s => s.active).length;
-    const completedStays = stays.filter(s => !s.active).length;
-    const totalMeals = meals.length;
-    const mealsEaten = meals.filter(m => m.ate).length;
+    const totalStays = filteredStays.length;
+    const activeStays = filteredStays.filter(s => s.active).length;
+    const completedStays = filteredStays.filter(s => !s.active).length;
+    const totalMeals = meals.filter(m => filteredStays.some(s => s.id === m.hotel_stay_id)).length;
+    const mealsEaten = meals.filter(m => m.ate && filteredStays.some(s => s.id === m.hotel_stay_id)).length;
     const mealRate = totalMeals > 0 ? Math.round((mealsEaten / totalMeals) * 100) : 0;
-    const totalMeds = meds.length;
-    const medsAdministered = meds.filter(m => m.administered).length;
+    const totalMeds = meds.filter(m => filteredStays.some(s => s.id === m.hotel_stay_id)).length;
+    const medsAdministered = meds.filter(m => m.administered && filteredStays.some(s => s.id === m.hotel_stay_id)).length;
     const medRate = totalMeds > 0 ? Math.round((medsAdministered / totalMeds) * 100) : 0;
 
     const avgStayDays = completedStays > 0
-      ? Math.round(stays.filter(s => !s.active && s.check_out).reduce((sum, s) => sum + Math.max(1, differenceInDays(new Date(s.check_out!), new Date(s.check_in))), 0) / completedStays)
+      ? Math.round(filteredStays.filter(s => !s.active && s.check_out).reduce((sum, s) => sum + Math.max(1, differenceInDays(new Date(s.check_out!), new Date(s.check_in))), 0) / completedStays)
       : 0;
 
     const dogCounts = new Map<string, number>();
-    stays.forEach(s => dogCounts.set(s.dog_name, (dogCounts.get(s.dog_name) || 0) + 1));
+    filteredStays.forEach(s => dogCounts.set(s.dog_name, (dogCounts.get(s.dog_name) || 0) + 1));
     const topDogs = Array.from(dogCounts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([dog, count]) => ({ dog, count }));
 
     const now = new Date();
@@ -96,7 +102,7 @@ const HotelAnalyticsTab: React.FC = () => {
     const monthlyData = months.map(month => {
       const mStart = startOfMonth(month);
       const mEnd = endOfMonth(month);
-      const count = stays.filter(s => {
+      const count = filteredStays.filter(s => {
         const d = new Date(s.check_in);
         return d >= mStart && d <= mEnd;
       }).length;
@@ -105,24 +111,24 @@ const HotelAnalyticsTab: React.FC = () => {
     const maxMonthly = Math.max(...monthlyData.map(m => m.count), 1);
 
     const dayOfWeekData = DAY_NAMES.map((name, i) => {
-      const count = stays.filter(s => getDay(new Date(s.check_in)) === i).length;
+      const count = filteredStays.filter(s => getDay(new Date(s.check_in)) === i).length;
       return { day: name, entradas: count };
     });
 
     return { totalStays, activeStays, completedStays, mealRate, medRate, avgStayDays, topDogs, monthlyData, maxMonthly, mealsEaten, totalMeals, medsAdministered, totalMeds, dayOfWeekData };
-  }, [stays, meals, meds]);
+  }, [filteredStays, meals, meds]);
 
   const datesWithStays = useMemo(() => {
     const set = new Set<string>();
-    stays.forEach(s => set.add(format(new Date(s.check_in), 'yyyy-MM-dd')));
+    filteredStays.forEach(s => set.add(format(new Date(s.check_in), 'yyyy-MM-dd')));
     return set;
-  }, [stays]);
+  }, [filteredStays]);
 
   const staysForSelectedDate = useMemo(() => {
     if (!selectedDate) return [];
     const dayStart = startOfDay(selectedDate);
-    return stays.filter(s => startOfDay(new Date(s.check_in)).getTime() === dayStart.getTime());
-  }, [stays, selectedDate]);
+    return filteredStays.filter(s => startOfDay(new Date(s.check_in)).getTime() === dayStart.getTime());
+  }, [filteredStays, selectedDate]);
 
   const copySelectedDateHotel = () => {
     if (staysForSelectedDate.length === 0) return;

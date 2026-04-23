@@ -17,7 +17,7 @@ const SectionLoader = () => (
 );
 
 const ReportsPage: React.FC = () => {
-  const { clients } = useClients();
+  const { activeClients } = useClients();
   const [periodMonths, setPeriodMonths] = useState('6');
   const numMonths = parseInt(periodMonths);
 
@@ -28,14 +28,14 @@ const ReportsPage: React.FC = () => {
       const start = startOfMonth(date);
       const end = endOfMonth(date);
       const label = format(date, 'MMM/yy', { locale: ptBR });
-      const novos = clients.filter(c => {
+      const novos = activeClients.filter(c => {
         const created = new Date(c.createdAt);
         return isWithinInterval(created, { start, end });
       }).length;
       months.push({ month: label, novos });
     }
     return months;
-  }, [clients, numMonths]);
+  }, [activeClients, numMonths]);
 
   const CustomTooltipStyle = {
     backgroundColor: 'hsl(var(--card))',
@@ -87,7 +87,7 @@ const ReportsPage: React.FC = () => {
                   <Users size={16} className="text-primary" />
                   <p className="text-xs text-muted-foreground">Total Clientes</p>
                 </div>
-                <p className="text-xl font-bold text-foreground">{clients.length}</p>
+                <p className="text-xl font-bold text-foreground">{activeClients.length}</p>
               </div>
               <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
                 <div className="flex items-center gap-2 mb-2">

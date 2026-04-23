@@ -340,18 +340,18 @@ const generatePdf = async (clients: Client[]): Promise<Blob> => {
 };
 
 const DogIdCard: React.FC = () => {
-  const { clients } = useClients();
+  const { activeClients } = useClients();
   const [search, setSearch] = useState('');
   const [breedFilter, setBreedFilter] = useState('all');
   const [generating, setGenerating] = useState(false);
 
   const breeds = useMemo(() => {
-    const set = new Set(clients.map(c => c.breed).filter(Boolean));
+    const set = new Set(activeClients.map(c => c.breed).filter(Boolean));
     return Array.from(set).sort();
-  }, [clients]);
+  }, [activeClients]);
 
   const filtered = useMemo(() => {
-    let list = [...clients];
+    let list = [...activeClients];
     if (search) {
       const s = search.toLowerCase();
       list = list.filter(c => c.name.toLowerCase().includes(s) || c.tutorName.toLowerCase().includes(s));
@@ -360,7 +360,7 @@ const DogIdCard: React.FC = () => {
       list = list.filter(c => c.breed === breedFilter);
     }
     return list;
-  }, [clients, search, breedFilter]);
+  }, [activeClients, search, breedFilter]);
 
   const qrValue = (client: Client) =>
     `Tutor: ${client.tutorName}\nDog: ${client.name}\nRaça: ${client.breed || 'N/A'}`;
@@ -451,7 +451,7 @@ const DogIdCard: React.FC = () => {
             <SelectValue placeholder="Raça" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todas ({clients.length})</SelectItem>
+            <SelectItem value="all">Todas ({activeClients.length})</SelectItem>
             {breeds.map(b => (
               <SelectItem key={b} value={b!}>{b}</SelectItem>
             ))}

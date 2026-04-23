@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/select';
 
 const QrGenerator: React.FC = () => {
-  const { clients } = useClients();
+  const { activeClients } = useClients();
   const [mode, setMode] = useState<'client' | 'manual'>('client');
   const [selectedClientId, setSelectedClientId] = useState('');
   const [manualTutor, setManualTutor] = useState('');
@@ -22,7 +22,7 @@ const QrGenerator: React.FC = () => {
   const [generated, setGenerated] = useState<{ tutor: string; dog: string; breed: string } | null>(null);
   const qrRef = useRef<HTMLDivElement>(null);
 
-  const selectedClient = clients.find(c => c.id === selectedClientId);
+  const selectedClient = activeClients.find(c => c.id === selectedClientId);
 
   const handleGenerate = () => {
     if (mode === 'client' && selectedClient) {
@@ -88,7 +88,7 @@ const QrGenerator: React.FC = () => {
           <Select value={selectedClientId} onValueChange={setSelectedClientId}>
             <SelectTrigger><SelectValue placeholder="Escolha um pet..." /></SelectTrigger>
             <SelectContent>
-              {clients.map(c => (
+              {activeClients.map(c => (
                 <SelectItem key={c.id} value={c.id}>
                   {c.name} — {c.tutorName}
                 </SelectItem>

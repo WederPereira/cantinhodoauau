@@ -24,7 +24,7 @@ interface TodayEntry {
 }
 
 const DaycarePresence: React.FC = () => {
-  const { clients } = useClients();
+  const { activeClients } = useClients();
   const [entries, setEntries] = useState<TodayEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -213,7 +213,7 @@ const DaycarePresence: React.FC = () => {
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {filteredEntries.map((entry, idx) => {
-            const client = clients.find(c => c.name === entry.dog && c.tutorName === entry.tutor) || clients.find(c => c.name === entry.dog);
+            const client = activeClients.find(c => c.name === entry.dog && c.tutorName === entry.tutor) || activeClients.find(c => c.name === entry.dog);
             return (
               <div
                 key={entry.id}

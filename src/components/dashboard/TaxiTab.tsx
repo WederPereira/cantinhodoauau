@@ -58,7 +58,7 @@ const saveTaxiList = (list: TaxiEntry[]) => {
 };
 
 const TaxiTab: React.FC = () => {
-  const { clients } = useClients();
+  const { activeClients } = useClients();
   const [taxiList, setTaxiList] = useState<TaxiEntry[]>(loadTaxiList);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDirection, setSelectedDirection] = useState<TaxiDirection>('ida_volta');
@@ -111,8 +111,8 @@ const TaxiTab: React.FC = () => {
 
   const availableClients = useMemo(() => {
     const usedIds = new Set(taxiList.map(e => e.clientId));
-    return clients.filter(c => !usedIds.has(c.id));
-  }, [clients, taxiList]);
+    return activeClients.filter(c => !usedIds.has(c.id));
+  }, [activeClients, taxiList]);
 
   const filteredClients = useMemo(() => {
     if (!searchQuery.trim()) return availableClients;
@@ -128,7 +128,7 @@ const TaxiTab: React.FC = () => {
   }, [taxiList, filter]);
 
   const handleAdd = (clientId: string) => {
-    const client = clients.find(c => c.id === clientId);
+    const client = activeClients.find(c => c.id === clientId);
     if (!client) return;
     const entry: TaxiEntry = {
       id: crypto.randomUUID(),

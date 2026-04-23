@@ -57,7 +57,7 @@ const getMedTypeLabel = (type: string) => MEDICATION_TYPES.find(t => t.value ===
 const getMedTypeIcon = (type: string) => MEDICATION_TYPES.find(t => t.value === type)?.icon || '💊';
 
 const MedicationTab: React.FC = () => {
-  const { clients } = useClients();
+  const { activeClients } = useClients();
   const [meds, setMeds] = useState<MedItem[]>([]);
   const [now, setNow] = useState(new Date());
   const [search, setSearch] = useState('');
@@ -97,7 +97,8 @@ const MedicationTab: React.FC = () => {
       const activeStaysList = activeStaysFetch.data || [];
       setActiveStays(activeStaysList.map((s: any) => ({ id: s.id, dog_name: s.dog_name, tutor_name: s.tutor_name, client_id: s.client_id })));
       const stayMap = new Map(staysList.map((s: any) => [s.id, s.dog_name]));
-      const clientMap = new Map(clients.map(c => [c.id, c.name]));
+      const activeClientIds = new Set(activeClients.map(c => c.id));
+      const clientMap = new Map(activeClients.map(c => [c.id, c.name]));
 
       // Fetch ALL medications (hotel + standalone)
       const { data: allMeds } = await supabase
@@ -105,26 +106,28 @@ const MedicationTab: React.FC = () => {
         .select('*')
         .order('scheduled_time', { ascending: true });
 
-      const items: MedItem[] = (allMeds || []).map((m: any) => ({
-        id: m.id,
-        medication_name: m.medication_name,
-        medication_type: m.medication_type || 'comprimido',
-        scheduled_time: m.scheduled_time,
-        administered: m.administered,
-        administered_at: m.administered_at || null,
-        recurrence: m.recurrence || 'once',
-        notes: m.notes || '',
-        dog_name: m.hotel_stay_id ? (stayMap.get(m.hotel_stay_id) || 'Dog') : (m.client_id ? (clientMap.get(m.client_id) || 'Dog') : 'Dog'),
-        source: m.hotel_stay_id ? 'hotel' : 'standalone',
-        stay_id: m.hotel_stay_id || '',
-        client_id: m.client_id || null,
-      }));
+      const items: MedItem[] = (allMeds || [])
+        .filter((m: any) => !m.client_id || activeClientIds.has(m.client_id))
+        .map((m: any) => ({
+          id: m.id,
+          medication_name: m.medication_name,
+          medication_type: m.medication_type || 'comprimido',
+          scheduled_time: m.scheduled_time,
+          administered: m.administered,
+          administered_at: m.administered_at || null,
+          recurrence: m.recurrence || 'once',
+          notes: m.notes || '',
+          dog_name: m.hotel_stay_id ? (stayMap.get(m.hotel_stay_id) || 'Dog') : (m.client_id ? (clientMap.get(m.client_id) || 'Dog') : 'Dog'),
+          source: m.hotel_stay_id ? 'hotel' : 'standalone',
+          stay_id: m.hotel_stay_id || '',
+          client_id: m.client_id || null,
+        }));
 
       setMeds(items);
     } catch (err) {
       console.error(err);
     }
-  }, [clients]);
+  }, [activeClients]);
 
   // Fetch daycare dogs for today
   const fetchDaycareDogs = useCallback(async () => {
@@ -311,7 +314,7 @@ const MedicationTab: React.FC = () => {
   const upcoming = pending.filter(isUpcoming);
 
   // For the add dialog: show all registered dogs, not just hotel stays
-  const allDogs = clients.map(c => {
+  const allDogs = activeClients.map(c => {
     const hotelStay = activeStays.find(s => s.client_id === c.id);
     const isDaycare = daycareDogNames.has(c.name.toLowerCase());
     return {
@@ -529,7 +532,7 @@ const MedicationTab: React.FC = () => {
                   </div>
                   {/* Daycare warning */}
                   {selectedClientId && (() => {
-                    const dog = clients.find(c => c.id === selectedClientId);
+                    const dog = activeClients.find(c => c.id === selectedClientId);
                     if (dog && daycareDogNames.has(dog.name.toLowerCase())) {
                       return (
                         <div className="mt-2 p-2 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-300 text-amber-700 dark:text-amber-400 text-xs flex items-center gap-2">
