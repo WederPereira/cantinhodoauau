@@ -183,7 +183,8 @@ const AccountPage = () => {
           variant="outline"
           className="w-full"
           onClick={async () => {
-            toast.loading("Atualizando...", { id: "update" });
+            toast.loading("Buscando versão mais recente...", { id: "update" });
+
             if ("serviceWorker" in navigator) {
               const registrations = await navigator.serviceWorker.getRegistrations();
               for (const reg of registrations) {
@@ -193,13 +194,16 @@ const AccountPage = () => {
                 }
               }
             }
-            // Clear caches
+
             if ("caches" in window) {
               const names = await caches.keys();
-              await Promise.all(names.map((n) => caches.delete(n)));
+              await Promise.all(names.map((name) => caches.delete(name)));
             }
-            toast.success("App atualizado! Recarregando...", { id: "update" });
-            setTimeout(() => window.location.reload(), 1000);
+
+            toast.success("Versão mais recente carregando...", { id: "update" });
+            const url = new URL(window.location.href);
+            url.searchParams.set("refresh", Date.now().toString());
+            setTimeout(() => window.location.replace(url.toString()), 500);
           }}
         >
           <RefreshCw className="mr-2 w-4 h-4" /> Atualizar App
