@@ -26,6 +26,7 @@ interface TodayEntry {
 const DaycarePresence: React.FC = () => {
   const { activeClients } = useClients();
   const [entries, setEntries] = useState<TodayEntry[]>([]);
+  const [hotelCount, setHotelCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'ate' | 'not_ate'>('all');
@@ -39,27 +40,32 @@ const DaycarePresence: React.FC = () => {
       const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
       const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
 
-      const { data: qrData, error: qrError } = await supabase
-        .from('qr_entries')
-        .select('*')
-        .gte('data_hora', startOfDay.toISOString())
-        .lte('data_hora', endOfDay.toISOString())
-        .order('data_hora', { ascending: true });
+      const [qrRes, recRes, hotelRes] = await Promise.all([
+        supabase
+          .from('qr_entries')
+          .select('*')
+          .gte('data_hora', startOfDay.toISOString())
+          .lte('data_hora', endOfDay.toISOString())
+          .order('data_hora', { ascending: true }),
+        supabase
+          .from('daily_records')
+          .select('*')
+          .eq('date', today),
+        supabase
+          .from('hotel_stays')
+          .select('id', { count: 'exact', head: true })
+          .eq('active', true),
+      ]);
 
-      if (qrError) throw qrError;
-
-      const { data: records, error: recError } = await supabase
-        .from('daily_records')
-        .select('*')
-        .eq('date', today);
-
-      if (recError) throw recError;
+      if (qrRes.error) throw qrRes.error;
+      if (recRes.error) throw recRes.error;
+      if (hotelRes.error) throw hotelRes.error;
 
       const recordMap = new Map(
-        (records || []).map((r: any) => [r.qr_entry_id, r])
+        (recRes.data || []).map((r: any) => [r.qr_entry_id, r])
       );
 
-      const mapped: TodayEntry[] = (qrData || []).map((qr: any) => {
+      const mapped: TodayEntry[] = (qrRes.data || []).map((qr: any) => {
         const record = recordMap.get(qr.id) as any;
         return {
           id: qr.id,
@@ -74,6 +80,7 @@ const DaycarePresence: React.FC = () => {
       });
 
       setEntries(mapped);
+      setHotelCount(hotelRes.count || 0);
     } catch (err) {
       console.error(err);
       toast.error('Erro ao carregar entradas do dia');
@@ -88,6 +95,7 @@ const DaycarePresence: React.FC = () => {
       .channel('daycare-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'qr_entries' }, () => fetchEntries())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_records' }, () => fetchEntries())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'hotel_stays' }, () => fetchEntries())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [fetchEntries]);
@@ -163,8 +171,11 @@ const DaycarePresence: React.FC = () => {
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-card border border-border rounded-xl p-3 text-center shadow-soft">
           <Dog size={18} className="mx-auto text-primary mb-1" />
-          <p className="text-2xl font-bold text-foreground">{entries.length}</p>
+          <p className="text-2xl font-bold text-foreground">{entries.length + hotelCount}</p>
           <p className="text-[10px] text-muted-foreground">Presentes</p>
+          <p className="text-[9px] text-muted-foreground/70 mt-0.5">
+            {entries.length} creche · {hotelCount} hotel
+          </p>
         </div>
         <div className="bg-card border border-border rounded-xl p-3 text-center shadow-soft">
           <Utensils size={18} className="mx-auto text-green-600 mb-1" />
