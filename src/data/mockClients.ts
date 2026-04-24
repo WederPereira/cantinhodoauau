@@ -1,6 +1,6 @@
 import { Client, DEFAULT_VACCINES } from '@/types/client';
 
-export const mockClients: Client[] = [
+const mockClientsBase: Omit<Client, 'isActive'>[] = [
   {
     id: '519e638a-7780-4d18-b303-121e1c5a5261',
     tutorName: "Mariana Meireles Amaral",
@@ -3065,3 +3065,8 @@ export const mockClients: Client[] = [
     updatedAt: new Date(),
   },
 ];
+
+export const mockClients: Client[] = mockClientsBase.map((client) => ({
+  ...client,
+  isActive: true,
+}));

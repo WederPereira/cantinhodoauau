@@ -6,6 +6,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const getErrorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : String(error);
+
 const TABLES = [
   "clients",
   "vaccine_records",
@@ -162,7 +165,7 @@ Deno.serve(async (req) => {
   } catch (e) {
     console.error("Backup failed:", e);
     return new Response(
-      JSON.stringify({ ok: false, error: String(e?.message || e) }),
+      JSON.stringify({ ok: false, error: getErrorMessage(e) }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
