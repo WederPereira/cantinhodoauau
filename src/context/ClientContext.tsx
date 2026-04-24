@@ -154,7 +154,6 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       breed: data.breed,
       pet_size: data.petSize || null,
       photo: data.photo || null,
-      vaccines: (data.vaccines || DEFAULT_VACCINES) as any,
       entry_date: (data.entryDate || new Date()).toISOString(),
       birth_date: data.birthDate?.toISOString() || null,
       gender: data.gender || null,
