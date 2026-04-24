@@ -170,8 +170,11 @@ const DaycarePresence: React.FC = () => {
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-card border border-border rounded-xl p-3 text-center shadow-soft">
           <Dog size={18} className="mx-auto text-primary mb-1" />
-          <p className="text-2xl font-bold text-foreground">{entries.length}</p>
+          <p className="text-2xl font-bold text-foreground">{entries.length + hotelCount}</p>
           <p className="text-[10px] text-muted-foreground">Presentes</p>
+          <p className="text-[9px] text-muted-foreground/70 mt-0.5">
+            {entries.length} creche · {hotelCount} hotel
+          </p>
         </div>
         <div className="bg-card border border-border rounded-xl p-3 text-center shadow-soft">
           <Utensils size={18} className="mx-auto text-green-600 mb-1" />
