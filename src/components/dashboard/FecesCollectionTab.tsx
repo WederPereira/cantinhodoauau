@@ -23,7 +23,7 @@ interface FecesCollection {
 }
 
 const FecesCollectionTab: React.FC = () => {
-  const { clients: allClients, activeClients } = useClients();
+  const { clients, activeClients } = useClients();
   const { session } = useAuth();
   const [collections, setCollections] = useState<FecesCollection[]>([]);
   const [currentMonth, setCurrentMonth] = useState(() => startOfMonth(new Date()));

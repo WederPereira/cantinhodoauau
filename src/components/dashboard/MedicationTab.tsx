@@ -57,7 +57,7 @@ const getMedTypeLabel = (type: string) => MEDICATION_TYPES.find(t => t.value ===
 const getMedTypeIcon = (type: string) => MEDICATION_TYPES.find(t => t.value === type)?.icon || '💊';
 
 const MedicationTab: React.FC = () => {
-  const { clients: allClients, activeClients } = useClients();
+  const { clients, activeClients } = useClients();
   const [meds, setMeds] = useState<MedItem[]>([]);
   const [now, setNow] = useState(new Date());
   const [search, setSearch] = useState('');
@@ -336,7 +336,7 @@ const MedicationTab: React.FC = () => {
 
   const renderMedCard = (med: MedItem, variant: 'overdue' | 'past' | 'upcoming') => {
     const countdown = getCountdown(med);
-    const client = allClients.find(c => c.id === activeStays.find(s => s.id === med.stay_id)?.client_id);
+    const client = clients.find(c => c.id === activeStays.find(s => s.id === med.stay_id)?.client_id);
     const borderColors = {
       overdue: 'border-destructive/60 bg-destructive/5',
       past: 'border-amber-400/60 bg-amber-50/30 dark:bg-amber-950/10',

@@ -625,7 +625,7 @@ const PrintableList: React.FC<{ data: ClientHealthInfo[]; category: 'vaccines' |
 // ── Main Component ────────────────────────────────────────
 
 export const HealthControlTab: React.FC = () => {
-  const { clients: allClients, activeClients, addVaccineRecord, addFleaRecord } = useClients();
+  const { clients, activeClients, addVaccineRecord, addFleaRecord } = useClients();
   const { isAdmin } = useUserRole();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'expired' | 'expiring' | 'ok'>('all');
@@ -672,7 +672,7 @@ export const HealthControlTab: React.FC = () => {
 
       return { client, vaccines, flea, worstStatus };
     });
-  }, [allClients]);
+  }, [clients]);
 
   const vaccineStats = useMemo(() => {
     let expired = 0, expiring = 0, ok = 0;
@@ -844,7 +844,7 @@ export const HealthControlTab: React.FC = () => {
       {category === 'feces' ? (
         <FecesCollectionTab />
       ) : category === 'restrictions' ? (
-        <RestrictionsSection clients={allClients} />
+        <RestrictionsSection clients={clients} />
       ) : (
       <>
       {/* Stats */}

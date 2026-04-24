@@ -20,7 +20,7 @@ import * as XLSX from 'xlsx';
 const VACCINE_KEYS = Object.keys(VACCINE_LABELS) as Array<keyof Vaccines>;
 
 const SpreadsheetPage: React.FC = () => {
-  const { clients: allClients, activeClients, updateClient, deleteClient, importClients } = useClients();
+  const { clients, activeClients, updateClient, deleteClient, importClients } = useClients();
   const { maskCpf, maskPhone, maskEmail, maskAddress, canSeeSensitive } = useSensitiveData();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -153,7 +153,7 @@ const SpreadsheetPage: React.FC = () => {
       const name = findCol(row, 'dog', 'nome do dog', 'nome do pet', 'nome');
       if (!name) continue;
       const tutorName = findCol(row, 'tutor');
-      const isDuplicate = allClients.some(c =>
+      const isDuplicate = clients.some(c =>
         c.name.toLowerCase() === name.toLowerCase() &&
         (!tutorName || !c.tutorName || c.tutorName.toLowerCase() === tutorName.toLowerCase())
       );
@@ -174,7 +174,7 @@ const SpreadsheetPage: React.FC = () => {
       const weightStr = findCol(row, 'peso');
       const weight = weightStr ? parseFloat(weightStr.replace(',', '.')) : undefined;
 
-      const existingTutor = tutorName ? allClients.find(c => c.tutorName.toLowerCase() === tutorName.toLowerCase()) : null;
+      const existingTutor = tutorName ? clients.find(c => c.tutorName.toLowerCase() === tutorName.toLowerCase()) : null;
 
       const newClient: any = {
         name,
