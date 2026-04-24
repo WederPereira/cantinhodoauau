@@ -21,7 +21,6 @@ interface QrEntry {
 }
 
 const FrequencyAnalytics: React.FC = () => {
-  const { activeClients } = useClients();
   const [entries, setEntries] = useState<QrEntry[]>([]);
   const [dailyRecords, setDailyRecords] = useState<Array<{ dog: string; date: string; ate: boolean }>>([]);
   const [loading, setLoading] = useState(true);
@@ -41,19 +40,9 @@ const FrequencyAnalytics: React.FC = () => {
     fetchEntries();
   }, []);
 
-  const filteredEntries = useMemo(() => {
-    const activeIds = new Set(activeClients.map(c => c.id));
-    // Since qr_entries might not have client_id, we match by name+tutor if needed, 
-    // but the qr_entries table SHOULD have client_id if updated. 
-    // Let's check if it has client_id. (Assuming it does or we match by name)
-    // Actually, looking at the type QrEntry, it doesn't have client_id. 
-    // We'll match by dog name and tutor name if possible.
-    return entries.filter(e => activeClients.some(c => c.name === e.dog && c.tutorName === e.tutor));
-  }, [entries, activeClients]);
-
   const topDogs = useMemo(() => {
     const freq: Record<string, { dog: string; raca: string; count: number }> = {};
-    filteredEntries.forEach(e => {
+    entries.forEach(e => {
       const key = `${e.dog}||${e.raca || ''}`;
       if (!freq[key]) freq[key] = { dog: e.dog, raca: e.raca || '', count: 0 };
       freq[key].count++;
@@ -66,15 +55,15 @@ const FrequencyAnalytics: React.FC = () => {
 
   const dayOfWeekData = useMemo(() => {
     const freq = [0, 0, 0, 0, 0, 0, 0];
-    filteredEntries.forEach(e => { freq[getDay(new Date(e.data_hora))]++; });
+    entries.forEach(e => { freq[getDay(new Date(e.data_hora))]++; });
     return DAY_NAMES.map((name, i) => ({ day: name, entradas: freq[i] }));
   }, [entries]);
 
   const entriesForSelectedDate = useMemo(() => {
     if (!selectedDate) return [];
     const dayStart = startOfDay(selectedDate);
-    return filteredEntries.filter(e => startOfDay(new Date(e.data_hora)).getTime() === dayStart.getTime());
-  }, [filteredEntries, selectedDate]);
+    return entries.filter(e => startOfDay(new Date(e.data_hora)).getTime() === dayStart.getTime());
+  }, [entries, selectedDate]);
 
   const selectedDateSummary = useMemo(() => {
     const freq: Record<string, { dog: string; raca: string; count: number }> = {};
@@ -90,9 +79,9 @@ const FrequencyAnalytics: React.FC = () => {
 
   const datesWithEntries = useMemo(() => {
     const set = new Set<string>();
-    filteredEntries.forEach(e => set.add(format(new Date(e.data_hora), 'yyyy-MM-dd')));
+    entries.forEach(e => set.add(format(new Date(e.data_hora), 'yyyy-MM-dd')));
     return set;
-  }, [filteredEntries]);
+  }, [entries]);
 
   const copySelectedDateDogs = () => {
     if (selectedDateSummary.length === 0) return;

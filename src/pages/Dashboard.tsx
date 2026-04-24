@@ -46,7 +46,7 @@ const prefetchTabModules = () => {
 };
 
 const Dashboard: React.FC = () => {
-  const { clients, activeClients, getClientById } = useClients();
+  const { clients, getClientById } = useClients();
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
@@ -61,19 +61,12 @@ const Dashboard: React.FC = () => {
         supabase.from('qr_entries').select('dog,tutor').gte('data_hora', `${today}T00:00:00`).lte('data_hora', `${today}T23:59:59`),
         supabase.from('hotel_stays').select('id').eq('active', true),
       ]);
-      const uniqueDaycare = (qrToday || []).filter((q: any) => 
-        activeClients.some(c => c.name === q.dog && c.tutorName === q.tutor)
-      ).map((q: any) => `${q.dog}|${q.tutor}`);
-      
-      const activeStayCount = (stays || []).filter((s: any) => 
-        activeClients.some(c => c.id === s.client_id)
-      ).length;
-
-      setPresence({ daycare: new Set(uniqueDaycare).size, hotel: activeStayCount });
+      const uniqueDaycare = new Set((qrToday || []).map((q: any) => `${q.dog}|${q.tutor}`));
+      setPresence({ daycare: uniqueDaycare.size, hotel: (stays || []).length });
     } catch (err) {
       console.error(err);
     }
-  }, [activeClients]);
+  }, []);
 
   useEffect(() => {
     prefetchTabModules();
@@ -97,7 +90,7 @@ const Dashboard: React.FC = () => {
     };
   }, [fetchPresence]);
 
-  const healthAlerts = useMemo(() => getHealthAlerts(activeClients), [activeClients]);
+  const healthAlerts = useMemo(() => getHealthAlerts(clients), [clients]);
 
   const handleClientClick = (client: Client) => {
     setSelectedClientId(client.id);
@@ -244,7 +237,7 @@ const Dashboard: React.FC = () => {
                     <Users size={13} className="text-primary" strokeWidth={2.2} />
                   </div>
                 </div>
-                <p className="text-3xl font-bold text-foreground">{activeClients.length}</p>
+                <p className="text-3xl font-bold text-foreground">{clients.length}</p>
                 <p className="text-[10px] text-muted-foreground mt-0.5">cadastrados</p>
               </div>
               <div className="group bg-card/80 backdrop-blur-sm border border-border/70 rounded-2xl p-4 transition-all hover:border-destructive/40 hover:shadow-md">
@@ -263,7 +256,7 @@ const Dashboard: React.FC = () => {
               <HotelFeedingAlerts />
               <HotelCheckoutAlerts />
               <HealthAlerts alerts={healthAlerts} onClientClick={handleAlertClientClick} />
-              <BirthdaySection clients={activeClients} onClientClick={handleClientClick} />
+              <BirthdaySection clients={clients} onClientClick={handleClientClick} />
             </Suspense>
           </TabsContent>
 

@@ -6,7 +6,6 @@ import { toast } from 'sonner';
 
 interface ClientContextType {
   clients: Client[];
-  activeClients: Client[];
   loading: boolean;
   addClient: (data: {
     tutorName: string;
@@ -81,12 +80,7 @@ const dbRowToClient = (row: any, vaccineRecords: any[] = [], fleaRecords: any[] 
 
 export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [clients, setClients] = useState<Client[]>([]);
-  const [activeClients, setActiveClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    setActiveClients(clients.filter(c => c.isActive !== false));
-  }, [clients]);
 
   const fetchClients = useCallback(async () => {
     try {
@@ -403,7 +397,6 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     <ClientContext.Provider
       value={{
         clients,
-        activeClients,
         loading,
         addClient,
         importClients,

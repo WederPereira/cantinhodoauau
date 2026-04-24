@@ -23,7 +23,7 @@ interface FecesCollection {
 }
 
 const FecesCollectionTab: React.FC = () => {
-  const { activeClients } = useClients();
+  const { clients } = useClients();
   const { session } = useAuth();
   const [collections, setCollections] = useState<FecesCollection[]>([]);
   const [currentMonth, setCurrentMonth] = useState(() => startOfMonth(new Date()));
@@ -60,7 +60,7 @@ const FecesCollectionTab: React.FC = () => {
   }, [collections]);
 
   const filteredClients = useMemo(() => {
-    let list = [...activeClients];
+    let list = [...clients];
     if (search) {
       const s = search.toLowerCase();
       list = list.filter(c => c.name.toLowerCase().includes(s) || c.tutorName.toLowerCase().includes(s));
@@ -82,8 +82,8 @@ const FecesCollectionTab: React.FC = () => {
   }, [clients, search, collectedMap, viewTab]);
 
   const collectedCount = useMemo(() => {
-    return activeClients.filter(c => collectedMap.get(c.id)?.collected).length;
-  }, [activeClients, collectedMap]);
+    return clients.filter(c => collectedMap.get(c.id)?.collected).length;
+  }, [clients, collectedMap]);
 
   const handleToggleCollected = async (clientId: string) => {
     if (!session?.user) return;
@@ -135,11 +135,11 @@ const FecesCollectionTab: React.FC = () => {
           <p className="text-[10px] text-muted-foreground">Coletados</p>
         </div>
         <div className="flex-1 bg-muted/50 border border-border rounded-xl p-3 text-center">
-          <p className="text-xl font-bold text-foreground">{activeClients.length - collectedCount}</p>
+          <p className="text-xl font-bold text-foreground">{clients.length - collectedCount}</p>
           <p className="text-[10px] text-muted-foreground">Pendentes</p>
         </div>
         <div className="flex-1 bg-primary/5 border border-primary/20 rounded-xl p-3 text-center">
-          <p className="text-xl font-bold text-primary">{activeClients.length}</p>
+          <p className="text-xl font-bold text-primary">{clients.length}</p>
           <p className="text-[10px] text-muted-foreground">Total</p>
         </div>
       </div>
@@ -152,7 +152,7 @@ const FecesCollectionTab: React.FC = () => {
           className="flex-1 gap-1 text-xs"
           onClick={() => setViewTab('pending')}
         >
-          <Circle size={12} /> Pendentes ({activeClients.length - collectedCount})
+          <Circle size={12} /> Pendentes ({clients.length - collectedCount})
         </Button>
         <Button
           variant={viewTab === 'collected' ? 'default' : 'outline'}

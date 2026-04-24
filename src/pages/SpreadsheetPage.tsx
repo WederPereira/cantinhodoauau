@@ -20,7 +20,7 @@ import * as XLSX from 'xlsx';
 const VACCINE_KEYS = Object.keys(VACCINE_LABELS) as Array<keyof Vaccines>;
 
 const SpreadsheetPage: React.FC = () => {
-  const { activeClients, updateClient, deleteClient, importClients } = useClients();
+  const { clients, updateClient, deleteClient, importClients } = useClients();
   const { maskCpf, maskPhone, maskEmail, maskAddress, canSeeSensitive } = useSensitiveData();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -72,7 +72,7 @@ const SpreadsheetPage: React.FC = () => {
 
   const generateAllQrCodes = useCallback(async () => {
     setGeneratingAll(true);
-    const toGenerate = activeClients.filter(c => !generatedQrIds.has(c.id));
+    const toGenerate = clients.filter(c => !generatedQrIds.has(c.id));
     if (toGenerate.length === 0) { toast.info('Todos os QR Codes já foram gerados!'); setGeneratingAll(false); return; }
     let count = 0;
     for (const client of toGenerate) {
@@ -82,9 +82,9 @@ const SpreadsheetPage: React.FC = () => {
     }
     toast.success(`${count} QR Code(s) baixado(s)!`);
     setGeneratingAll(false);
-  }, [activeClients, generatedQrIds, downloadQrForClient]);
+  }, [clients, generatedQrIds, downloadQrForClient]);
 
-  const filteredClients = activeClients.filter((client) =>
+  const filteredClients = clients.filter((client) =>
     client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (client.tutorName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
     (client.breed || '').toLowerCase().includes(searchQuery.toLowerCase())
@@ -92,7 +92,7 @@ const SpreadsheetPage: React.FC = () => {
 
   const exportToCSV = () => {
     const headers = ['Tutor', 'Telefone', 'Email', 'CPF', 'Endereço', 'Dog', 'Raça', 'Peso (kg)', 'Porte', 'Gênero', 'Castrado', 'Nascimento', 'Entrada', ...VACCINE_KEYS.map(k => VACCINE_LABELS[k])];
-    const rows = activeClients.map(client => {
+    const rows = clients.map(client => {
       const fleaInfo = client.fleaHistory?.length > 0 ? client.fleaHistory[0].brand : '';
       return [
         client.tutorName || '', client.tutorPhone || '', client.tutorEmail || '',
@@ -368,7 +368,7 @@ const SpreadsheetPage: React.FC = () => {
           <div className="flex items-center gap-2 min-w-0">
             <FileSpreadsheet className="text-primary shrink-0" size={20} />
             <h1 className="text-base font-bold text-foreground truncate">Planilha</h1>
-            <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full shrink-0">{activeClients.length}</span>
+            <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full shrink-0">{clients.length}</span>
           </div>
           <div className="flex gap-1.5 shrink-0">
             {selectedIds.size > 0 && (
@@ -378,7 +378,7 @@ const SpreadsheetPage: React.FC = () => {
             )}
             <Button variant="outline" size="sm" className="gap-1 h-7 text-[10px] px-2" onClick={generateAllQrCodes} disabled={generatingAll}>
               <QrCode size={12} />
-              <span className="hidden sm:inline">{generatingAll ? 'Gerando...' : `QR (${activeClients.filter(c => !generatedQrIds.has(c.id)).length})`}</span>
+              <span className="hidden sm:inline">{generatingAll ? 'Gerando...' : `QR (${clients.filter(c => !generatedQrIds.has(c.id)).length})`}</span>
             </Button>
             {canSeeSensitive && (
               <>

@@ -83,7 +83,7 @@ const getMealForCurrentTime = () => {
 };
 
 const HotelTab: React.FC = () => {
-  const { activeClients } = useClients();
+  const { clients } = useClients();
   const [stays, setStays] = useState<HotelStay[]>([]);
   const [allStays, setAllStays] = useState<HotelStay[]>([]);
   const [medications, setMedications] = useState<Medication[]>([]);
@@ -149,19 +149,18 @@ const HotelTab: React.FC = () => {
         mealsData = ml || [];
       }
 
-      const activeClientIds = new Set(activeClients.map(c => c.id));
-      setStays((staysData || []).filter((s: any) => activeClientIds.has(s.client_id)).map((s: any) => ({ ...s, belonging_labels: s.belonging_labels || {} })));
-      setAllStays((allData || []).filter((s: any) => activeClientIds.has(s.client_id)).map((s: any) => ({ ...s, belonging_labels: s.belonging_labels || {} })));
+      setStays((staysData || []).map((s: any) => ({ ...s, belonging_labels: s.belonging_labels || {} })));
+      setAllStays((allData || []).map((s: any) => ({ ...s, belonging_labels: s.belonging_labels || {} })));
       setMedications(medsData);
       setMeals(mealsData);
-      setRecentCheckouts((recentCO || []).filter((s: any) => activeClientIds.has(s.client_id)).map((s: any) => ({ ...s, belonging_labels: s.belonging_labels || {} })));
+      setRecentCheckouts((recentCO || []).map((s: any) => ({ ...s, belonging_labels: s.belonging_labels || {} })));
     } catch (err) {
       console.error(err);
       toast.error('Erro ao carregar dados do hotel');
     } finally {
       setLoading(false);
     }
-  }, [activeClients]);
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -196,10 +195,10 @@ const HotelTab: React.FC = () => {
   }, [medications, stays]);
 
   const filteredClients = useMemo(() => {
-    if (!searchFilter) return activeClients;
+    if (!searchFilter) return clients;
     const q = searchFilter.toLowerCase();
-    return activeClients.filter(c => c.name.toLowerCase().includes(q) || c.breed.toLowerCase().includes(q) || c.tutorName.toLowerCase().includes(q));
-  }, [activeClients, searchFilter]);
+    return clients.filter(c => c.name.toLowerCase().includes(q) || c.breed.toLowerCase().includes(q) || c.tutorName.toLowerCase().includes(q));
+  }, [clients, searchFilter]);
 
   const filteredActiveStays = useMemo(() => {
     if (!activeSearch) return stays;
@@ -235,7 +234,7 @@ const HotelTab: React.FC = () => {
 
   const handleAddStay = async () => {
     if (!selectedClientId) { toast.error('Selecione um dog'); return; }
-    const client = activeClients.find(c => c.id === selectedClientId);
+    const client = clients.find(c => c.id === selectedClientId);
     if (!client) return;
     try {
       const { error } = await supabase.from('hotel_stays').insert({
@@ -689,7 +688,7 @@ const HotelTab: React.FC = () => {
                 const today = format(new Date(), 'yyyy-MM-dd');
                 const dateStr = format(new Date(), 'dd/MM/yyyy');
                 const lines = filteredActiveStays.map((s, idx) => {
-                  const client = activeClients.find(c => c.id === s.client_id);
+                  const client = clients.find(c => c.id === s.client_id);
                   const breed = client?.breed || s.dog_name;
                   const todayMeals = getMealsForStay(s.id).filter(m => m.date === today && m.ate !== null);
                   let status = '📋 Sem registro';
