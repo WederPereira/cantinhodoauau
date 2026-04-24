@@ -53,7 +53,7 @@ const DaycarePresence: React.FC = () => {
           .eq('date', today),
         supabase
           .from('hotel_stays')
-          .select('id', { count: 'exact', head: true })
+          .select('id')
           .eq('active', true),
       ]);
 
@@ -80,7 +80,7 @@ const DaycarePresence: React.FC = () => {
       });
 
       setEntries(mapped);
-      setHotelCount(hotelRes.count || 0);
+      setHotelCount((hotelRes.data || []).length);
     } catch (err) {
       console.error(err);
       toast.error('Erro ao carregar entradas do dia');
