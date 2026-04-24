@@ -95,6 +95,7 @@ const DaycarePresence: React.FC = () => {
       .channel('daycare-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'qr_entries' }, () => fetchEntries())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_records' }, () => fetchEntries())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'hotel_stays' }, () => fetchEntries())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [fetchEntries]);
