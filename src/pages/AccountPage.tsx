@@ -15,6 +15,7 @@ import ActionHistory from "@/components/account/ActionHistory";
 import WorkTaskManager from "@/components/account/WorkTaskManager";
 import BackupAndReports from "@/components/account/BackupAndReports";
 import ThemeColorPicker from "@/components/account/ThemeColorPicker";
+import NotificationSettings from "@/components/account/NotificationSettings";
 
 const AccountPage = () => {
   const { session, signOut } = useAuth();
@@ -147,6 +148,8 @@ const AccountPage = () => {
       </Card>
 
       <ThemeColorPicker />
+
+      <NotificationSettings />
 
       <Separator />
       <Tabs defaultValue={isAdmin ? "employees" : "tasks"} className="w-full">
