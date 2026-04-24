@@ -46,13 +46,13 @@ const prefetchTabModules = () => {
 };
 
 const Dashboard: React.FC = () => {
-  const { clients: allClients, activeClients, getClientById } = useClients();
+  const { clients, activeClients, getClientById } = useClients();
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
   const [presence, setPresence] = useState({ daycare: 0, hotel: 0 });
 
-  const selectedClient = selectedClientId ? allClients.find(c => c.id === selectedClientId) || null : null;
+  const selectedClient = selectedClientId ? clients.find(c => c.id === selectedClientId) || null : null;
 
   const fetchPresence = useCallback(async () => {
     try {
