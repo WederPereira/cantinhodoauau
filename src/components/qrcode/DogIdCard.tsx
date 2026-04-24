@@ -4,12 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useClients } from '@/context/ClientContext';
 import { toast } from 'sonner';
-import { Download, Search, FileText, Filter, Loader2 } from 'lucide-react';
+import { Download, Search, FileText, Filter, Loader2, CheckCircle2 } from 'lucide-react';
 import { Client } from '@/types/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import logoSrc from '@/assets/logo-cantinho.png';
 import logoFullSrc from '@/assets/logo-cantinho-full.png';
 import jsPDF from 'jspdf';
+import { supabase } from '@/integrations/supabase/client';
+import { startOfDay } from 'date-fns';
+import { logAction } from '@/hooks/useActionLog';
 
 // Foldable ID card dimensions (matches user-provided spec)
 const CARD_W_MM = 55;
@@ -344,6 +347,7 @@ const DogIdCard: React.FC = () => {
   const [search, setSearch] = useState('');
   const [breedFilter, setBreedFilter] = useState('all');
   const [generating, setGenerating] = useState(false);
+  const [savingId, setSavingId] = useState<string | null>(null);
 
   const breeds = useMemo(() => {
     const set = new Set(clients.map(c => c.breed).filter(Boolean));
@@ -364,6 +368,55 @@ const DogIdCard: React.FC = () => {
 
   const qrValue = (client: Client) =>
     `Tutor: ${client.tutorName}\nDog: ${client.name}\nRaça: ${client.breed || 'N/A'}`;
+
+  const checkDuplicateToday = async (dog: string, tutor: string): Promise<boolean> => {
+    const today = startOfDay(new Date());
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const { data, error } = await supabase
+      .from('qr_entries')
+      .select('id')
+      .eq('dog', dog)
+      .eq('tutor', tutor)
+      .gte('data_hora', today.toISOString())
+      .lt('data_hora', tomorrow.toISOString())
+      .limit(1);
+
+    if (error) return false;
+    return (data && data.length > 0);
+  };
+
+  const handleManualEntry = async (client: Client) => {
+    setSavingId(client.id);
+    try {
+      const isDuplicate = await checkDuplicateToday(client.name, client.tutorName);
+      if (isDuplicate) {
+        toast.warning(`⚠️ ${client.name} já foi registrado(a) hoje!`);
+        return;
+      }
+
+      const { error, data: newEntry } = await supabase.from('qr_entries').insert({
+        tutor: client.tutorName,
+        dog: client.name,
+        raca: client.breed || '',
+        data_hora: new Date().toISOString(),
+      }).select('id').single();
+
+      if (error) {
+        toast.error('Erro ao salvar entrada');
+        console.error(error);
+      } else {
+        logAction('qr_read', 'daycare', newEntry?.id, { dog_name: client.name, tutor_name: client.tutorName, raca: client.breed || '' });
+        toast.success(`✅ Entrada manual registrada: ${client.name}`);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Erro na entrada manual');
+    } finally {
+      setSavingId(null);
+    }
+  };
 
   const handleDownloadAllPdf = async () => {
     if (filtered.length === 0) return;
@@ -506,7 +559,10 @@ const DogIdCard: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="flex justify-center gap-2">
+            <div className="flex justify-center gap-2 flex-wrap">
+              <Button variant="default" size="sm" onClick={() => handleManualEntry(client)} disabled={savingId === client.id} className="gap-1 text-xs bg-emerald-600 hover:bg-emerald-700 text-white">
+                {savingId === client.id ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />} Entrada Manual
+              </Button>
               <Button variant="outline" size="sm" onClick={() => handleDownloadPng(client)} className="gap-1 text-xs">
                 <Download size={14} /> PNG (frente+verso)
               </Button>
