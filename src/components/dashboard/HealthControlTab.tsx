@@ -625,7 +625,7 @@ const PrintableList: React.FC<{ data: ClientHealthInfo[]; category: 'vaccines' |
 // ── Main Component ────────────────────────────────────────
 
 export const HealthControlTab: React.FC = () => {
-  const { clients, activeClients, addVaccineRecord, addFleaRecord } = useClients();
+  const { activeClients, addVaccineRecord, addFleaRecord } = useClients();
   const { isAdmin } = useUserRole();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'expired' | 'expiring' | 'ok'>('all');

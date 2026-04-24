@@ -20,7 +20,7 @@ import * as XLSX from 'xlsx';
 const VACCINE_KEYS = Object.keys(VACCINE_LABELS) as Array<keyof Vaccines>;
 
 const SpreadsheetPage: React.FC = () => {
-  const { clients, activeClients, updateClient, deleteClient, importClients } = useClients();
+  const { activeClients, updateClient, deleteClient, importClients } = useClients();
   const { maskCpf, maskPhone, maskEmail, maskAddress, canSeeSensitive } = useSensitiveData();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
