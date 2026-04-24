@@ -26,6 +26,7 @@ interface TodayEntry {
 const DaycarePresence: React.FC = () => {
   const { activeClients } = useClients();
   const [entries, setEntries] = useState<TodayEntry[]>([]);
+  const [hotelCount, setHotelCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'ate' | 'not_ate'>('all');
