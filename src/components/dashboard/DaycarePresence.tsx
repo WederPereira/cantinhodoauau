@@ -80,7 +80,7 @@ const DaycarePresence: React.FC = () => {
       });
 
       setEntries(mapped);
-      setHotelCount(hotelRes.count || 0);
+      setHotelCount((hotelRes.data || []).length);
     } catch (err) {
       console.error(err);
       toast.error('Erro ao carregar entradas do dia');
