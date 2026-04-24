@@ -40,27 +40,32 @@ const DaycarePresence: React.FC = () => {
       const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
       const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
 
-      const { data: qrData, error: qrError } = await supabase
-        .from('qr_entries')
-        .select('*')
-        .gte('data_hora', startOfDay.toISOString())
-        .lte('data_hora', endOfDay.toISOString())
-        .order('data_hora', { ascending: true });
+      const [qrRes, recRes, hotelRes] = await Promise.all([
+        supabase
+          .from('qr_entries')
+          .select('*')
+          .gte('data_hora', startOfDay.toISOString())
+          .lte('data_hora', endOfDay.toISOString())
+          .order('data_hora', { ascending: true }),
+        supabase
+          .from('daily_records')
+          .select('*')
+          .eq('date', today),
+        supabase
+          .from('hotel_stays')
+          .select('id', { count: 'exact', head: true })
+          .eq('active', true),
+      ]);
 
-      if (qrError) throw qrError;
-
-      const { data: records, error: recError } = await supabase
-        .from('daily_records')
-        .select('*')
-        .eq('date', today);
-
-      if (recError) throw recError;
+      if (qrRes.error) throw qrRes.error;
+      if (recRes.error) throw recRes.error;
+      if (hotelRes.error) throw hotelRes.error;
 
       const recordMap = new Map(
-        (records || []).map((r: any) => [r.qr_entry_id, r])
+        (recRes.data || []).map((r: any) => [r.qr_entry_id, r])
       );
 
-      const mapped: TodayEntry[] = (qrData || []).map((qr: any) => {
+      const mapped: TodayEntry[] = (qrRes.data || []).map((qr: any) => {
         const record = recordMap.get(qr.id) as any;
         return {
           id: qr.id,
@@ -75,6 +80,7 @@ const DaycarePresence: React.FC = () => {
       });
 
       setEntries(mapped);
+      setHotelCount(hotelRes.count || 0);
     } catch (err) {
       console.error(err);
       toast.error('Erro ao carregar entradas do dia');
