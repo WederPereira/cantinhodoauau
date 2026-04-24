@@ -165,6 +165,7 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       birth_date: data.birthDate?.toISOString() || null,
       gender: data.gender || null,
       castrated: data.castrated ?? false,
+      vaccines: { ...(data.vaccines || DEFAULT_VACCINES), isActive: data.isActive ?? true } as any,
     } as any).select().single();
 
     if (error) { 

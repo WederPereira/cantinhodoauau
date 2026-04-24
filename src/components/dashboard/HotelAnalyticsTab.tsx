@@ -10,7 +10,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ResponsiveContainer, BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip, Cell } from 'recharts';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { useClients } from '@/context/ClientContext';
 
 interface StayData {
   id: string;
