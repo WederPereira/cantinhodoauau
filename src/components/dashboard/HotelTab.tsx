@@ -83,7 +83,7 @@ const getMealForCurrentTime = () => {
 };
 
 const HotelTab: React.FC = () => {
-  const { clients: allClients, activeClients } = useClients();
+  const { clients, activeClients } = useClients();
   const [stays, setStays] = useState<HotelStay[]>([]);
   const [allStays, setAllStays] = useState<HotelStay[]>([]);
   const [medications, setMedications] = useState<Medication[]>([]);
@@ -743,7 +743,7 @@ const HotelTab: React.FC = () => {
                 const stayMeds = getMedsForStay(stay.id);
                 const stayMeals = getMealsForStay(stay.id);
                 const pendingMeds = stayMeds.filter(m => !m.administered).length;
-                const client = allClients.find(c => c.id === stay.client_id);
+                const client = clients.find(c => c.id === stay.client_id);
                 const stayDays = getStayDays(stay);
                 const totalDays = stayDays.length;
                 const daysElapsed = Math.max(1, differenceInDays(new Date(), new Date(stay.check_in)) + 1);
@@ -866,7 +866,7 @@ const HotelTab: React.FC = () => {
               {sheetStayId && (() => {
                 const stay = stays.find(s => s.id === sheetStayId);
                 if (!stay) return null;
-                const client = allClients.find(c => c.id === stay.client_id);
+                const client = clients.find(c => c.id === stay.client_id);
                 const stayMeals = getMealsForStay(stay.id);
                 const stayMeds = getMedsForStay(stay.id);
                 const stayDays = getStayDays(stay);
@@ -1112,7 +1112,7 @@ const HotelTab: React.FC = () => {
           ) : (
             <div className="space-y-4">
               {stays.filter(s => (s.belongings_photos?.length || 0) > 0).map(stay => {
-                const client = allClients.find(c => c.id === stay.client_id);
+                const client = clients.find(c => c.id === stay.client_id);
                 return (
                   <div key={stay.id} className="bg-card border border-border rounded-2xl overflow-hidden">
                     <div className="flex items-center gap-3 p-3 border-b border-border">
@@ -1179,7 +1179,7 @@ const HotelTab: React.FC = () => {
                         <Badge variant="secondary" className="text-xs">{staysForSelectedDate.length} estadia(s)</Badge>
                         <div className="space-y-2">
                           {staysForSelectedDate.map((s, i) => {
-                            const sc = allClients.find(c => c.id === s.client_id);
+                            const sc = clients.find(c => c.id === s.client_id);
                             return (
                               <div key={s.id} className="flex items-center gap-3 p-2 rounded-xl border border-border bg-muted/30">
                                 {sc?.photo ? (
