@@ -79,7 +79,7 @@ const FecesCollectionTab: React.FC = () => {
     }
 
     return list;
-  }, [clients, search, collectedMap, viewTab]);
+  }, [allClients, search, collectedMap, viewTab]);
 
   const collectedCount = useMemo(() => {
     return activeClients.filter(c => collectedMap.get(c.id)?.collected).length;
