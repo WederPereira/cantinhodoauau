@@ -53,7 +53,7 @@ const DaycarePresence: React.FC = () => {
           .eq('date', today),
         supabase
           .from('hotel_stays')
-          .select('id', { count: 'exact', head: true })
+          .select('id')
           .eq('active', true),
       ]);
 
