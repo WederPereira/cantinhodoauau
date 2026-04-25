@@ -302,7 +302,7 @@ ${taxiContext}
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-[100] flex flex-col items-end gap-4">
+    <div className="fixed bottom-20 lg:bottom-6 right-4 lg:right-6 z-[100] flex flex-col items-end gap-4">
       {/* Chat Window */}
       {isOpen && (
         <Card className="w-[360px] sm:w-[420px] h-[520px] flex flex-col shadow-2xl border-primary/20 animate-in slide-in-from-bottom-4 duration-300 overflow-hidden bg-card/95 backdrop-blur-md">
