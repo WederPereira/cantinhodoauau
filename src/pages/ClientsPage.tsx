@@ -35,10 +35,9 @@ const ClientsPage: React.FC = () => {
     return () => window.removeEventListener('openClientDetail', handler);
   }, []);
 
-  // Get unique breeds with counts
   const breedStats = useMemo(() => {
     const map = new Map<string, number>();
-    clients.forEach(c => {
+    clients.filter(c => c.isActive !== false).forEach(c => {
       const breed = normalizeBreedName(c.breed) || 'Sem raça';
       map.set(breed, (map.get(breed) || 0) + 1);
     });
@@ -90,7 +89,7 @@ const ClientsPage: React.FC = () => {
             <div>
               <h1 className="text-xl font-bold text-foreground tracking-tight">Dogs</h1>
               <p className="text-xs text-muted-foreground">
-                {filteredClients.length} de {clients.length} dog{clients.length !== 1 ? 's' : ''}
+                {filteredClients.length} de {clients.filter(c => c.isActive !== false).length} dog ativos
               </p>
             </div>
           </div>
@@ -121,7 +120,7 @@ const ClientsPage: React.FC = () => {
                 <SelectValue placeholder="Filtrar por raça" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all" className="text-xs">Todas as raças ({clients.length})</SelectItem>
+                <SelectItem value="all" className="text-xs">Todas as raças ({clients.filter(c => c.isActive !== false).length})</SelectItem>
                 {breedStats.map(([breed, count]) => (
                   <SelectItem key={breed} value={breed} className="text-xs">
                     {breed} ({count})

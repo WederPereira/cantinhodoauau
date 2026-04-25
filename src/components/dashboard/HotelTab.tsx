@@ -884,9 +884,9 @@ const HotelTab: React.FC = () => {
                       </div>
                       <div className="absolute -bottom-8 left-4">
                         {client?.photo ? (
-                          <img src={client.photo} alt={stay.dog_name} className="w-20 h-20 rounded-2xl object-cover border-4 border-background shadow-lg" />
+                          <img onClick={() => client && window.dispatchEvent(new CustomEvent('openClientDetail', { detail: client.id }))} src={client.photo} alt={stay.dog_name} className="w-20 h-20 rounded-2xl object-cover border-4 border-background shadow-lg cursor-pointer hover:scale-105 transition-transform" title="Abrir Perfil do Dog" />
                         ) : (
-                          <div className="w-20 h-20 rounded-2xl bg-primary/10 border-4 border-background shadow-lg flex items-center justify-center">
+                          <div onClick={() => client && window.dispatchEvent(new CustomEvent('openClientDetail', { detail: client.id }))} className="w-20 h-20 rounded-2xl bg-primary/10 border-4 border-background shadow-lg flex items-center justify-center cursor-pointer hover:scale-105 transition-transform" title="Abrir Perfil do Dog">
                             <Dog size={32} className="text-primary" />
                           </div>
                         )}
@@ -911,7 +911,7 @@ const HotelTab: React.FC = () => {
                       {/* Meals history - spreadsheet style */}
                       <div className="space-y-2">
                         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Histórico de Refeições</h3>
-                        <div className="overflow-x-auto -mx-4 px-4">
+                        <div className="overflow-y-auto max-h-[300px] overflow-x-auto -mx-4 px-4 scrollbar-thin">
                           <table className="w-full text-[10px] border-collapse min-w-[300px]">
                             <thead>
                               <tr className="bg-muted/50">
@@ -924,7 +924,7 @@ const HotelTab: React.FC = () => {
                               </tr>
                             </thead>
                             <tbody>
-                              {stayDays.map((day, i) => {
+                              {[...stayDays].reverse().map((day, i) => {
                                 const dateStr = format(day, 'yyyy-MM-dd');
                                 const isToday = isSameDay(day, new Date());
                                 return (

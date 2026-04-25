@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode, useMemo } from 'react';
 import { Client, VaccineType, DEFAULT_VACCINES, Vaccines, FleaRecord, VaccineRecord, PetGender, FleaType } from '@/types/client';
 import { logAction } from '@/hooks/useActionLog';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 
 interface ClientContextType {
   clients: Client[];
+  activeClients: Client[];
   loading: boolean;
   addClient: (data: {
     tutorName: string;
@@ -80,6 +81,7 @@ const dbRowToClient = (row: any, vaccineRecords: any[] = [], fleaRecords: any[] 
 
 export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [clients, setClients] = useState<Client[]>([]);
+  const activeClients = useMemo(() => clients.filter(c => c.isActive !== false), [clients]);
   const [loading, setLoading] = useState(true);
 
   const fetchClients = useCallback(async () => {
@@ -396,6 +398,7 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     <ClientContext.Provider
       value={{
         clients,
+        activeClients,
         loading,
         addClient,
         importClients,
