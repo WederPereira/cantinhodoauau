@@ -16,6 +16,12 @@ interface AppData {
   hotelStays: any[];
   hotelMeals: any[];
   medications: any[];
+  workTasks: any[];
+  vaccineRecords: any[];
+  fleaRecords: any[];
+  fecesCollections: any[];
+  taxiGroups: any[];
+  dailyRecords: any[];
   loadedAt: string;
 }
 
@@ -45,17 +51,35 @@ export const AIAssistant: React.FC = () => {
         { data: hotelStays },
         { data: hotelMeals },
         { data: medications },
+        { data: workTasks },
+        { data: vaccineRecords },
+        { data: fleaRecords },
+        { data: fecesCollections },
+        { data: taxiGroups },
+        { data: dailyRecords },
       ] = await Promise.all([
         supabase.from('qr_entries').select('*').order('data_hora', { ascending: false }).limit(500),
         supabase.from('hotel_stays').select('*').order('created_at', { ascending: false }).limit(200),
         supabase.from('hotel_meals').select('*').order('created_at', { ascending: false }).limit(500),
-        supabase.from('medications').select('*').order('created_at', { ascending: false }).limit(200),
+        supabase.from('hotel_medications').select('*').order('created_at', { ascending: false }).limit(300),
+        supabase.from('work_tasks').select('*').order('due_date', { ascending: false }).limit(200),
+        supabase.from('vaccine_records').select('*').order('date', { ascending: false }).limit(300),
+        supabase.from('flea_records').select('*').order('date', { ascending: false }).limit(300),
+        supabase.from('feces_collections').select('*').order('created_at', { ascending: false }).limit(200),
+        supabase.from('taxi_groups').select('*').order('updated_at', { ascending: false }).limit(50),
+        supabase.from('daily_records').select('*').order('date', { ascending: false }).limit(300),
       ]);
       setAppData({
         qrEntries: qrEntries || [],
         hotelStays: hotelStays || [],
         hotelMeals: hotelMeals || [],
         medications: medications || [],
+        workTasks: workTasks || [],
+        vaccineRecords: vaccineRecords || [],
+        fleaRecords: fleaRecords || [],
+        fecesCollections: fecesCollections || [],
+        taxiGroups: taxiGroups || [],
+        dailyRecords: dailyRecords || [],
         loadedAt: new Date().toLocaleTimeString('pt-BR'),
       });
     } catch (err) {
@@ -76,7 +100,7 @@ export const AIAssistant: React.FC = () => {
     const today = format(new Date(), 'dd/MM/yyyy');
     const todayISO = format(new Date(), 'yyyy-MM-dd');
 
-    // Full client details
+    // Full client details (with photos)
     const allDogsDetail = clients.map(c => {
       try {
         const vaccineInfo = c.vaccines
@@ -88,7 +112,11 @@ export const AIAssistant: React.FC = () => {
               })
               .join(', ') || 'nenhuma'
           : 'nenhuma';
-        return `  • ${c.name} (Tutor: ${c.tutorName || 'N/A'}, Raça: ${c.breed || 'SRD'}, Porte: ${c.petSize || 'N/A'}, Nascimento: ${c.birthDate ? format(new Date(c.birthDate), 'dd/MM/yyyy') : 'N/A'}, Status: ${c.isActive === false ? 'INATIVO' : 'Ativo'}, Vacinas: ${vaccineInfo})`;
+        const photoInfo = c.photo ? ` 📷 Foto pet: ${c.photo}` : '';
+        const tutorPhotoInfo = c.tutorPhoto ? ` 👤 Foto tutor: ${c.tutorPhoto}` : '';
+        const contact = `Tel: ${c.tutorPhone || 'N/A'}, Email: ${c.tutorEmail || 'N/A'}, CPF: ${c.tutorCpf || 'N/A'}, Endereço: ${c.tutorAddress || 'N/A'} (${c.tutorNeighborhood || ''})`;
+        const petInfo = `Peso: ${c.weight || 'N/A'}kg, Sexo: ${c.gender || 'N/A'}, Castrado: ${c.castrated ? 'Sim' : 'Não'}, Restrições: ${c.healthRestrictions || 'nenhuma'}`;
+        return `  • ${c.name} (Tutor: ${c.tutorName || 'N/A'}, Raça: ${c.breed || 'SRD'}, Porte: ${c.petSize || 'N/A'}, Nascimento: ${c.birthDate ? format(new Date(c.birthDate), 'dd/MM/yyyy') : 'N/A'}, Status: ${c.isActive === false ? 'INATIVO' : 'Ativo'})\n     ${contact}\n     ${petInfo}\n     Vacinas: ${vaccineInfo}${photoInfo}${tutorPhotoInfo}`;
       } catch {
         return `  • ${c.name} (Tutor: ${c.tutorName || 'N/A'})`;
       }
@@ -98,6 +126,11 @@ export const AIAssistant: React.FC = () => {
     let qrContext = 'Dados de creche ainda carregando...';
     let hotelContext = 'Dados de hotel ainda carregando...';
     let mealsContext = '';
+    let medsContext = '';
+    let tasksContext = '';
+    let healthContext = '';
+    let fecesContext = '';
+    let taxiContext = '';
 
     if (appData) {
       // QR Entries (Daycare)
@@ -108,26 +141,26 @@ export const AIAssistant: React.FC = () => {
           if (!qrByDog.has(key)) qrByDog.set(key, []);
           const dateStr = e.data_hora ? format(parseISO(e.data_hora), 'dd/MM/yyyy HH:mm') : 'data inválida';
           qrByDog.get(key)!.push(dateStr);
-        } catch { /* skip invalid entry */ }
+        } catch { /* skip */ }
       });
 
       const todayQrEntries = appData.qrEntries.filter((e: any) => e.data_hora?.startsWith(todayISO));
       const todayDogs = new Set(todayQrEntries.map((e: any) => `${e.dog}|${e.tutor}`));
 
       qrContext = `
-ENTRADAS NA CRECHE (últimas ${appData.qrEntries.length} entradas registradas via QR):
+ENTRADAS NA CRECHE (${appData.qrEntries.length} entradas via QR):
 - Hoje (${today}): ${todayDogs.size} cão(es) presentes [${Array.from(todayDogs).map(k => k.split('|')[0]).join(', ')}]
 
-Histórico de entradas por cão:
-${Array.from(qrByDog.entries()).map(([key, dates]) => `  • ${key.split('|')[0]} (Tutor: ${key.split('|')[1]}): ${dates.length} entrada(s). Datas: ${dates.slice(0, 10).join('; ')}${dates.length > 10 ? ` ... +${dates.length - 10} mais` : ''}`).join('\n')}`;
+Histórico por cão:
+${Array.from(qrByDog.entries()).map(([key, dates]) => `  • ${key.split('|')[0]} (Tutor: ${key.split('|')[1]}): ${dates.length} entrada(s). Últimas: ${dates.slice(0, 5).join('; ')}${dates.length > 5 ? ` ... +${dates.length - 5} mais` : ''}`).join('\n')}`;
 
       // Hotel Stays
       const activeStays = appData.hotelStays.filter((s: any) => s.active);
       const allStaysByDog = new Map<string, any[]>();
       appData.hotelStays.forEach((s: any) => {
-        const clientName = clients.find(c => c.id === s.client_id)?.name || s.client_id;
-        if (!allStaysByDog.has(clientName)) allStaysByDog.set(clientName, []);
-        allStaysByDog.get(clientName)!.push(s);
+        const name = s.dog_name || clients.find(c => c.id === s.client_id)?.name || s.client_id;
+        if (!allStaysByDog.has(name)) allStaysByDog.set(name, []);
+        allStaysByDog.get(name)!.push(s);
       });
 
       hotelContext = `
@@ -135,38 +168,82 @@ HOTEL:
 - Estadias ativas agora: ${activeStays.length} cão(es)
 ${activeStays.map((s: any) => {
   try {
-    const clientName = clients.find(c => c.id === s.client_id)?.name || 'Desconhecido';
-    const ci = s.check_in_date ? format(parseISO(s.check_in_date), 'dd/MM/yyyy') : 'N/A';
-    const co = s.expected_checkout_date ? format(parseISO(s.expected_checkout_date), 'dd/MM/yyyy') : 'não definido';
-    return `  • ${clientName}: Check-in ${ci}, Checkout previsto ${co}`;
-  } catch { return '  • [estadia com data inválida]'; }
+    const name = s.dog_name || 'Desconhecido';
+    const ci = s.check_in ? format(parseISO(s.check_in), 'dd/MM/yyyy') : 'N/A';
+    const co = s.expected_checkout ? format(parseISO(s.expected_checkout), 'dd/MM/yyyy') : 'não definido';
+    const photos = s.belongings_photos?.length ? ` 📷 ${s.belongings_photos.length} fotos pertences` : '';
+    return `  • ${name} (Tutor: ${s.tutor_name}): Check-in ${ci}, Checkout previsto ${co}, Obs: ${s.observations || 'nenhuma'}${photos}`;
+  } catch { return '  • [estadia inválida]'; }
 }).join('\n')}
 
-Histórico de estadias por cão:
+Histórico de estadias:
 ${Array.from(allStaysByDog.entries()).map(([name, stays]) => {
   try {
-    const lastCI = stays[0]?.check_in_date ? format(parseISO(stays[0].check_in_date), 'dd/MM/yyyy') : 'N/A';
+    const lastCI = stays[0]?.check_in ? format(parseISO(stays[0].check_in), 'dd/MM/yyyy') : 'N/A';
     return `  • ${name}: ${stays.length} estadia(s). Último check-in: ${lastCI}`;
   } catch { return `  • ${name}: ${stays.length} estadia(s).`; }
 }).join('\n')}`;
 
       // Hotel Meals
-      const mealsByStay = new Map<string, any[]>();
-      appData.hotelMeals.forEach((m: any) => {
-        if (!mealsByStay.has(m.stay_id)) mealsByStay.set(m.stay_id, []);
-        mealsByStay.get(m.stay_id)!.push(m);
-      });
-
       mealsContext = `
-REFEIÇÕES NO HOTEL (últimas ${appData.hotelMeals.length} registradas):
-${appData.hotelMeals.slice(0, 50).map((m: any) => {
-  const clientName = clients.find(c => appData.hotelStays.find((s: any) => s.id === m.stay_id && s.client_id === c.id))?.name || 'Desconhecido';
-  return `  • ${clientName} - ${m.meal_type} em ${m.meal_date}: ${m.amount || 'N/A'} (${m.brand || 'ração não especificada'})`;
+REFEIÇÕES NO HOTEL (${appData.hotelMeals.length} registros):
+${appData.hotelMeals.slice(0, 80).map((m: any) => {
+  const stay = appData.hotelStays.find((s: any) => s.id === m.hotel_stay_id);
+  const name = stay?.dog_name || 'Desconhecido';
+  return `  • ${name} - ${m.meal_type} em ${m.date}: ${m.ate === true ? 'Comeu ✅' : m.ate === false ? 'Não comeu ❌' : 'Pendente'}`;
 }).join('\n')}`;
+
+      // Medications (hotel_medications)
+      medsContext = `
+MEDICAÇÕES DO HOTEL (${appData.medications.length} registros):
+${appData.medications.slice(0, 80).map((m: any) => {
+  const stay = appData.hotelStays.find((s: any) => s.id === m.hotel_stay_id);
+  const name = stay?.dog_name || clients.find(c => c.id === m.client_id)?.name || 'Desconhecido';
+  return `  • ${name}: ${m.medication_name} (${m.medication_type}) às ${m.scheduled_time}, recorrência: ${m.recurrence}, ${m.administered ? `administrado em ${m.administered_at ? format(parseISO(m.administered_at), 'dd/MM HH:mm') : 'sim'}` : 'PENDENTE'}`;
+}).join('\n')}`;
+
+      // Work tasks
+      const todayTasks = appData.workTasks.filter((t: any) => t.due_date === todayISO);
+      tasksContext = `
+TAREFAS DA EQUIPE (${appData.workTasks.length} total, ${todayTasks.length} para hoje):
+${appData.workTasks.slice(0, 60).map((t: any) => `  • [${t.status}] ${t.title} - prazo ${t.due_date}${t.scheduled_time ? ` ${t.scheduled_time}` : ''}, recorrência: ${t.recurrence}, atribuída a: ${t.assigned_to}`).join('\n')}`;
+
+      // Health: vaccines + flea
+      const vaccineByClient = new Map<string, any[]>();
+      appData.vaccineRecords.forEach((v: any) => {
+        if (!vaccineByClient.has(v.client_id)) vaccineByClient.set(v.client_id, []);
+        vaccineByClient.get(v.client_id)!.push(v);
+      });
+      const fleaByClient = new Map<string, any[]>();
+      appData.fleaRecords.forEach((f: any) => {
+        if (!fleaByClient.has(f.client_id)) fleaByClient.set(f.client_id, []);
+        fleaByClient.get(f.client_id)!.push(f);
+      });
+      healthContext = `
+HISTÓRICO DE VACINAS (${appData.vaccineRecords.length} aplicações) e ANTIPULGAS (${appData.fleaRecords.length}):
+${Array.from(new Set([...vaccineByClient.keys(), ...fleaByClient.keys()])).slice(0, 80).map(cid => {
+  const name = clients.find(c => c.id === cid)?.name || 'Desconhecido';
+  const vs = vaccineByClient.get(cid) || [];
+  const fs = fleaByClient.get(cid) || [];
+  return `  • ${name}: ${vs.length} vacinas [${vs.slice(0,5).map(v => `${v.type} ${v.date}`).join('; ')}], ${fs.length} antipulgas [${fs.slice(0,3).map(f => `${f.brand} ${f.date} (${f.duration_months}m)`).join('; ')}]`;
+}).join('\n')}`;
+
+      // Feces collections
+      fecesContext = `
+COLETAS DE FEZES (${appData.fecesCollections.length} registros):
+${appData.fecesCollections.slice(0, 50).map((f: any) => {
+  const name = clients.find(c => c.id === f.client_id)?.name || 'Desconhecido';
+  return `  • ${name} - ${f.month_year}: ${f.collected ? `Coletado em ${f.collected_at?.slice(0,10)} por ${f.collected_by_name}` : 'Pendente'}`;
+}).join('\n')}`;
+
+      // Taxi groups
+      taxiContext = `
+GRUPOS DE TÁXI (${appData.taxiGroups.length}):
+${appData.taxiGroups.map((g: any) => `  • ${g.name}: ${Array.isArray(g.entries) ? g.entries.length : 0} cães`).join('\n')}`;
     }
 
     return `Você é o assistente virtual do "Cantinho do AuAu", uma creche e hotel para cães.
-Você tem acesso COMPLETO a todos os dados do sistema. Responda com precisão e detalhes.
+Você tem acesso COMPLETO a TODOS os dados do sistema (cadastros, fotos, hotel, creche, saúde, tarefas, táxi, fezes). Responda com precisão e detalhes.
 Data/hora atual: ${format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR })}
 
 ========== CADASTRO DE CÃES (${clients.length} total) ==========
@@ -180,13 +257,24 @@ ${allDogsDetail.join('\n')}
 
 ${mealsContext}
 
+${medsContext}
+
+${tasksContext}
+
+${healthContext}
+
+${fecesContext}
+
+${taxiContext}
+
 ========== REGRAS ==========
 1. Responda em Português do Brasil.
-2. Seja direto, preciso e use os dados acima para responder.
+2. Seja direto, preciso e use os dados acima para responder qualquer pergunta.
 3. Use emojis de cachorro e patinhas. 🐾 🦴
-4. Se o dado pedido não estiver nos dados acima, informe claramente.
-5. Você pode calcular totais, fazer comparações e identificar padrões nos dados.
-6. Para perguntas sobre um cão específico, encontre pelo nome (busca parcial) e dê todos os detalhes disponíveis.`;
+4. Quando perguntarem sobre fotos, forneça os links (URLs) que aparecem nos dados.
+5. Você pode calcular totais, fazer comparações, identificar padrões e gerar resumos.
+6. Para perguntas sobre um cão específico, encontre pelo nome (busca parcial) e dê TODOS os detalhes disponíveis (cadastro, hotel, vacinas, antipulgas, presença, etc).
+7. Se o dado realmente não estiver disponível, informe claramente.`;
   }, [clients, activeClients, appData]);
 
   const handleSend = async () => {
@@ -214,7 +302,7 @@ ${mealsContext}
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-[100] flex flex-col items-end gap-4">
+    <div className="fixed bottom-20 lg:bottom-6 right-4 lg:right-6 z-[100] flex flex-col items-end gap-4">
       {/* Chat Window */}
       {isOpen && (
         <Card className="w-[360px] sm:w-[420px] h-[520px] flex flex-col shadow-2xl border-primary/20 animate-in slide-in-from-bottom-4 duration-300 overflow-hidden bg-card/95 backdrop-blur-md">
