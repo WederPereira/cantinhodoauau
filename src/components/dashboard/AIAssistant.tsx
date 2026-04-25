@@ -1,8 +1,11 @@
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useClients } from '@/context/ClientContext';
 import { chatWithDeepSeek, Message } from '@/services/aiService';
 import { supabase } from '@/integrations/supabase/client';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
