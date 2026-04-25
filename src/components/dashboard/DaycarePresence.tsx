@@ -3,7 +3,7 @@ import { useClients } from '@/context/ClientContext';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Utensils, UtensilsCrossed, Dog, RefreshCw, Calendar, Search, Copy, FileText, Loader2 } from 'lucide-react';
+import { Utensils, UtensilsCrossed, Dog, RefreshCw, Calendar, Search, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { logAction } from '@/hooks/useActionLog';
-import { generatePresencePDF } from '@/utils/pdfGenerator';
 
 interface TodayEntry {
   id: string;
@@ -28,7 +27,6 @@ const DaycarePresence: React.FC = () => {
   const { clients } = useClients();
   const [entries, setEntries] = useState<TodayEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'ate' | 'not_ate'>('all');
   const today = format(new Date(), 'yyyy-MM-dd');
@@ -150,39 +148,6 @@ const DaycarePresence: React.FC = () => {
     toast.success('Lista copiada!');
   };
 
-  const handleDownloadPDF = async () => {
-    try {
-      setIsGeneratingPDF(true);
-      
-      const daycareItems = entries.map(e => ({
-        dogName: e.dog,
-        tutorName: e.tutor,
-        photoUrl: clients.find(c => c.name === e.dog && c.tutorName === e.tutor)?.photo || clients.find(c => c.name === e.dog)?.photo || null
-      }));
-
-      const { data: hotelStays, error } = await supabase
-        .from('hotel_stays')
-        .select('*')
-        .eq('active', true);
-        
-      if (error) throw error;
-      
-      const hotelItems = (hotelStays || []).map(s => ({
-        dogName: s.dog_name,
-        tutorName: s.tutor_name,
-        photoUrl: clients.find(c => c.id === s.client_id)?.photo || null
-      }));
-
-      await generatePresencePDF(daycareItems, hotelItems);
-      toast.success('PDF gerado com sucesso!');
-    } catch (err) {
-      console.error(err);
-      toast.error('Erro ao gerar PDF');
-    } finally {
-      setIsGeneratingPDF(false);
-    }
-  };
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -190,15 +155,9 @@ const DaycarePresence: React.FC = () => {
           <Calendar size={16} className="text-primary" />
           <span className="text-sm font-medium text-foreground capitalize">{todayDisplay}</span>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleDownloadPDF} disabled={isGeneratingPDF} className="h-8 text-xs gap-1" title="Baixar PDF de Presentes">
-            {isGeneratingPDF ? <Loader2 size={14} className="animate-spin text-primary" /> : <FileText size={14} className="text-primary" />}
-            Baixar PDF
-          </Button>
-          <Button variant="ghost" size="icon" onClick={fetchEntries} disabled={loading} className="h-8 w-8">
-            <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-          </Button>
-        </div>
+        <Button variant="ghost" size="icon" onClick={fetchEntries} disabled={loading}>
+          <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+        </Button>
       </div>
 
       <div className="grid grid-cols-3 gap-3">

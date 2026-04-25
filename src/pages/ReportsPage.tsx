@@ -87,7 +87,7 @@ const ReportsPage: React.FC = () => {
                   <Users size={16} className="text-primary" />
                   <p className="text-xs text-muted-foreground">Total Clientes</p>
                 </div>
-                <p className="text-xl font-bold text-foreground">{clients.filter(c => c.isActive !== false).length}</p>
+                <p className="text-xl font-bold text-foreground">{clients.length}</p>
               </div>
               <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
                 <div className="flex items-center gap-2 mb-2">
