@@ -118,7 +118,9 @@ export const AIAssistant: React.FC = () => {
           : 'nenhuma';
         const photoInfo = c.photo ? ` 📷 Foto pet: ${c.photo}` : '';
         const tutorPhotoInfo = c.tutorPhoto ? ` 👤 Foto tutor: ${c.tutorPhoto}` : '';
-        const contact = `Tel: ${c.tutorPhone || 'N/A'}, Email: ${c.tutorEmail || 'N/A'}, CPF: ${c.tutorCpf || 'N/A'}, Endereço: ${c.tutorAddress || 'N/A'} (${c.tutorNeighborhood || ''})`;
+        const contact = isAdmin
+          ? `Tel: ${c.tutorPhone || 'N/A'}, Email: ${c.tutorEmail || 'N/A'}, CPF: ${c.tutorCpf || 'N/A'}, Endereço: ${c.tutorAddress || 'N/A'} (${c.tutorNeighborhood || ''})`
+          : `Tel: [RESTRITO], Email: [RESTRITO], CPF: [RESTRITO], Endereço: [RESTRITO] (${c.tutorNeighborhood || ''})`;
         const petInfo = `Peso: ${c.weight || 'N/A'}kg, Sexo: ${c.gender || 'N/A'}, Castrado: ${c.castrated ? 'Sim' : 'Não'}, Restrições: ${c.healthRestrictions || 'nenhuma'}`;
         return `  • ${c.name} (Tutor: ${c.tutorName || 'N/A'}, Raça: ${c.breed || 'SRD'}, Porte: ${c.petSize || 'N/A'}, Nascimento: ${c.birthDate ? format(new Date(c.birthDate), 'dd/MM/yyyy') : 'N/A'}, Status: ${c.isActive === false ? 'INATIVO' : 'Ativo'})\n     ${contact}\n     ${petInfo}\n     Vacinas: ${vaccineInfo}${photoInfo}${tutorPhotoInfo}`;
       } catch {
