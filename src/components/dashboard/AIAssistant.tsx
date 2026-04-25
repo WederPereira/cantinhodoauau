@@ -30,6 +30,7 @@ interface AppData {
 
 export const AIAssistant: React.FC = () => {
   const { clients, activeClients } = useClients();
+  const { isAdmin } = useUserRole();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
