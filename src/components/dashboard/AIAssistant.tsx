@@ -16,6 +16,12 @@ interface AppData {
   hotelStays: any[];
   hotelMeals: any[];
   medications: any[];
+  workTasks: any[];
+  vaccineRecords: any[];
+  fleaRecords: any[];
+  fecesCollections: any[];
+  taxiGroups: any[];
+  dailyRecords: any[];
   loadedAt: string;
 }
 
