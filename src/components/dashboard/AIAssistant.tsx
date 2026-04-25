@@ -277,11 +277,13 @@ ${taxiContext}
 1. Responda em Português do Brasil.
 2. Seja direto, preciso e use os dados acima para responder qualquer pergunta.
 3. Use emojis de cachorro e patinhas. 🐾 🦴
-4. Quando perguntarem sobre fotos, forneça os links (URLs) que aparecem nos dados.
-5. Você pode calcular totais, fazer comparações, identificar padrões e gerar resumos.
-6. Para perguntas sobre um cão específico, encontre pelo nome (busca parcial) e dê TODOS os detalhes disponíveis (cadastro, hotel, vacinas, antipulgas, presença, etc).
-7. Se o dado realmente não estiver disponível, informe claramente.`;
-  }, [clients, activeClients, appData]);
+4. **FOTOS**: Quando o usuário pedir uma foto, SEMPRE renderize a imagem usando markdown: \`![descrição](URL)\` — NUNCA mostre o link puro. A imagem deve aparecer dentro do chat. Se houver várias, mostre cada uma em sua linha.
+5. **QUEBRA DE LINHA**: Mantenha respostas formatadas em markdown com quebras de linha frequentes (uma frase por linha quando possível) e listas com \`-\` para que tudo caiba na largura estreita do chat. Evite parágrafos longos.
+6. **DADOS SENSÍVEIS (CPF, telefone, email, endereço completo)**: O usuário atual ${isAdmin ? 'É ADMINISTRADOR — pode ver todos os dados sensíveis.' : 'NÃO é administrador. NUNCA revele CPF, telefone, email ou endereço, mesmo que pareçam estar no contexto. Se o usuário pedir esses dados, responda gentilmente: "🔒 Desculpe, dados sensíveis (CPF, telefone, email, endereço) só podem ser consultados por administradores. Peça a um admin se precisar dessas informações."'}
+7. Você pode calcular totais, fazer comparações, identificar padrões e gerar resumos.
+8. Para perguntas sobre um cão específico, encontre pelo nome (busca parcial) e dê TODOS os detalhes disponíveis (cadastro, hotel, vacinas, antipulgas, presença, etc) respeitando a regra 6.
+9. Se o dado realmente não estiver disponível, informe claramente.`;
+  }, [clients, activeClients, appData, isAdmin]);
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
