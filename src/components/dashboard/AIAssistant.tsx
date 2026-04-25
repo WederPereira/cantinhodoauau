@@ -391,12 +391,37 @@ ${taxiContext}
                   </div>
                 )}
                 <div className={cn(
-                  "max-w-[85%] rounded-2xl p-3 text-sm shadow-sm whitespace-pre-wrap",
+                  "max-w-[85%] rounded-2xl p-3 text-sm shadow-sm break-words overflow-hidden",
                   m.role === 'user'
-                    ? "bg-primary text-primary-foreground rounded-tr-none"
+                    ? "bg-primary text-primary-foreground rounded-tr-none whitespace-pre-wrap"
                     : "bg-muted/80 border border-border/50 rounded-tl-none text-foreground"
                 )}>
-                  {m.content}
+                  {m.role === 'assistant' ? (
+                    <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0 prose-headings:my-2 prose-img:my-2 prose-img:rounded-lg prose-img:max-h-64 prose-img:w-auto prose-a:text-primary break-words">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          img: ({ node, ...props }) => (
+                            <img
+                              {...props}
+                              loading="lazy"
+                              className="rounded-lg max-h-64 w-auto object-contain border border-border/50"
+                              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                            />
+                          ),
+                          a: ({ node, ...props }) => (
+                            <a {...props} target="_blank" rel="noopener noreferrer" className="text-primary underline break-all" />
+                          ),
+                          p: ({ node, ...props }) => <p {...props} className="break-words whitespace-pre-wrap" />,
+                          code: ({ node, ...props }) => <code {...props} className="bg-background/60 px-1 py-0.5 rounded text-[11px] break-all" />,
+                        }}
+                      >
+                        {m.content}
+                      </ReactMarkdown>
+                    </div>
+                  ) : (
+                    m.content
+                  )}
                 </div>
                 {m.role === 'user' && (
                   <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center shrink-0 mt-0.5">
