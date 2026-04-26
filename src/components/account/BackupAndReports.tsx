@@ -80,20 +80,27 @@ const BackupAndReports = () => {
     } finally { setGeneratingXlsx(false); }
   };
 
-  const handleCreateBackup = async () => {
+  const handleCreateBackup = async (includePhotos: boolean) => {
     setCreatingBackup(true);
     try {
-      toast.info("Gerando backup completo... Isso pode levar 1-3 minutos.", { duration: 8000 });
+      toast.info(
+        includePhotos
+          ? "Gerando backup completo (com fotos)... pode levar 1-2 minutos."
+          : "Gerando backup rápido (só dados)...",
+        { duration: 6000 },
+      );
       const { data, error } = await supabase.functions.invoke("monthly-backup", {
         body: {
           source: "manual",
           user_id: session?.user?.id,
           user_name: session?.user?.user_metadata?.full_name || session?.user?.email || "Admin",
+          include_photos: includePhotos,
         },
       });
       if (error) throw error;
       if (!data?.ok) throw new Error(data?.error || "Falha");
-      toast.success(`Backup criado! ${data.total_records} registros + ${data.total_photos} fotos`);
+      const truncMsg = data.photos_truncated ? ` (⚠️ ${data.photos_skipped} fotos não couberam, gere outro backup)` : "";
+      toast.success(`Backup criado! ${data.total_records} registros + ${data.total_photos} fotos${truncMsg}`);
       loadBackups();
     } catch (e: any) {
       toast.error(`Erro: ${e.message}`);
@@ -203,11 +210,20 @@ const BackupAndReports = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex gap-2">
-            <Button onClick={handleCreateBackup} disabled={creatingBackup} className="flex-1 gap-1.5">
-              {creatingBackup ? <Loader2 className="w-4 h-4 animate-spin" /> : <HardDrive className="w-4 h-4" />}
-              Gerar Backup Agora
+          <div className="grid grid-cols-2 gap-2">
+            <Button onClick={() => handleCreateBackup(false)} disabled={creatingBackup} className="gap-1.5">
+              {creatingBackup ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
+              Backup Rápido
             </Button>
+            <Button onClick={() => handleCreateBackup(true)} disabled={creatingBackup} variant="outline" className="gap-1.5">
+              {creatingBackup ? <Loader2 className="w-4 h-4 animate-spin" /> : <HardDrive className="w-4 h-4" />}
+              Completo (c/ fotos)
+            </Button>
+          </div>
+          <p className="text-[10px] text-muted-foreground -mt-1">
+            <strong>Rápido</strong>: só dados das tabelas (poucos KB, sempre funciona). <strong>Completo</strong>: inclui todas as fotos (pode levar 1-2 min).
+          </p>
+          <div className="flex justify-end">
             <Button variant="outline" size="icon" onClick={loadBackups} disabled={loadingBackups}>
               <RefreshCw className={`w-4 h-4 ${loadingBackups ? "animate-spin" : ""}`} />
             </Button>

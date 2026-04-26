@@ -12,7 +12,8 @@ import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { useAuth } from "@/hooks/useAuth";
 import TaskNotifications from "./components/TaskNotifications";
 import { Loader2 } from "lucide-react";
-import { AIAssistant } from "@/components/dashboard/AIAssistant";
+// AIAssistant temporariamente desativado
+// import { AIAssistant } from "@/components/dashboard/AIAssistant";
 
 const Index = lazy(() => import("./pages/Index"));
 const ClientsPage = lazy(() => import("./pages/ClientsPage"));
@@ -73,7 +74,7 @@ const AppContent = () => {
         </main>
         <BottomNavbar />
         <PWAInstallPrompt />
-        <AIAssistant />
+        {/* <AIAssistant /> desativado */}
       </div>
     </ClientProvider>
   );
