@@ -60,28 +60,39 @@ Deno.serve(async (req) => {
     const dataFolder = zip.folder("data")!;
     let totalRecords = 0;
 
-    // 1) Dump all tables (in parallel)
+    console.log(`[backup] start source=${source} include_photos=${includePhotos}`);
+
+    // 1) Dump all tables (sequential, with paging to bypass 1000-row default cap)
     const dump: Record<string, any[]> = {};
-    await Promise.all(
-      TABLES.map(async (table) => {
-        try {
-          const { data, error } = await admin.from(table).select("*");
-          if (error) {
-            console.error(`dump ${table}:`, error.message);
-            dump[table] = [];
-          } else {
-            dump[table] = data || [];
-          }
-        } catch (e) {
-          console.error(`dump ${table} threw:`, getErrorMessage(e));
-          dump[table] = [];
+    const PAGE = 1000;
+    for (const table of TABLES) {
+      const tStart = Date.now();
+      const all: any[] = [];
+      let from = 0;
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { data, error } = await admin.from(table).select("*").range(from, from + PAGE - 1);
+        if (error) {
+          console.error(`[backup] dump ${table} err:`, error.message);
+          break;
         }
-      }),
-    );
+        if (!data || data.length === 0) break;
+        all.push(...data);
+        if (data.length < PAGE) break;
+        from += PAGE;
+        if (all.length > 200_000) {
+          console.warn(`[backup] ${table} truncated at 200k rows`);
+          break;
+        }
+      }
+      dump[table] = all;
+      console.log(`[backup] ${table}: ${all.length} rows in ${Date.now() - tStart}ms`);
+    }
     for (const table of TABLES) {
       dataFolder.file(`${table}.json`, JSON.stringify(dump[table] || [], null, 2));
       totalRecords += (dump[table] || []).length;
     }
+    console.log(`[backup] tables done, total=${totalRecords}, elapsed=${Date.now() - startedAt}ms`);
 
     // 2) Optionally include photos (with hard time guard + concurrency)
     let totalPhotos = 0;
