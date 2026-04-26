@@ -47,7 +47,7 @@ serve(async (req) => {
       console.error("Gemini API error:", response.status, errorText);
       if (response.status === 429) {
         return new Response(
-          JSON.stringify({ error: "Limite de requisições do Gemini atingido. Tente novamente em instantes." }),
+          JSON.stringify({ error: "Sua chave do Gemini atingiu o limite de uso (quota gratuita esgotada). Aguarde alguns minutos ou ative cobrança no Google AI Studio: https://aistudio.google.com/app/apikey" }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
