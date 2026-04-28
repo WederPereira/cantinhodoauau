@@ -26,7 +26,7 @@ interface ClientContextType {
     birthDate?: Date;
     gender?: PetGender;
     castrated?: boolean;
-  }) => Promise<void>;
+  }) => Promise<string | null>;
   importClients: (newClients: Array<{
     tutorName?: string;
     name: string;
