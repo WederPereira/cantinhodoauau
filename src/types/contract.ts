@@ -1,5 +1,5 @@
 export type PlanType = 'mensal' | 'trimestral' | 'semestral' | 'anual';
-export type DiscountType = 'normal' | 'desc15' | 'desc30' | 'custom';
+export type DiscountType = 'normal';
 export type ContractStatus = 'pendente' | 'ativo' | 'cancelado' | 'concluido';
 
 export interface ContractPlan {
