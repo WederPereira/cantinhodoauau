@@ -17,6 +17,7 @@ import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
+import { ContractDialog } from './contracts/ContractDialog';
 
 interface AddClientDialogProps {
   trigger?: React.ReactNode;
@@ -24,6 +25,8 @@ interface AddClientDialogProps {
 
 export const AddClientDialog: React.FC<AddClientDialogProps> = ({ trigger }) => {
   const [open, setOpen] = useState(false);
+  const [contractOpen, setContractOpen] = useState(false);
+  const [newClientId, setNewClientId] = useState<string | null>(null);
   const [tutorName, setTutorName] = useState('');
   const [tutorPhone, setTutorPhone] = useState('');
   const [tutorEmail, setTutorEmail] = useState('');
@@ -69,14 +72,14 @@ export const AddClientDialog: React.FC<AddClientDialogProps> = ({ trigger }) => 
     ).slice(0, 5);
   }, [tutorName, tutorOptions]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
       toast.error('Preencha o nome do pet');
       return;
     }
 
-    addClient({
+    const insertedId = await addClient({
       tutorName: tutorName.trim(),
       tutorPhone: tutorPhone.trim(),
       tutorEmail: tutorEmail.trim(),
@@ -95,6 +98,10 @@ export const AddClientDialog: React.FC<AddClientDialogProps> = ({ trigger }) => 
     toast.success(`${name} adicionado com sucesso!`);
     resetForm();
     setOpen(false);
+    if (insertedId) {
+      setNewClientId(insertedId);
+      setContractOpen(true);
+    }
   };
 
   const resetForm = () => {
