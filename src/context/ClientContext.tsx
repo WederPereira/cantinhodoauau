@@ -26,7 +26,7 @@ interface ClientContextType {
     birthDate?: Date;
     gender?: PetGender;
     castrated?: boolean;
-  }) => Promise<void>;
+  }) => Promise<string | null>;
   importClients: (newClients: Array<{
     tutorName?: string;
     name: string;
@@ -166,10 +166,11 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     if (error) { 
       console.error('Error adding client:', error); 
       toast.error("Erro ao adicionar cliente.");
-      return; 
+      return null; 
     }
     logAction('add_client', 'client', inserted.id, { dog_name: data.name, tutor_name: data.tutorName });
     await fetchClients();
+    return inserted.id as string;
   }, [fetchClients]);
 
   const importClients = useCallback(async (newClients: Array<{

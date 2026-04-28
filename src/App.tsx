@@ -21,6 +21,7 @@ const SpreadsheetPage = lazy(() => import("./pages/SpreadsheetPage"));
 const ReportsPage = lazy(() => import("./pages/ReportsPage"));
 const AccountPage = lazy(() => import("./pages/AccountPage"));
 const ReelsPage = lazy(() => import("./pages/ReelsPage"));
+const ContractsPage = lazy(() => import("./pages/ContractsPage"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -66,6 +67,7 @@ const AppContent = () => {
               <Route path="/spreadsheet" element={<SpreadsheetPage />} />
               <Route path="/reports" element={<ReportsPage />} />
               <Route path="/reels" element={<ReelsPage />} />
+              <Route path="/contracts" element={<ContractsPage />} />
               <Route path="/account" element={<AccountPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

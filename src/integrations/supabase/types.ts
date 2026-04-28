@@ -164,6 +164,120 @@ export type Database = {
         }
         Relationships: []
       }
+      contract_plans: {
+        Row: {
+          active: boolean
+          base_monthly_value: number
+          created_at: string
+          frequency_per_week: number
+          id: string
+          notes: string | null
+          plan_type: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          base_monthly_value?: number
+          created_at?: string
+          frequency_per_week: number
+          id?: string
+          notes?: string | null
+          plan_type: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          base_monthly_value?: number
+          created_at?: string
+          frequency_per_week?: number
+          id?: string
+          notes?: string | null
+          plan_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      contracts: {
+        Row: {
+          base_monthly_value: number
+          cancellation_fee: number | null
+          cancelled_at: string | null
+          client_id: string
+          client_snapshot: Json
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          discount_percent: number
+          discount_type: string
+          docx_url: string | null
+          end_date: string | null
+          final_monthly_value: number
+          frequency_per_week: number
+          id: string
+          missing_fields: Json | null
+          observations: string | null
+          payment_method: string | null
+          pdf_url: string | null
+          plan_type: string
+          start_date: string
+          status: string
+          total_contract_value: number
+          updated_at: string
+        }
+        Insert: {
+          base_monthly_value?: number
+          cancellation_fee?: number | null
+          cancelled_at?: string | null
+          client_id: string
+          client_snapshot?: Json
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          discount_percent?: number
+          discount_type?: string
+          docx_url?: string | null
+          end_date?: string | null
+          final_monthly_value?: number
+          frequency_per_week: number
+          id?: string
+          missing_fields?: Json | null
+          observations?: string | null
+          payment_method?: string | null
+          pdf_url?: string | null
+          plan_type: string
+          start_date?: string
+          status?: string
+          total_contract_value?: number
+          updated_at?: string
+        }
+        Update: {
+          base_monthly_value?: number
+          cancellation_fee?: number | null
+          cancelled_at?: string | null
+          client_id?: string
+          client_snapshot?: Json
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          discount_percent?: number
+          discount_type?: string
+          docx_url?: string | null
+          end_date?: string | null
+          final_monthly_value?: number
+          frequency_per_week?: number
+          id?: string
+          missing_fields?: Json | null
+          observations?: string | null
+          payment_method?: string | null
+          pdf_url?: string | null
+          plan_type?: string
+          start_date?: string
+          status?: string
+          total_contract_value?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       daily_records: {
         Row: {
           ate: boolean
