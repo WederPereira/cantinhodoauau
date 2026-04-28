@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Contract, PLAN_TYPE_LABELS, STATUS_LABELS, STATUS_COLORS,
-  formatBRL, calcCancellationFee, ContractStatus,
+  formatBRL, ContractStatus,
 } from '@/types/contract';
 import { generateContractPDF, generateContractDOCX } from '@/lib/contractGenerator';
 import { ContractDialog } from '@/components/contracts/ContractDialog';
@@ -114,11 +114,9 @@ const ContractsPage: React.FC = () => {
               onDelete={() => deleteContract(c.id)}
               onStatusChange={(status) => updateContract(c.id, { status })}
               onCancel={() => {
-                const fee = calcCancellationFee(c);
                 updateContract(c.id, {
                   status: 'cancelado',
                   cancelled_at: new Date().toISOString(),
-                  cancellation_fee: fee,
                 });
               }}
             />
@@ -181,9 +179,6 @@ interface ContractCardProps {
 
 const ContractCard: React.FC<ContractCardProps> = ({ contract, isAdmin, onDelete, onStatusChange, onCancel }) => {
   const snap = contract.client_snapshot || {};
-  const fee = contract.status === 'cancelado' && contract.cancellation_fee
-    ? contract.cancellation_fee
-    : calcCancellationFee(contract);
 
   return (
     <Card className="p-3">
@@ -197,7 +192,6 @@ const ContractCard: React.FC<ContractCardProps> = ({ contract, isAdmin, onDelete
           <div className="text-sm text-muted-foreground mt-1">
             {PLAN_TYPE_LABELS[contract.plan_type]} • {contract.frequency_per_week}x/sem •
             {' '}<strong className="text-foreground">{formatBRL(contract.final_monthly_value)}</strong>/mês
-            {contract.discount_percent > 0 && <span className="text-green-600"> • -{contract.discount_percent}%</span>}
           </div>
           <div className="text-xs text-muted-foreground">
             {new Date(contract.start_date).toLocaleDateString('pt-BR')} → {contract.end_date ? new Date(contract.end_date).toLocaleDateString('pt-BR') : '—'}
@@ -205,9 +199,6 @@ const ContractCard: React.FC<ContractCardProps> = ({ contract, isAdmin, onDelete
           </div>
           {contract.missing_fields?.length > 0 && contract.status === 'pendente' && (
             <div className="text-xs text-yellow-600 mt-1">⚠️ {contract.missing_fields.length} campo(s) por preencher</div>
-          )}
-          {contract.status === 'cancelado' && (
-            <div className="text-xs text-red-600 mt-1">Taxa de cancelamento: {formatBRL(contract.cancellation_fee || 0)}</div>
           )}
         </div>
       </div>
@@ -228,7 +219,7 @@ const ContractCard: React.FC<ContractCardProps> = ({ contract, isAdmin, onDelete
               <AlertDialogHeader>
                 <AlertDialogTitle>Cancelar contrato?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Taxa de cancelamento (30% sobre valor restante): <strong>{formatBRL(fee)}</strong>
+                  O contrato será marcado como cancelado. Comunique formalmente com 30 dias de antecedência (Cláusula 22ª).
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

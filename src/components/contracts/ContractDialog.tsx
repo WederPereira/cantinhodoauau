@@ -9,9 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { useContracts } from '@/hooks/useContracts';
 import { useClients } from '@/context/ClientContext';
 import {
-  PlanType, DiscountType, PLAN_TYPE_LABELS, PLAN_MONTHS,
-  DISCOUNT_LABELS, suggestDiscount, getDiscountPercent, calcContract,
-  getMissingClientFields, formatBRL,
+  PlanType, PLAN_TYPE_LABELS, PLAN_MONTHS,
+  calcContract, getMissingClientFields, formatBRL,
 } from '@/types/contract';
 import { generateContractPDF, generateContractDOCX } from '@/lib/contractGenerator';
 import { FileText, Download, AlertCircle, CheckCircle2 } from 'lucide-react';
@@ -30,21 +29,14 @@ export const ContractDialog: React.FC<Props> = ({ open, onOpenChange, clientId }
 
   const [planType, setPlanType] = useState<PlanType>('mensal');
   const [frequency, setFrequency] = useState<number>(3);
-  const [discountType, setDiscountType] = useState<DiscountType>('normal');
-  const [customDiscount, setCustomDiscount] = useState<number>(0);
   const [paymentMethod, setPaymentMethod] = useState('');
   const [observations, setObservations] = useState('');
   const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [overrideValue, setOverrideValue] = useState<string>('');
 
-  useEffect(() => {
-    if (open) setDiscountType(suggestDiscount(planType));
-  }, [planType, open]);
-
   const plan = findPlan(planType, frequency);
   const baseValue = overrideValue ? Number(overrideValue) : (plan?.base_monthly_value || 0);
-  const discountPercent = getDiscountPercent(discountType, customDiscount);
-  const calc = calcContract(baseValue, planType, discountPercent);
+  const calc = calcContract(baseValue, planType);
 
   const endDate = useMemo(() => {
     const d = new Date(startDate);
@@ -69,8 +61,8 @@ export const ContractDialog: React.FC<Props> = ({ open, onOpenChange, clientId }
     plan_type: planType,
     frequency_per_week: frequency,
     base_monthly_value: baseValue,
-    discount_type: discountType,
-    discount_percent: discountPercent,
+    discount_type: 'normal',
+    discount_percent: 0,
     final_monthly_value: calc.final_monthly_value,
     total_contract_value: calc.total_contract_value,
     start_date: startDate,
@@ -153,23 +145,6 @@ export const ContractDialog: React.FC<Props> = ({ open, onOpenChange, clientId }
             </Select>
           </div>
           <div>
-            <Label>Desconto</Label>
-            <Select value={discountType} onValueChange={(v) => setDiscountType(v as DiscountType)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {(['normal', 'desc15', 'desc30', 'custom'] as DiscountType[]).map(d => (
-                  <SelectItem key={d} value={d}>{DISCOUNT_LABELS[d]}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          {discountType === 'custom' && (
-            <div>
-              <Label>% Desconto personalizado</Label>
-              <Input type="number" value={customDiscount} onChange={(e) => setCustomDiscount(Number(e.target.value))} />
-            </div>
-          )}
-          <div>
             <Label>Início</Label>
             <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
           </div>
@@ -201,12 +176,6 @@ export const ContractDialog: React.FC<Props> = ({ open, onOpenChange, clientId }
             <span>Valor mensal base:</span>
             <span>{formatBRL(baseValue)}</span>
           </div>
-          {discountPercent > 0 && (
-            <div className="flex justify-between text-sm text-green-600">
-              <span>Desconto ({discountPercent}%):</span>
-              <span>-{formatBRL(baseValue * discountPercent / 100)}</span>
-            </div>
-          )}
           <div className="flex justify-between font-semibold text-base pt-1 border-t border-primary/20">
             <span>Mensalidade final:</span>
             <span className="text-primary">{formatBRL(calc.final_monthly_value)}</span>

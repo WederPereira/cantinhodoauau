@@ -1,5 +1,5 @@
 export type PlanType = 'mensal' | 'trimestral' | 'semestral' | 'anual';
-export type DiscountType = 'normal' | 'desc15' | 'desc30' | 'custom';
+export type DiscountType = 'normal';
 export type ContractStatus = 'pendente' | 'ativo' | 'cancelado' | 'concluido';
 
 export interface ContractPlan {
@@ -53,10 +53,7 @@ export const PLAN_MONTHS: Record<PlanType, number> = {
 };
 
 export const DISCOUNT_LABELS: Record<DiscountType, string> = {
-  normal: 'Normal (sem desconto)',
-  desc15: 'Desconto 15%',
-  desc30: 'Desconto 30%',
-  custom: 'Personalizado',
+  normal: 'Normal',
 };
 
 export const STATUS_LABELS: Record<ContractStatus, string> = {
@@ -73,26 +70,13 @@ export const STATUS_COLORS: Record<ContractStatus, string> = {
   concluido: 'bg-muted text-muted-foreground',
 };
 
-/** Suggests discount based on plan length */
-export const suggestDiscount = (plan: PlanType): DiscountType => {
-  if (plan === 'anual') return 'desc30';
-  if (plan === 'semestral') return 'desc15';
-  return 'normal';
-};
+export const suggestDiscount = (_plan: PlanType): DiscountType => 'normal';
+export const getDiscountPercent = (_type: DiscountType, _custom = 0): number => 0;
 
-export const getDiscountPercent = (type: DiscountType, custom = 0): number => {
-  switch (type) {
-    case 'desc15': return 15;
-    case 'desc30': return 30;
-    case 'custom': return custom;
-    default: return 0;
-  }
-};
-
-/** Calculates contract values */
-export const calcContract = (basePerMonth: number, plan: PlanType, discountPercent: number) => {
+/** Calculates contract values (no discount applied) */
+export const calcContract = (basePerMonth: number, plan: PlanType, _discountPercent = 0) => {
   const months = PLAN_MONTHS[plan];
-  const final_monthly_value = basePerMonth * (1 - discountPercent / 100);
+  const final_monthly_value = basePerMonth;
   const total_contract_value = final_monthly_value * months;
   return {
     final_monthly_value: Math.round(final_monthly_value * 100) / 100,
@@ -100,21 +84,9 @@ export const calcContract = (basePerMonth: number, plan: PlanType, discountPerce
   };
 };
 
-/**
- * Cancellation fee = 30% of remaining (unused) value of the contract
- * Based on Cláusula Vigésima Segunda
- */
-export const calcCancellationFee = (contract: Contract, cancellationDate: Date = new Date()): number => {
-  const start = new Date(contract.start_date);
-  const totalMonths = PLAN_MONTHS[contract.plan_type];
-  const monthsElapsed = Math.max(0, Math.min(totalMonths,
-    (cancellationDate.getFullYear() - start.getFullYear()) * 12 +
-    (cancellationDate.getMonth() - start.getMonth())
-  ));
-  const monthsRemaining = Math.max(0, totalMonths - monthsElapsed);
-  const remainingValue = monthsRemaining * contract.final_monthly_value;
-  return Math.round(remainingValue * 0.3 * 100) / 100;
-};
+/** Cancellation fee removed — returns 0 */
+export const calcCancellationFee = (_contract: Contract, _cancellationDate: Date = new Date()): number => 0;
+
 
 /** Required client fields to fill the contract */
 export const CONTRACT_REQUIRED_FIELDS: { key: string; label: string }[] = [

@@ -1,7 +1,8 @@
 import jsPDF from 'jspdf';
-import { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel } from 'docx';
+import { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel, ImageRun } from 'docx';
 import { saveAs } from 'file-saver';
 import { Contract, PLAN_TYPE_LABELS, formatBRL } from '@/types/contract';
+import logoUrl from '@/assets/logo-cantinho-full.png';
 
 const PLACEHOLDER = '[ A PREENCHER ]';
 
@@ -13,6 +14,24 @@ const fmtDate = (iso?: string | null) => {
 };
 
 const safe = (v: any) => (v === null || v === undefined || v === '') ? PLACEHOLDER : String(v);
+
+const loadImageAsDataURL = async (url: string): Promise<{ dataUrl: string; bytes: Uint8Array; w: number; h: number }> => {
+  const res = await fetch(url);
+  const blob = await res.blob();
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  const dataUrl: string = await new Promise((resolve) => {
+    const r = new FileReader();
+    r.onloadend = () => resolve(r.result as string);
+    r.readAsDataURL(blob);
+  });
+  const dims: { w: number; h: number } = await new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+    img.onerror = () => resolve({ w: 1, h: 1 });
+    img.src = dataUrl;
+  });
+  return { dataUrl, bytes, w: dims.w, h: dims.h };
+};
 
 const buildContractText = (contract: Contract) => {
   const c = contract.client_snapshot || {};
@@ -35,7 +54,7 @@ const buildContractText = (contract: Contract) => {
       '',
       `§1. Plano contratado: ${planLabel}`,
       `Frequência: ${contract.frequency_per_week}x por semana`,
-      `Valor mensal: ${formatBRL(contract.final_monthly_value)}${contract.discount_percent > 0 ? ` (com desconto de ${contract.discount_percent}%)` : ''}`,
+      `Valor mensal: ${formatBRL(contract.final_monthly_value)}`,
       `Valor total do contrato: ${formatBRL(contract.total_contract_value)}`,
       `Vigência: ${fmtDate(contract.start_date)} até ${fmtDate(contract.end_date)}`,
       `Forma de pagamento: ${safe(contract.payment_method)}`,
@@ -67,9 +86,9 @@ const buildContractText = (contract: Contract) => {
       'Cláusula Décima Nona – Faltas por motivo de saúde, com comprovação, podem ser repostas no mês seguinte.',
       'Cláusula Vigésima – A CONTRATADA aceita somente cães sociáveis.',
       '',
-      'DO PAGAMENTO E DAS MULTAS CONTRATUAIS',
+      'DO PAGAMENTO',
       'Cláusula Vigésima Primeira – Pagamentos no início da vigência e nos dias 10 ou 30 dos meses subsequentes. Custos adicionais serão cobrados no próximo pagamento.',
-      'Cláusula Vigésima Segunda – Cancelamento deve ser comunicado formalmente com 30 dias de antecedência. Em caso de cancelamento antecipado, taxa de 30% sobre o valor restante do contrato vigente.',
+      'Cláusula Vigésima Segunda – Cancelamento deve ser comunicado formalmente com 30 dias de antecedência.',
       'Cláusula Vigésima Terceira – Em pagamento por cartão de crédito, valor restante será revertido em produtos/serviços ou devolvido conforme parcelas.',
       '',
       'DO FORO',
@@ -93,12 +112,21 @@ const buildContractText = (contract: Contract) => {
   };
 };
 
-export const generateContractPDF = (contract: Contract) => {
+export const generateContractPDF = async (contract: Contract) => {
   const data = buildContractText(contract);
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const margin = 18;
   const maxWidth = 210 - margin * 2;
   let y = margin;
+
+  // Logo
+  try {
+    const logo = await loadImageAsDataURL(logoUrl);
+    const logoW = 30;
+    const logoH = (logo.h / logo.w) * logoW;
+    doc.addImage(logo.dataUrl, 'PNG', (210 - logoW) / 2, y, logoW, logoH);
+    y += logoH + 4;
+  } catch { /* ignore */ }
 
   const writeBlock = (lines: string[], opts: { bold?: boolean; size?: number; gap?: number } = {}) => {
     doc.setFont('helvetica', opts.bold ? 'bold' : 'normal');
@@ -108,7 +136,6 @@ export const generateContractPDF = (contract: Contract) => {
       const wrapped = doc.splitTextToSize(line, maxWidth);
       wrapped.forEach((w: string) => {
         if (y > 280) { doc.addPage(); y = margin; }
-        // Highlight placeholder in red
         if (w.includes(PLACEHOLDER)) {
           doc.setTextColor(200, 30, 30);
         } else {
@@ -156,7 +183,26 @@ export const generateContractDOCX = async (contract: Contract) => {
       spacing: { after: 120 },
     });
 
+  // Logo image paragraph
+  let logoParagraph: Paragraph | null = null;
+  try {
+    const logo = await loadImageAsDataURL(logoUrl);
+    const targetW = 120;
+    const targetH = Math.round((logo.h / logo.w) * targetW);
+    logoParagraph = new Paragraph({
+      alignment: AlignmentType.CENTER,
+      children: [new ImageRun({
+        type: 'png',
+        data: logo.bytes,
+        transformation: { width: targetW, height: targetH },
+        altText: { title: 'Logo', description: 'Cantinho do AuAu', name: 'logo' },
+      } as any)],
+      spacing: { after: 200 },
+    });
+  } catch { /* ignore */ }
+
   const children: Paragraph[] = [
+    ...(logoParagraph ? [logoParagraph] : []),
     para(data.title, { bold: true, heading: HeadingLevel.HEADING_1, align: AlignmentType.CENTER }),
     ...data.intro.map(t => para(t)),
     para(data.plan[0], { bold: true, heading: HeadingLevel.HEADING_2 }),
