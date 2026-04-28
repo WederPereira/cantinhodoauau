@@ -29,21 +29,14 @@ export const ContractDialog: React.FC<Props> = ({ open, onOpenChange, clientId }
 
   const [planType, setPlanType] = useState<PlanType>('mensal');
   const [frequency, setFrequency] = useState<number>(3);
-  const [discountType, setDiscountType] = useState<DiscountType>('normal');
-  const [customDiscount, setCustomDiscount] = useState<number>(0);
   const [paymentMethod, setPaymentMethod] = useState('');
   const [observations, setObservations] = useState('');
   const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [overrideValue, setOverrideValue] = useState<string>('');
 
-  useEffect(() => {
-    if (open) setDiscountType(suggestDiscount(planType));
-  }, [planType, open]);
-
   const plan = findPlan(planType, frequency);
   const baseValue = overrideValue ? Number(overrideValue) : (plan?.base_monthly_value || 0);
-  const discountPercent = getDiscountPercent(discountType, customDiscount);
-  const calc = calcContract(baseValue, planType, discountPercent);
+  const calc = calcContract(baseValue, planType);
 
   const endDate = useMemo(() => {
     const d = new Date(startDate);
