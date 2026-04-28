@@ -145,23 +145,6 @@ export const ContractDialog: React.FC<Props> = ({ open, onOpenChange, clientId }
             </Select>
           </div>
           <div>
-            <Label>Desconto</Label>
-            <Select value={discountType} onValueChange={(v) => setDiscountType(v as DiscountType)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {(['normal', 'desc15', 'desc30', 'custom'] as DiscountType[]).map(d => (
-                  <SelectItem key={d} value={d}>{DISCOUNT_LABELS[d]}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          {discountType === 'custom' && (
-            <div>
-              <Label>% Desconto personalizado</Label>
-              <Input type="number" value={customDiscount} onChange={(e) => setCustomDiscount(Number(e.target.value))} />
-            </div>
-          )}
-          <div>
             <Label>Início</Label>
             <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
           </div>
