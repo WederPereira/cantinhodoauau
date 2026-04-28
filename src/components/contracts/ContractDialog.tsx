@@ -9,9 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { useContracts } from '@/hooks/useContracts';
 import { useClients } from '@/context/ClientContext';
 import {
-  PlanType, DiscountType, PLAN_TYPE_LABELS, PLAN_MONTHS,
-  DISCOUNT_LABELS, suggestDiscount, getDiscountPercent, calcContract,
-  getMissingClientFields, formatBRL,
+  PlanType, PLAN_TYPE_LABELS, PLAN_MONTHS,
+  calcContract, getMissingClientFields, formatBRL,
 } from '@/types/contract';
 import { generateContractPDF, generateContractDOCX } from '@/lib/contractGenerator';
 import { FileText, Download, AlertCircle, CheckCircle2 } from 'lucide-react';
