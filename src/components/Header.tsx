@@ -1,5 +1,5 @@
 import React from 'react';
-import { Moon, Sun, LayoutDashboard, Dog, FileSpreadsheet, UserCircle, Camera, BarChart3 } from 'lucide-react';
+import { Moon, Sun, LayoutDashboard, Dog, FileSpreadsheet, UserCircle, Camera, BarChart3, FileText } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import { NavLink as RouterNavLink, useLocation } from 'react-router-dom';
@@ -9,6 +9,7 @@ import { useNotificationBadges } from '@/hooks/useNotificationBadges';
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/clients', icon: Dog, label: 'Pets' },
+  { to: '/contracts', icon: FileText, label: 'Contratos' },
   { to: '/reels', icon: Camera, label: 'Mural' },
   { to: '/reports', icon: BarChart3, label: 'Relatórios' },
   { to: '/spreadsheet', icon: FileSpreadsheet, label: 'Planilha' },
