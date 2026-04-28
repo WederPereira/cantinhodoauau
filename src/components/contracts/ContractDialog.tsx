@@ -176,12 +176,6 @@ export const ContractDialog: React.FC<Props> = ({ open, onOpenChange, clientId }
             <span>Valor mensal base:</span>
             <span>{formatBRL(baseValue)}</span>
           </div>
-          {discountPercent > 0 && (
-            <div className="flex justify-between text-sm text-green-600">
-              <span>Desconto ({discountPercent}%):</span>
-              <span>-{formatBRL(baseValue * discountPercent / 100)}</span>
-            </div>
-          )}
           <div className="flex justify-between font-semibold text-base pt-1 border-t border-primary/20">
             <span>Mensalidade final:</span>
             <span className="text-primary">{formatBRL(calc.final_monthly_value)}</span>
