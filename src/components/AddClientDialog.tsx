@@ -281,6 +281,7 @@ export const AddClientDialog: React.FC<AddClientDialogProps> = ({ trigger }) => 
           </div>
         </form>
       </DialogContent>
+      <ContractDialog open={contractOpen} onOpenChange={setContractOpen} clientId={newClientId} />
     </Dialog>
   );
 };
