@@ -106,7 +106,7 @@ const buildContractText = (contract: Contract) => {
       '',
       'DO PAGAMENTO',
       'Cláusula Vigésima Primeira – Pagamentos no início da vigência e nos dias 10 ou 30 dos meses subsequentes. Custos adicionais serão cobrados no próximo pagamento.',
-      'Cláusula Vigésima Segunda – Cancelamento deve ser comunicado formalmente com 30 dias de antecedência.',
+      cancellationLine,
       'Cláusula Vigésima Terceira – Em pagamento por cartão de crédito, valor restante será revertido em produtos/serviços ou devolvido conforme parcelas.',
       '',
       'DO FORO',
