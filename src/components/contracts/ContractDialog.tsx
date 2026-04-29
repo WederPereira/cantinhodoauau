@@ -6,14 +6,17 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { DatePicker } from '@/components/ui/date-picker';
 import { useContracts } from '@/hooks/useContracts';
 import { useClients } from '@/context/ClientContext';
 import {
   PlanType, PLAN_TYPE_LABELS, PLAN_MONTHS,
   calcContract, getMissingClientFields, formatBRL,
+  PAYMENT_METHODS, CancellationFeePercent, ContractPet,
 } from '@/types/contract';
 import { generateContractPDF, generateContractDOCX } from '@/lib/contractGenerator';
-import { FileText, Download, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { FileText, Download, AlertCircle, CheckCircle2, Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Props {
@@ -29,14 +32,44 @@ export const ContractDialog: React.FC<Props> = ({ open, onOpenChange, clientId }
 
   const [planType, setPlanType] = useState<PlanType>('mensal');
   const [frequency, setFrequency] = useState<number>(3);
-  const [paymentMethod, setPaymentMethod] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<string>('Pix');
+  const [paymentMethodOther, setPaymentMethodOther] = useState('');
   const [observations, setObservations] = useState('');
   const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [overrideValue, setOverrideValue] = useState<string>('');
+  const [overrideTotal, setOverrideTotal] = useState<string>('');
+  const [cancellationFeePct, setCancellationFeePct] = useState<CancellationFeePercent>(0);
+  const [extraPetIds, setExtraPetIds] = useState<string[]>([]);
+
+  // Pets from same tutor (excluding the main one)
+  const sameTutorPets = useMemo(() => {
+    if (!client) return [];
+    const tutorKey = (client.tutorName || '').trim().toLowerCase();
+    const tutorCpf = (client.tutorCpf || '').trim();
+    return clients.filter(c =>
+      c.id !== client.id &&
+      ((tutorCpf && c.tutorCpf?.trim() === tutorCpf) ||
+        (tutorKey && (c.tutorName || '').trim().toLowerCase() === tutorKey))
+    );
+  }, [client, clients]);
+
+  // Reset state when dialog re-opens
+  useEffect(() => {
+    if (open) {
+      setExtraPetIds([]);
+      setOverrideValue('');
+      setOverrideTotal('');
+      setCancellationFeePct(0);
+      setPaymentMethod('Pix');
+      setPaymentMethodOther('');
+    }
+  }, [open, clientId]);
 
   const plan = findPlan(planType, frequency);
-  const baseValue = overrideValue ? Number(overrideValue) : (plan?.base_monthly_value || 0);
+  const baseValue = overrideValue !== '' ? Number(overrideValue) : (plan?.base_monthly_value || 0);
   const calc = calcContract(baseValue, planType);
+  const finalMonthlyValue = calc.final_monthly_value;
+  const totalValue = overrideTotal !== '' ? Number(overrideTotal) : calc.total_contract_value;
 
   const endDate = useMemo(() => {
     const d = new Date(startDate);
@@ -48,6 +81,23 @@ export const ContractDialog: React.FC<Props> = ({ open, onOpenChange, clientId }
 
   if (!client) return null;
 
+  const extraPets: ContractPet[] = extraPetIds
+    .map(id => clients.find(c => c.id === id))
+    .filter(Boolean)
+    .map(c => ({
+      client_id: c!.id,
+      name: c!.name,
+      breed: c!.breed,
+      petSize: c!.petSize,
+      birthDate: c!.birthDate,
+      gender: c!.gender,
+      castrated: c!.castrated,
+    }));
+
+  const finalPaymentMethod = paymentMethod === 'Outros' && paymentMethodOther
+    ? paymentMethodOther
+    : paymentMethod;
+
   const buildContract = () => ({
     id: 'preview',
     client_id: client.id,
@@ -57,18 +107,20 @@ export const ContractDialog: React.FC<Props> = ({ open, onOpenChange, clientId }
       tutorPhone: client.tutorPhone, tutorEmail: client.tutorEmail,
       name: client.name, breed: client.breed, petSize: client.petSize,
       birthDate: client.birthDate, gender: client.gender, castrated: client.castrated,
+      pets: extraPets,
     },
     plan_type: planType,
     frequency_per_week: frequency,
     base_monthly_value: baseValue,
-    discount_type: 'normal',
-    discount_percent: 0,
-    final_monthly_value: calc.final_monthly_value,
-    total_contract_value: calc.total_contract_value,
+    discount_type: 'normal' as const,
+    // We re-use this column to store the chosen cancellation fee percent (0/15/30)
+    discount_percent: cancellationFeePct,
+    final_monthly_value: finalMonthlyValue,
+    total_contract_value: Math.round(totalValue * 100) / 100,
     start_date: startDate,
     end_date: endDate,
     status: 'pendente' as const,
-    payment_method: paymentMethod,
+    payment_method: finalPaymentMethod,
     observations,
     missing_fields: missing.map(m => m.key),
     cancelled_at: null, cancellation_fee: null, pdf_url: null, docx_url: null,
@@ -77,7 +129,7 @@ export const ContractDialog: React.FC<Props> = ({ open, onOpenChange, clientId }
   });
 
   const handleSave = async () => {
-    if (baseValue <= 0) { toast.error('Defina um valor base. Configure os planos em Conta → Planos.'); return; }
+    if (baseValue <= 0) { toast.error('Defina um valor mensal. Configure os planos em Contratos → Planos & Valores.'); return; }
     const c = buildContract();
     const { id, created_at, updated_at, cancelled_at, cancellation_fee, pdf_url, docx_url, created_by, created_by_name, ...rest } = c;
     await createContract(rest as any);
@@ -86,6 +138,10 @@ export const ContractDialog: React.FC<Props> = ({ open, onOpenChange, clientId }
 
   const handlePDF = () => generateContractPDF(buildContract() as any);
   const handleDOCX = () => generateContractDOCX(buildContract() as any);
+
+  const togglePet = (id: string) => {
+    setExtraPetIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -123,6 +179,31 @@ export const ContractDialog: React.FC<Props> = ({ open, onOpenChange, clientId }
           </div>
         )}
 
+        {/* Multi-pet block */}
+        {sameTutorPets.length > 0 && (
+          <div className="rounded-lg border border-border p-3 space-y-2">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Plus size={14} /> Incluir outros pets do mesmo tutor neste contrato
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+              {sameTutorPets.map(p => (
+                <label key={p.id} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted/50 cursor-pointer text-sm">
+                  <Checkbox
+                    checked={extraPetIds.includes(p.id)}
+                    onCheckedChange={() => togglePet(p.id)}
+                  />
+                  <span>{p.name} <span className="text-muted-foreground">({p.breed || '—'})</span></span>
+                </label>
+              ))}
+            </div>
+            {extraPets.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                {extraPets.length + 1} pets serão incluídos no contrato.
+              </p>
+            )}
+          </div>
+        )}
+
         <div className="grid grid-cols-2 gap-3">
           <div>
             <Label>Plano (vigência)</Label>
@@ -146,25 +227,81 @@ export const ContractDialog: React.FC<Props> = ({ open, onOpenChange, clientId }
           </div>
           <div>
             <Label>Início</Label>
-            <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+            <DatePicker value={startDate} onChange={setStartDate} />
           </div>
           <div>
             <Label>Fim (calculado)</Label>
-            <Input type="date" value={endDate} disabled />
+            <DatePicker value={endDate} onChange={() => {}} disabled />
           </div>
+
           <div className="col-span-2">
-            <Label>Valor mensal base (R$) {plan && <span className="text-xs text-muted-foreground">— sugerido: {formatBRL(plan.base_monthly_value)}</span>}</Label>
+            <Label>
+              Valor mensal (R$)
+              {plan && <span className="text-xs text-muted-foreground ml-1">— sugerido: {formatBRL(plan.base_monthly_value)}</span>}
+            </Label>
             <Input
               type="number"
+              step="0.01"
               placeholder={plan?.base_monthly_value ? String(plan.base_monthly_value) : '0,00'}
               value={overrideValue}
               onChange={(e) => setOverrideValue(e.target.value)}
             />
           </div>
+
+          <div className="col-span-2">
+            <Label>
+              Valor total do contrato (R$)
+              <span className="text-xs text-muted-foreground ml-1">
+                — calculado: {formatBRL(calc.total_contract_value)} ({PLAN_MONTHS[planType]} mês{PLAN_MONTHS[planType] > 1 ? 'es' : ''})
+              </span>
+            </Label>
+            <Input
+              type="number"
+              step="0.01"
+              placeholder={String(calc.total_contract_value)}
+              value={overrideTotal}
+              onChange={(e) => setOverrideTotal(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Edite livremente para registrar negociações (não recalcula a mensalidade automaticamente).
+            </p>
+          </div>
+
           <div className="col-span-2">
             <Label>Forma de pagamento</Label>
-            <Input placeholder="Ex: Pix, Cartão 3x, Dinheiro..." value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} />
+            <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {PAYMENT_METHODS.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            {paymentMethod === 'Outros' && (
+              <Input
+                className="mt-2"
+                placeholder="Especifique a forma de pagamento"
+                value={paymentMethodOther}
+                onChange={(e) => setPaymentMethodOther(e.target.value)}
+              />
+            )}
           </div>
+
+          <div className="col-span-2">
+            <Label>Taxa de cancelamento</Label>
+            <Select value={String(cancellationFeePct)} onValueChange={(v) => setCancellationFeePct(Number(v) as CancellationFeePercent)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">Sem multa</SelectItem>
+                <SelectItem value="15">15% sobre o valor restante</SelectItem>
+                <SelectItem value="30">30% sobre o valor restante</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground mt-1">
+              {cancellationFeePct === 0
+                ? 'Cláusula 22ª: rescisão com aviso prévio de 30 dias, sem multa.'
+                : `Cláusula 22ª: rescisão antecipada cobra ${cancellationFeePct}% sobre o valor não utilizado.`}
+            </p>
+          </div>
+
           <div className="col-span-2">
             <Label>Observações</Label>
             <Textarea rows={2} value={observations} onChange={(e) => setObservations(e.target.value)} />
@@ -173,16 +310,12 @@ export const ContractDialog: React.FC<Props> = ({ open, onOpenChange, clientId }
 
         <div className="rounded-lg bg-primary/5 border border-primary/20 p-4 space-y-1">
           <div className="flex justify-between text-sm">
-            <span>Valor mensal base:</span>
-            <span>{formatBRL(baseValue)}</span>
+            <span>Valor mensal:</span>
+            <span>{formatBRL(finalMonthlyValue)}</span>
           </div>
-          <div className="flex justify-between font-semibold text-base pt-1 border-t border-primary/20">
-            <span>Mensalidade final:</span>
-            <span className="text-primary">{formatBRL(calc.final_monthly_value)}</span>
-          </div>
-          <div className="flex justify-between font-bold text-lg">
+          <div className="flex justify-between font-bold text-lg pt-1 border-t border-primary/20">
             <span>Total do contrato ({PLAN_MONTHS[planType]} mês{PLAN_MONTHS[planType] > 1 ? 'es' : ''}):</span>
-            <span className="text-primary">{formatBRL(calc.total_contract_value)}</span>
+            <span className="text-primary">{formatBRL(totalValue)}</span>
           </div>
         </div>
 
