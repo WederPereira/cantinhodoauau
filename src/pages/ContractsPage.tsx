@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Contract, PLAN_TYPE_LABELS, STATUS_LABELS, STATUS_COLORS,
-  formatBRL, ContractStatus,
+  formatBRL, ContractStatus, calcCancellationFee,
 } from '@/types/contract';
 import { generateContractPDF, generateContractDOCX } from '@/lib/contractGenerator';
 import { ContractDialog } from '@/components/contracts/ContractDialog';
@@ -179,6 +179,9 @@ interface ContractCardProps {
 
 const ContractCard: React.FC<ContractCardProps> = ({ contract, isAdmin, onDelete, onStatusChange, onCancel }) => {
   const snap = contract.client_snapshot || {};
+  const extraPets = (snap.pets as any[]) || [];
+  const feePct = Number(contract.discount_percent) || 0;
+  const estimatedFee = feePct > 0 ? calcCancellationFee(contract) : 0;
 
   return (
     <Card className="p-3">
@@ -186,6 +189,11 @@ const ContractCard: React.FC<ContractCardProps> = ({ contract, isAdmin, onDelete
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-semibold">{snap.name}</span>
+            {extraPets.length > 0 && (
+              <span className="text-xs text-muted-foreground">
+                +{extraPets.length} pet{extraPets.length > 1 ? 's' : ''} ({extraPets.map((p: any) => p.name).join(', ')})
+              </span>
+            )}
             <span className="text-sm text-muted-foreground">— {snap.tutorName}</span>
             <Badge className={STATUS_COLORS[contract.status]}>{STATUS_LABELS[contract.status]}</Badge>
           </div>
@@ -196,6 +204,8 @@ const ContractCard: React.FC<ContractCardProps> = ({ contract, isAdmin, onDelete
           <div className="text-xs text-muted-foreground">
             {new Date(contract.start_date).toLocaleDateString('pt-BR')} → {contract.end_date ? new Date(contract.end_date).toLocaleDateString('pt-BR') : '—'}
             {' • '}Total: <strong>{formatBRL(contract.total_contract_value)}</strong>
+            {feePct > 0 && <> {' • '}Multa rescisão: <strong>{feePct}%</strong></>}
+            {contract.payment_method && <> {' • '}Pgto: {contract.payment_method}</>}
           </div>
           {contract.missing_fields?.length > 0 && contract.status === 'pendente' && (
             <div className="text-xs text-yellow-600 mt-1">⚠️ {contract.missing_fields.length} campo(s) por preencher</div>
@@ -219,7 +229,13 @@ const ContractCard: React.FC<ContractCardProps> = ({ contract, isAdmin, onDelete
               <AlertDialogHeader>
                 <AlertDialogTitle>Cancelar contrato?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  O contrato será marcado como cancelado. Comunique formalmente com 30 dias de antecedência (Cláusula 22ª).
+                  O contrato será marcado como cancelado.
+                  {feePct > 0 ? (
+                    <> Conforme Cláusula 22ª, será aplicada multa de <strong>{feePct}%</strong> sobre o valor restante:
+                      {' '}<strong>{formatBRL(estimatedFee)}</strong>.</>
+                  ) : (
+                    <> Sem multa contratada — comunique formalmente com 30 dias de antecedência.</>
+                  )}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
