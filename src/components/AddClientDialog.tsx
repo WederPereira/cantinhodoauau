@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { ContractDialog } from './contracts/ContractDialog';
+import { useUserRole } from '@/hooks/useUserRole';
 
 interface AddClientDialogProps {
   trigger?: React.ReactNode;
@@ -42,6 +43,7 @@ export const AddClientDialog: React.FC<AddClientDialogProps> = ({ trigger }) => 
   const [castrated, setCastrated] = useState(false);
   const [vaccines, setVaccines] = useState<Vaccines>({ ...DEFAULT_VACCINES });
   const { clients, addClient } = useClients();
+  const { canManageContracts } = useUserRole();
 
   // Get unique tutor names for auto-fill
   const tutorOptions = useMemo(() => {
@@ -98,7 +100,7 @@ export const AddClientDialog: React.FC<AddClientDialogProps> = ({ trigger }) => 
     toast.success(`${name} adicionado com sucesso!`);
     resetForm();
     setOpen(false);
-    if (insertedId) {
+    if (insertedId && canManageContracts) {
       setNewClientId(insertedId);
       setContractOpen(true);
     }
