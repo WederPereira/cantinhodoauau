@@ -18,6 +18,7 @@ interface Employee {
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Administrador",
+  admin_comercial: "Admin Comercial",
   monitor: "Monitor",
   noturnista: "Noturnista",
 };
