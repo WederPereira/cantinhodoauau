@@ -5,11 +5,12 @@ import { Button } from '@/components/ui/button';
 import { NavLink as RouterNavLink, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useNotificationBadges } from '@/hooks/useNotificationBadges';
+import { useUserRole } from '@/hooks/useUserRole';
 
-const navItems = [
+const baseNavItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/clients', icon: Dog, label: 'Pets' },
-  { to: '/contracts', icon: FileText, label: 'Contratos' },
+  { to: '/contracts', icon: FileText, label: 'Contratos', requiresContracts: true },
   { to: '/reels', icon: Camera, label: 'Mural' },
   { to: '/reports', icon: BarChart3, label: 'Relatórios' },
   { to: '/spreadsheet', icon: FileSpreadsheet, label: 'Planilha' },
@@ -20,6 +21,8 @@ export const Header: React.FC = () => {
   const { theme, setTheme } = useTheme();
   const location = useLocation();
   const { getBadge } = useNotificationBadges();
+  const { canManageContracts } = useUserRole();
+  const navItems = baseNavItems.filter(i => !i.requiresContracts || canManageContracts);
 
   return (
     <header className="sticky top-0 z-50 w-full bg-background/80 backdrop-blur-xl border-b border-border/50 safe-area-top">

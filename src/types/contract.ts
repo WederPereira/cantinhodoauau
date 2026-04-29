@@ -2,6 +2,21 @@ export type PlanType = 'mensal' | 'trimestral' | 'semestral' | 'anual';
 export type DiscountType = 'normal';
 export type ContractStatus = 'pendente' | 'ativo' | 'cancelado' | 'concluido';
 
+/** Cancellation fee percent options selectable on contract creation */
+export type CancellationFeePercent = 0 | 15 | 30;
+
+/** Standard payment methods */
+export const PAYMENT_METHODS = [
+  'Pix',
+  'Dinheiro',
+  'Cartão de Crédito',
+  'Cartão de Débito',
+  'Boleto',
+  'Transferência',
+  'Outros',
+] as const;
+export type PaymentMethod = typeof PAYMENT_METHODS[number];
+
 export interface ContractPlan {
   id: string;
   plan_type: PlanType;
@@ -11,10 +26,24 @@ export interface ContractPlan {
   notes: string;
 }
 
+/** Pet entry stored in contract (snapshot of pet data) */
+export interface ContractPet {
+  client_id: string;
+  name: string;
+  breed: string;
+  petSize?: string;
+  birthDate?: string | null;
+  gender?: string;
+  castrated?: boolean;
+}
+
 export interface Contract {
   id: string;
   client_id: string;
-  client_snapshot: Record<string, any>;
+  client_snapshot: Record<string, any> & {
+    /** Optional: list of additional pets included in the same contract */
+    pets?: ContractPet[];
+  };
   plan_type: PlanType;
   frequency_per_week: number;
   base_monthly_value: number;
@@ -28,6 +57,7 @@ export interface Contract {
   payment_method: string;
   observations: string;
   missing_fields: string[];
+  /** % chosen at contract creation (0, 15 or 30). Stored on cancellation_fee at cancel time */
   cancelled_at: string | null;
   cancellation_fee: number | null;
   pdf_url: string | null;
@@ -73,7 +103,7 @@ export const STATUS_COLORS: Record<ContractStatus, string> = {
 export const suggestDiscount = (_plan: PlanType): DiscountType => 'normal';
 export const getDiscountPercent = (_type: DiscountType, _custom = 0): number => 0;
 
-/** Calculates contract values (no discount applied) */
+/** Calculates contract values (no automatic discount applied) */
 export const calcContract = (basePerMonth: number, plan: PlanType, _discountPercent = 0) => {
   const months = PLAN_MONTHS[plan];
   const final_monthly_value = basePerMonth;
@@ -84,9 +114,22 @@ export const calcContract = (basePerMonth: number, plan: PlanType, _discountPerc
   };
 };
 
-/** Cancellation fee removed — returns 0 */
-export const calcCancellationFee = (_contract: Contract, _cancellationDate: Date = new Date()): number => 0;
-
+/**
+ * Cancellation fee uses the percent stored in `discount_percent` field of the contract
+ * (we reuse this column to hold the chosen 0/15/30 cancellation fee policy).
+ * Calculated over the value not yet used (remaining months × monthly value).
+ */
+export const calcCancellationFee = (contract: Contract, cancellationDate: Date = new Date()): number => {
+  const feePercent = Number(contract.discount_percent) || 0;
+  if (!feePercent) return 0;
+  const start = new Date(contract.start_date);
+  const totalMonths = PLAN_MONTHS[contract.plan_type];
+  const elapsedMs = Math.max(0, cancellationDate.getTime() - start.getTime());
+  const elapsedMonths = elapsedMs / (1000 * 60 * 60 * 24 * 30);
+  const remaining = Math.max(0, totalMonths - elapsedMonths);
+  const remainingValue = remaining * Number(contract.final_monthly_value || 0);
+  return Math.round(remainingValue * (feePercent / 100) * 100) / 100;
+};
 
 /** Required client fields to fill the contract */
 export const CONTRACT_REQUIRED_FIELDS: { key: string; label: string }[] = [

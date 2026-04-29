@@ -3,11 +3,12 @@ import { NavLink as RouterNavLink, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { LayoutDashboard, Dog, FileSpreadsheet, UserCircle, Camera, BarChart3, FileText } from 'lucide-react';
 import { useNotificationBadges } from '@/hooks/useNotificationBadges';
+import { useUserRole } from '@/hooks/useUserRole';
 
-const navItems = [
+const baseNavItems = [
   { to: '/', icon: LayoutDashboard, label: 'Home' },
   { to: '/clients', icon: Dog, label: 'Pets' },
-  { to: '/contracts', icon: FileText, label: 'Contratos' },
+  { to: '/contracts', icon: FileText, label: 'Contratos', requiresContracts: true },
   { to: '/reels', icon: Camera, label: 'Mural' },
   { to: '/reports', icon: BarChart3, label: 'Relatórios' },
   { to: '/spreadsheet', icon: FileSpreadsheet, label: 'Planilha' },
@@ -17,6 +18,8 @@ const navItems = [
 export const BottomNavbar: React.FC = () => {
   const location = useLocation();
   const { getBadge } = useNotificationBadges();
+  const { canManageContracts } = useUserRole();
+  const navItems = baseNavItems.filter(i => !i.requiresContracts || canManageContracts);
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-xl border-t border-border/50 safe-area-bottom lg:hidden">

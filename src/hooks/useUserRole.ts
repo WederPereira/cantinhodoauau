@@ -30,5 +30,10 @@ export function useUserRole() {
     return () => subscription.unsubscribe();
   }, []);
 
-  return { role, isAdmin: role === "admin", loading };
+  const isAdmin = role === "admin";
+  const isComercial = role === ("admin_comercial" as AppRole);
+  // Pode ver/gerenciar contratos
+  const canManageContracts = isAdmin || isComercial;
+
+  return { role, isAdmin, isComercial, canManageContracts, loading };
 }

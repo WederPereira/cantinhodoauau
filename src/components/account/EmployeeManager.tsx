@@ -18,6 +18,7 @@ interface Employee {
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Administrador",
+  admin_comercial: "Admin Comercial",
   monitor: "Monitor",
   noturnista: "Noturnista",
 };
@@ -133,6 +134,7 @@ const EmployeeManager = () => {
                 <SelectContent>
                   <SelectItem value="monitor">Monitor</SelectItem>
                   <SelectItem value="noturnista">Noturnista</SelectItem>
+                  <SelectItem value="admin_comercial">Admin Comercial</SelectItem>
                   <SelectItem value="admin">Administrador</SelectItem>
                 </SelectContent>
               </Select>
@@ -171,6 +173,7 @@ const EmployeeManager = () => {
                       <SelectContent>
                         <SelectItem value="monitor" className="text-xs">Monitor</SelectItem>
                         <SelectItem value="noturnista" className="text-xs">Noturnista</SelectItem>
+                        <SelectItem value="admin_comercial" className="text-xs">Admin Comercial</SelectItem>
                         <SelectItem value="admin" className="text-xs">Administrador</SelectItem>
                       </SelectContent>
                     </Select>
