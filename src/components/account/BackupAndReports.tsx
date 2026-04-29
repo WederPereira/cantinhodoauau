@@ -10,6 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from "sonner";
 import { Download, FileSpreadsheet, FileText, Loader2, Database, Upload, Trash2, RefreshCw, Calendar, HardDrive } from "lucide-react";
 import { generateMonthlyPdf, generateMonthlyXlsx, fetchMonthlyData } from "@/lib/monthlyReports";
+import PetPhotosDownload from "./PetPhotosDownload";
 
 interface BackupRow {
   id: string;
