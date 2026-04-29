@@ -88,9 +88,9 @@ export const ContractDialog: React.FC<Props> = ({ open, onOpenChange, clientId }
       client_id: c!.id,
       name: c!.name,
       breed: c!.breed,
-      petSize: c!.petSize,
-      birthDate: c!.birthDate,
-      gender: c!.gender,
+      petSize: c!.petSize as any,
+      birthDate: c!.birthDate ? new Date(c!.birthDate as any).toISOString() : null,
+      gender: c!.gender as any,
       castrated: c!.castrated,
     }));
 
