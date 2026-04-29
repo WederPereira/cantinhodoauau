@@ -117,6 +117,7 @@ const ContractsPage: React.FC = () => {
                 updateContract(c.id, {
                   status: 'cancelado',
                   cancelled_at: new Date().toISOString(),
+                  cancellation_fee: calcCancellationFee(c),
                 });
               }}
             />
