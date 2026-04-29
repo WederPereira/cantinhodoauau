@@ -200,6 +200,9 @@ const BackupAndReports = () => {
         </CardContent>
       </Card>
 
+      {/* Pet Photos Download */}
+      <PetPhotosDownload />
+
       {/* Backup System */}
       <Card>
         <CardHeader className="pb-3">
