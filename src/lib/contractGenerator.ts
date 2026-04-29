@@ -39,6 +39,24 @@ const buildContractText = (contract: Contract) => {
   const monthName = new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(today);
   const planLabel = PLAN_TYPE_LABELS[contract.plan_type];
 
+  // Build pet list (main pet + extra pets)
+  const allPets = [
+    {
+      name: c.name, breed: c.breed, petSize: c.petSize,
+      birthDate: c.birthDate, gender: c.gender, castrated: c.castrated,
+    },
+    ...((c.pets as any[]) || []),
+  ];
+
+  const petLines = allPets.map((p, idx) =>
+    `${idx + 1}. ${safe(p.name)}, nascido em ${fmtDate(p.birthDate)}, raça ${safe(p.breed)}, porte ${safe(p.petSize)}${p.gender ? ', sexo ' + p.gender : ''}${p.castrated !== undefined ? ', ' + (p.castrated ? 'castrado' : 'não castrado') : ''}.`
+  );
+
+  const feePercent = Number(contract.discount_percent) || 0;
+  const cancellationLine = feePercent > 0
+    ? `Cláusula Vigésima Segunda – Cancelamento deve ser comunicado formalmente com 30 dias de antecedência. Em caso de rescisão antecipada, será cobrada multa de ${feePercent}% sobre o valor restante do contrato (meses não utilizados).`
+    : 'Cláusula Vigésima Segunda – Cancelamento deve ser comunicado formalmente com 30 dias de antecedência.';
+
   return {
     title: 'CONTRATO DE PRESTAÇÃO DE SERVIÇOS DE CRECHE',
     intro: [
@@ -46,7 +64,7 @@ const buildContractText = (contract: Contract) => {
       '',
       `CONTRATANTE: ${safe(c.tutorName)}, brasileiro(a), inscrito(a) sob o CPF: ${safe(c.tutorCpf)}, residente e domiciliado no endereço: ${safe(c.tutorAddress)}${c.tutorNeighborhood ? ' - ' + c.tutorNeighborhood : ''}, telefone: ${safe(c.tutorPhone)}, doravante denominado proprietário do(s) animal(is) de estimação:`,
       '',
-      `1. ${safe(c.name)}, nascido em ${fmtDate(c.birthDate)}, raça ${safe(c.breed)}, porte ${safe(c.petSize)}${c.gender ? ', sexo ' + c.gender : ''}${c.castrated !== undefined ? ', ' + (c.castrated ? 'castrado' : 'não castrado') : ''}.`,
+      ...petLines,
     ],
     plan: [
       'DO OBJETO DO CONTRATO',
