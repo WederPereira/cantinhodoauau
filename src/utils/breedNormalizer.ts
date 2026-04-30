@@ -97,25 +97,39 @@ const BREED_ALIASES: Record<string, string> = {
 
 const normalize = (s: string) => s.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
+/** Title-case while preserving small words and accents */
+const toTitleCase = (s: string): string =>
+  s.toLowerCase()
+    .split(/(\s|-|\/)/)
+    .map(part => (part.length > 2 ? part.charAt(0).toUpperCase() + part.slice(1) : part))
+    .join('')
+    .replace(/\s+/g, ' ')
+    .trim();
+
 export function normalizeBreedName(breed: string): string {
   if (!breed || !breed.trim()) return '';
-  
+
   const trimmed = breed.trim();
-  
+
   // Exact match in canonical list
   if (DOG_BREEDS.includes(trimmed)) return trimmed;
-  
-  // Check aliases
+
+  // Check aliases (accent/case-insensitive)
   const normalized = normalize(trimmed);
   if (BREED_ALIASES[normalized]) return BREED_ALIASES[normalized];
-  
-  // Fuzzy match: find canonical breed that starts with or contains the input
+
+  // Case/accent-insensitive exact match against canonical list
   const match = DOG_BREEDS.find(b => normalize(b) === normalized);
   if (match) return match;
-  
-  const partialMatch = DOG_BREEDS.find(b => normalize(b).includes(normalized) || normalized.includes(normalize(b)));
-  if (partialMatch) return partialMatch;
-  
-  // Return original if no match found
-  return trimmed;
+
+  // Safer partial match: only when the input is a clear substring of a single canonical breed
+  // (avoids false positives like "spitz" matching multiple breeds)
+  const candidates = DOG_BREEDS.filter(b => {
+    const nb = normalize(b);
+    return nb.startsWith(normalized + ' ') || nb === normalized;
+  });
+  if (candidates.length === 1) return candidates[0];
+
+  // No match: return Title-Cased version so "spitz", "Spitz" e "SPITZ" se consolidem
+  return toTitleCase(trimmed);
 }

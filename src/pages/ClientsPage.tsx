@@ -58,8 +58,8 @@ const ClientsPage: React.FC = () => {
         }
       }
       if (breedFilter !== 'all') {
-        const clientBreed = normalizeBreedName(client.breed) || 'Sem raça';
-        if (clientBreed !== breedFilter) return false;
+        const clientBreed = (normalizeBreedName(client.breed) || 'Sem raça').toLowerCase();
+        if (clientBreed !== breedFilter.toLowerCase()) return false;
       }
       if (noPhotoOnly && client.photo && client.photo.trim()) return false;
       

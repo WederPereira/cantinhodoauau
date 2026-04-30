@@ -30,6 +30,8 @@ export const ClientCard: React.FC<ClientCardProps> = ({
   const tags = getEffectiveTags(client.id);
   const hasNewTag = tags.some(t => t.auto_kind === 'new_pet');
 
+  const ringColorCompact = tags.find(t => t.auto_kind === 'new_pet')?.color || tags[0]?.color;
+
   if (compact) {
     return (
       <div
@@ -41,10 +43,10 @@ export const ClientCard: React.FC<ClientCardProps> = ({
           className
         )}
       >
-        <div className={cn(
-          "relative w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-muted",
-          hasNewTag && 'ring-2 ring-green-500 ring-offset-1 ring-offset-card',
-        )}>
+        <div
+          className="relative w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-muted"
+          style={ringColorCompact ? { boxShadow: `inset 0 0 0 2.5px ${ringColorCompact}` } : undefined}
+        >
           {client.photo ? (
             <img src={client.photo} alt={client.name} className="w-full h-full object-cover" />
           ) : (

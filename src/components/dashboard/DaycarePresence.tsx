@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { logAction } from '@/hooks/useActionLog';
 import { generatePresencePDF } from '@/utils/pdfGenerator';
+import { PetPhotoFrame } from '@/components/PetPhotoFrame';
 
 interface TodayEntry {
   id: string;
@@ -270,21 +271,26 @@ const DaycarePresence: React.FC = () => {
                 )}
               >
                 {/* Image Section */}
-                <div 
-                  className="aspect-[4/3] bg-muted relative overflow-hidden cursor-pointer active:scale-[0.98] transition-transform flex-shrink-0"
+                <PetPhotoFrame
+                  clientId={client?.id}
+                  dogName={entry.dog}
+                  tutorName={entry.tutor}
+                  photoUrl={client?.photo}
+                  alt={entry.dog}
+                  rounded="md"
+                  ringWidth={4}
+                  className="aspect-[4/3] cursor-pointer active:scale-[0.98] transition-transform flex-shrink-0 rounded-none"
                   onClick={() => client && window.dispatchEvent(new CustomEvent('openClientDetail', { detail: client.id }))}
-                >
-                  {client?.photo ? (
-                    <img src={client.photo} alt={entry.dog} className="w-full h-full object-cover" />
-                  ) : (
+                  fallback={(
                     <div className="w-full h-full flex flex-col items-center justify-center bg-muted/50">
                       <Dog size={36} className="text-muted-foreground/30 mb-2" />
                     </div>
                   )}
-                  <div className="absolute top-2 left-2 bg-black/60 rounded-full w-5 h-5 flex items-center justify-center text-[10px] text-white font-mono font-bold">
+                >
+                  <div className="absolute top-2 left-2 bg-black/60 rounded-full w-5 h-5 flex items-center justify-center text-[10px] text-white font-mono font-bold z-10">
                     {idx + 1}
                   </div>
-                  <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2.5 pt-8">
+                  <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2.5 pt-8 z-10">
                     <p className="font-bold text-sm text-white truncate drop-shadow-md">{entry.dog}</p>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <span className="text-[10px] text-white/80 truncate drop-shadow">{entry.tutor}</span>
@@ -295,7 +301,7 @@ const DaycarePresence: React.FC = () => {
                       )}
                     </div>
                   </div>
-                </div>
+                </PetPhotoFrame>
 
                 {/* Meal Buttons Section */}
                 <div className={cn(

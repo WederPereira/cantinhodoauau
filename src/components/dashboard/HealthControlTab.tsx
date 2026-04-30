@@ -15,6 +15,7 @@ import { format, startOfMonth, endOfMonth, subMonths, addMonths, isWithinInterva
 import { toast } from 'sonner';
 import FecesCollectionTab from './FecesCollectionTab';
 import { useUserRole } from '@/hooks/useUserRole';
+import { PetPhotoFrame } from '@/components/PetPhotoFrame';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 
 type HealthCategory = 'vaccines' | 'flea' | 'feces' | 'restrictions';
@@ -411,13 +412,19 @@ const RestrictionsSection: React.FC<{ clients: Client[] }> = ({ clients }) => {
           return (
             <div key={client.id} className="bg-card border border-border rounded-xl p-3 sm:p-4 space-y-2 shadow-soft">
               <div className="flex items-center gap-3">
-                {client.photo ? (
-                  <img src={client.photo} alt={client.name} className="w-12 h-12 rounded-full object-cover" />
-                ) : (
-                  <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground text-sm font-medium">
-                    {client.name.charAt(0)}
-                  </div>
-                )}
+                <PetPhotoFrame
+                  clientId={client.id}
+                  photoUrl={client.photo}
+                  alt={client.name}
+                  rounded="full"
+                  ringWidth={3}
+                  className="w-12 h-12"
+                  fallback={(
+                    <div className="w-full h-full flex items-center justify-center bg-muted text-muted-foreground text-sm font-medium">
+                      {client.name.charAt(0)}
+                    </div>
+                  )}
+                />
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-sm text-foreground truncate">{client.name}</p>
                   <p className="text-[11px] text-muted-foreground truncate">{client.tutorName} • {client.breed || 'SRD'}</p>
