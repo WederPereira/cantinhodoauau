@@ -13,22 +13,26 @@ import { useClients } from '@/context/ClientContext';
 import {
   PlanType, PLAN_TYPE_LABELS, PLAN_MONTHS,
   calcContract, getMissingClientFields, formatBRL,
-  PAYMENT_METHODS, CancellationFeePercent, ContractPet,
+  PAYMENT_METHODS, CancellationFeePercent, ContractPet, Contract,
 } from '@/types/contract';
 import { generateContractPDF, generateContractDOCX } from '@/lib/contractGenerator';
-import { FileText, Download, AlertCircle, CheckCircle2, Plus, X } from 'lucide-react';
+import { FileText, Download, AlertCircle, CheckCircle2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   clientId: string | null;
+  /** When provided, opens dialog in edit mode for this contract */
+  contract?: Contract | null;
 }
 
-export const ContractDialog: React.FC<Props> = ({ open, onOpenChange, clientId }) => {
+export const ContractDialog: React.FC<Props> = ({ open, onOpenChange, clientId, contract }) => {
   const { clients } = useClients();
-  const { plans, findPlan, createContract } = useContracts();
-  const client = clients.find(c => c.id === clientId);
+  const { plans, findPlan, createContract, updateContract } = useContracts();
+  const isEditing = !!contract;
+  const effectiveClientId = contract?.client_id || clientId;
+  const client = clients.find(c => c.id === effectiveClientId);
 
   const [planType, setPlanType] = useState<PlanType>('mensal');
   const [frequency, setFrequency] = useState<number>(3);
@@ -53,17 +57,37 @@ export const ContractDialog: React.FC<Props> = ({ open, onOpenChange, clientId }
     );
   }, [client, clients]);
 
-  // Reset state when dialog re-opens
+  // Reset / load state when dialog opens
   useEffect(() => {
-    if (open) {
+    if (!open) return;
+    if (contract) {
+      // Load existing contract values
+      setPlanType(contract.plan_type);
+      setFrequency(contract.frequency_per_week);
+      setStartDate(contract.start_date);
+      setOverrideValue(String(contract.base_monthly_value ?? ''));
+      setOverrideTotal(String(contract.total_contract_value ?? ''));
+      setCancellationFeePct((Number(contract.discount_percent) || 0) as CancellationFeePercent);
+      setObservations(contract.observations || '');
+      const pm = contract.payment_method || 'Pix';
+      const isStandard = (PAYMENT_METHODS as readonly string[]).includes(pm);
+      setPaymentMethod(isStandard ? pm : 'Outros');
+      setPaymentMethodOther(isStandard ? '' : pm);
+      const pets = (contract.client_snapshot?.pets as any[]) || [];
+      setExtraPetIds(pets.map(p => p.client_id).filter(Boolean));
+    } else {
       setExtraPetIds([]);
       setOverrideValue('');
       setOverrideTotal('');
       setCancellationFeePct(0);
       setPaymentMethod('Pix');
       setPaymentMethodOther('');
+      setObservations('');
+      setPlanType('mensal');
+      setFrequency(3);
+      setStartDate(new Date().toISOString().slice(0, 10));
     }
-  }, [open, clientId]);
+  }, [open, contract, clientId]);
 
   const plan = findPlan(planType, frequency);
   const baseValue = overrideValue !== '' ? Number(overrideValue) : (plan?.base_monthly_value || 0);
@@ -99,7 +123,7 @@ export const ContractDialog: React.FC<Props> = ({ open, onOpenChange, clientId }
     : paymentMethod;
 
   const buildContract = () => ({
-    id: 'preview',
+    id: contract?.id || 'preview',
     client_id: client.id,
     client_snapshot: {
       tutorName: client.tutorName, tutorCpf: client.tutorCpf,
@@ -113,27 +137,37 @@ export const ContractDialog: React.FC<Props> = ({ open, onOpenChange, clientId }
     frequency_per_week: frequency,
     base_monthly_value: baseValue,
     discount_type: 'normal' as const,
-    // We re-use this column to store the chosen cancellation fee percent (0/15/30)
     discount_percent: cancellationFeePct,
     final_monthly_value: finalMonthlyValue,
     total_contract_value: Math.round(totalValue * 100) / 100,
     start_date: startDate,
     end_date: endDate,
-    status: 'pendente' as const,
+    status: contract?.status || 'pendente' as const,
     payment_method: finalPaymentMethod,
     observations,
     missing_fields: missing.map(m => m.key),
-    cancelled_at: null, cancellation_fee: null, pdf_url: null, docx_url: null,
-    created_by: null, created_by_name: '',
-    created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+    cancelled_at: contract?.cancelled_at ?? null,
+    cancellation_fee: contract?.cancellation_fee ?? null,
+    pdf_url: contract?.pdf_url ?? null,
+    docx_url: contract?.docx_url ?? null,
+    created_by: contract?.created_by ?? null,
+    created_by_name: contract?.created_by_name ?? '',
+    created_at: contract?.created_at || new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   });
 
   const handleSave = async () => {
     if (baseValue <= 0) { toast.error('Defina um valor mensal. Configure os planos em Contratos → Planos & Valores.'); return; }
     const c = buildContract();
-    const { id, created_at, updated_at, cancelled_at, cancellation_fee, pdf_url, docx_url, created_by, created_by_name, ...rest } = c;
-    await createContract(rest as any);
-    onOpenChange(false);
+    if (isEditing && contract) {
+      const { id, created_at, created_by, created_by_name, ...rest } = c;
+      const ok = await updateContract(contract.id, rest as any);
+      if (ok) onOpenChange(false);
+    } else {
+      const { id, created_at, updated_at, cancelled_at, cancellation_fee, pdf_url, docx_url, created_by, created_by_name, ...rest } = c;
+      await createContract(rest as any);
+      onOpenChange(false);
+    }
   };
 
   const handlePDF = () => generateContractPDF(buildContract() as any);
@@ -149,10 +183,12 @@ export const ContractDialog: React.FC<Props> = ({ open, onOpenChange, clientId }
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText size={20} className="text-primary" />
-            Contrato — {client.name} ({client.tutorName})
+            {isEditing ? 'Editar contrato' : 'Contrato'} — {client.name} ({client.tutorName})
           </DialogTitle>
           <DialogDescription>
-            Configure o plano, gere o contrato em PDF/DOCX e envie ao cliente.
+            {isEditing
+              ? 'Altere os dados e salve para atualizar o contrato.'
+              : 'Configure o plano, gere o contrato em PDF/DOCX e envie ao cliente.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -326,7 +362,9 @@ export const ContractDialog: React.FC<Props> = ({ open, onOpenChange, clientId }
           <Button variant="outline" onClick={handleDOCX} className="flex-1 gap-2">
             <Download size={16} /> Baixar DOCX
           </Button>
-          <Button onClick={handleSave} className="flex-1">Salvar Contrato</Button>
+          <Button onClick={handleSave} className="flex-1">
+            {isEditing ? 'Salvar alterações' : 'Salvar Contrato'}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
