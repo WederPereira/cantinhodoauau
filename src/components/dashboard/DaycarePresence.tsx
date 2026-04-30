@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { logAction } from '@/hooks/useActionLog';
 import { generatePresencePDF } from '@/utils/pdfGenerator';
+import { PetPhotoFrame } from '@/components/PetPhotoFrame';
 
 interface TodayEntry {
   id: string;
