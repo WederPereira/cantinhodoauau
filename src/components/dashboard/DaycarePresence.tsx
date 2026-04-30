@@ -286,10 +286,10 @@ const DaycarePresence: React.FC = () => {
                     </div>
                   )}
                 >
-                  <div className="absolute top-2 left-2 bg-black/60 rounded-full w-5 h-5 flex items-center justify-center text-[10px] text-white font-mono font-bold">
+                  <div className="absolute top-2 left-2 bg-black/60 rounded-full w-5 h-5 flex items-center justify-center text-[10px] text-white font-mono font-bold z-10">
                     {idx + 1}
                   </div>
-                  <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2.5 pt-8">
+                  <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2.5 pt-8 z-10">
                     <p className="font-bold text-sm text-white truncate drop-shadow-md">{entry.dog}</p>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <span className="text-[10px] text-white/80 truncate drop-shadow">{entry.tutor}</span>
@@ -300,7 +300,7 @@ const DaycarePresence: React.FC = () => {
                       )}
                     </div>
                   </div>
-                </div>
+                </PetPhotoFrame>
 
                 {/* Meal Buttons Section */}
                 <div className={cn(
