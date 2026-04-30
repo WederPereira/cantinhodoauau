@@ -541,6 +541,48 @@ export type Database = {
         }
         Relationships: []
       }
+      pet_tags: {
+        Row: {
+          auto_kind: string | null
+          client_id: string
+          color: string
+          created_at: string
+          created_by: string | null
+          created_by_name: string
+          expires_at: string | null
+          icon: string | null
+          id: string
+          label: string
+          updated_at: string
+        }
+        Insert: {
+          auto_kind?: string | null
+          client_id: string
+          color?: string
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string
+          expires_at?: string | null
+          icon?: string | null
+          id?: string
+          label: string
+          updated_at?: string
+        }
+        Update: {
+          auto_kind?: string | null
+          client_id?: string
+          color?: string
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string
+          expires_at?: string | null
+          icon?: string | null
+          id?: string
+          label?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

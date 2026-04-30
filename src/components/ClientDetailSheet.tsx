@@ -23,6 +23,7 @@ import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { QRCodeSVG } from 'qrcode.react';
 import logoSrc from '@/assets/logo-cantinho.png';
+import { PetTagsManager } from './PetTagsManager';
 
 interface ClientDetailSheetProps {
   client: Client | null;
@@ -257,6 +258,7 @@ export const ClientDetailSheet: React.FC<ClientDetailSheetProps> = ({ client, op
           <ScrollArea className="flex-1">
             {/* === INFO TAB === */}
             <TabsContent value="info" className="p-4 space-y-4 mt-0">
+              <PetTagsManager client={client} />
               {/* Quick fill dialogs */}
               {fillingField === 'tutorName' && (
                 <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 animate-in fade-in">

@@ -2,6 +2,8 @@ import React from 'react';
 import { Client, formatDate, getProfileCompleteness } from '@/types/client';
 import { cn } from '@/lib/utils';
 import { ChevronRight } from 'lucide-react';
+import { usePetTags } from '@/hooks/usePetTags';
+import { PetTagBadge } from '@/components/PetTagBadge';
 
 interface ClientCardProps {
   client: Client;
@@ -23,6 +25,10 @@ export const ClientCard: React.FC<ClientCardProps> = ({
   compact = false,
 }) => {
   const { percent, level } = getProfileCompleteness(client);
+  const entryMap = React.useMemo(() => ({ [client.id]: client.entryDate }), [client.id, client.entryDate]);
+  const { getEffectiveTags } = usePetTags(entryMap);
+  const tags = getEffectiveTags(client.id);
+  const hasNewTag = tags.some(t => t.auto_kind === 'new_pet');
 
   if (compact) {
     return (
@@ -35,7 +41,10 @@ export const ClientCard: React.FC<ClientCardProps> = ({
           className
         )}
       >
-        <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-muted">
+        <div className={cn(
+          "relative w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-muted",
+          hasNewTag && 'ring-2 ring-green-500 ring-offset-1 ring-offset-card',
+        )}>
           {client.photo ? (
             <img src={client.photo} alt={client.name} className="w-full h-full object-cover" />
           ) : (
@@ -54,6 +63,10 @@ export const ClientCard: React.FC<ClientCardProps> = ({
     );
   }
 
+  // Find dominant tag color for the photo ring (prefer "Novo")
+  const ringColor = tags.find(t => t.auto_kind === 'new_pet')?.color
+    || tags[0]?.color;
+
   return (
     <div
       onClick={onClick}
@@ -65,7 +78,13 @@ export const ClientCard: React.FC<ClientCardProps> = ({
       )}
     >
       {/* Photo area */}
-      <div className="aspect-[4/3] bg-muted relative overflow-hidden">
+      <div
+        className={cn(
+          "aspect-[4/3] bg-muted relative overflow-hidden",
+          ringColor && 'ring-[3px] ring-inset',
+        )}
+        style={ringColor ? { boxShadow: `inset 0 0 0 3px ${ringColor}` } : undefined}
+      >
         {client.photo ? (
           <img src={client.photo} alt={client.name} className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300" />
         ) : (
@@ -73,12 +92,27 @@ export const ClientCard: React.FC<ClientCardProps> = ({
             <span className="text-4xl font-bold text-muted-foreground/30">{client.name.charAt(0).toUpperCase()}</span>
           </div>
         )}
+
+        {/* Tags overlay (top-left, stacked) */}
+        {tags.length > 0 && (
+          <div className="absolute top-2 left-2 flex flex-col gap-1 max-w-[70%]">
+            {tags.slice(0, 3).map(t => (
+              <PetTagBadge key={t.id} tag={t} size="xs" />
+            ))}
+            {tags.length > 3 && (
+              <span className="text-[9px] font-semibold bg-card/90 text-foreground px-1.5 py-0.5 rounded-full">
+                +{tags.length - 3}
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Completeness dot */}
         <div className="absolute top-3 right-3">
           <div className={cn('w-2.5 h-2.5 rounded-full ring-2 ring-card', levelDot[level])} />
         </div>
         {client.petSize && (
-          <div className="absolute top-3 left-3">
+          <div className="absolute bottom-2 left-2">
             <span className="text-[10px] font-medium bg-card/90 backdrop-blur-sm text-foreground px-2 py-0.5 rounded-full">
               {client.petSize}
             </span>

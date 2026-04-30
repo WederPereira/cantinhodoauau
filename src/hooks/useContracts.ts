@@ -35,7 +35,11 @@ export const useContracts = () => {
   };
 
   const updateContract = async (id: string, updates: Partial<Contract>) => {
-    const { error } = await supabase.from('contracts' as any).update(updates as any).eq('id', id);
+    const cleaned: any = { ...updates };
+    delete cleaned.id;
+    delete cleaned.created_at;
+    cleaned.updated_at = new Date().toISOString();
+    const { error } = await supabase.from('contracts' as any).update(cleaned).eq('id', id);
     if (error) { toast.error('Erro ao atualizar: ' + error.message); return false; }
     toast.success('Contrato atualizado');
     await fetchAll();

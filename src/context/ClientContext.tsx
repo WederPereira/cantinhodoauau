@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect, Rea
 import { Client, VaccineType, DEFAULT_VACCINES, Vaccines, FleaRecord, VaccineRecord, PetGender, FleaType } from '@/types/client';
 import { logAction } from '@/hooks/useActionLog';
 import { supabase } from '@/integrations/supabase/client';
+import { normalizeBreedName } from '@/utils/breedNormalizer';
 import { toast } from 'sonner';
 
 interface ClientContextType {
@@ -58,7 +59,7 @@ const dbRowToClient = (row: any, vaccineRecords: any[] = [], fleaRecords: any[] 
   tutorPhoto: row.tutor_photo || undefined,
   tutorBirthDate: row.tutor_birth_date ? new Date(row.tutor_birth_date) : undefined,
   name: row.name,
-  breed: row.breed || '',
+  breed: normalizeBreedName(row.breed || ''),
   petSize: row.pet_size as Client['petSize'],
   weight: row.weight ? Number(row.weight) : undefined,
   birthDate: row.birth_date ? new Date(row.birth_date) : undefined,

@@ -1,15 +1,21 @@
 import { DOG_BREEDS } from '@/data/dogBreeds';
 
 // Map of common variations to canonical breed names
+const SRD_LABEL = 'SRD';
 const BREED_ALIASES: Record<string, string> = {
-  'srd': 'SRD (Sem Raça Definida / Caramelo / Vira-Lata)',
-  'vira-lata': 'SRD (Sem Raça Definida / Caramelo / Vira-Lata)',
-  'vira lata': 'SRD (Sem Raça Definida / Caramelo / Vira-Lata)',
-  'viralata': 'SRD (Sem Raça Definida / Caramelo / Vira-Lata)',
-  'caramelo': 'SRD (Sem Raça Definida / Caramelo / Vira-Lata)',
-  'sem raça': 'SRD (Sem Raça Definida / Caramelo / Vira-Lata)',
-  'sem raca': 'SRD (Sem Raça Definida / Caramelo / Vira-Lata)',
-  'sem raça definida': 'SRD (Sem Raça Definida / Caramelo / Vira-Lata)',
+  'srd': SRD_LABEL,
+  'srd (sem raça definida / caramelo / vira-lata)': SRD_LABEL,
+  'sem raça definida / caramelo / vira-lata': SRD_LABEL,
+  'vira-lata': SRD_LABEL,
+  'vira lata': SRD_LABEL,
+  'viralata': SRD_LABEL,
+  'caramelo': SRD_LABEL,
+  'sem raça': SRD_LABEL,
+  'sem raca': SRD_LABEL,
+  'sem raça definida': SRD_LABEL,
+  'sem raca definida': SRD_LABEL,
+  'mestiço': SRD_LABEL,
+  'mestico': SRD_LABEL,
   'golden': 'Golden Retriever',
   'labrador': 'Labrador Retriever',
   'lab': 'Labrador Retriever',
