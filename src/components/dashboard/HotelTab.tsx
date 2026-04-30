@@ -25,6 +25,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { logAction } from '@/hooks/useActionLog';
+import { PetPhotoFrame } from '@/components/PetPhotoFrame';
 
 interface HotelStay {
   id: string;
