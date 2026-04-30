@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect, Rea
 import { Client, VaccineType, DEFAULT_VACCINES, Vaccines, FleaRecord, VaccineRecord, PetGender, FleaType } from '@/types/client';
 import { logAction } from '@/hooks/useActionLog';
 import { supabase } from '@/integrations/supabase/client';
+import { normalizeBreedName } from '@/utils/breedNormalizer';
 import { toast } from 'sonner';
 
 interface ClientContextType {
