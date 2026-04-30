@@ -514,13 +514,20 @@ const MedicationTab: React.FC = () => {
                             : 'border-border hover:border-primary/40 bg-card'
                         )}
                       >
-                        {dog.photo ? (
-                          <img src={dog.photo} alt={dog.name} className="w-10 h-10 rounded-full object-cover mb-1 border border-border" />
-                        ) : (
-                          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center mb-1">
-                            <Dog size={16} className="text-muted-foreground" />
-                          </div>
-                        )}
+                        <PetPhotoFrame
+                          clientId={dog.id}
+                          dogName={dog.name}
+                          photoUrl={dog.photo}
+                          alt={dog.name}
+                          rounded="full"
+                          ringWidth={3}
+                          className="w-10 h-10 mb-1 border border-border"
+                          fallback={(
+                            <div className="w-full h-full flex items-center justify-center bg-muted">
+                              <Dog size={16} className="text-muted-foreground" />
+                            </div>
+                          )}
+                        />
                         <p className="font-semibold text-[10px] truncate w-full">{dog.name}</p>
                         <div className="flex gap-0.5 mt-0.5">
                           {dog.isHotel && <Badge variant="secondary" className="text-[7px] px-1 py-0">🏨</Badge>}
