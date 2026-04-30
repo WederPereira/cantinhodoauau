@@ -232,13 +232,13 @@ const Dashboard: React.FC = () => {
             <div className="grid grid-cols-2 gap-3">
               <div className="group bg-card/80 backdrop-blur-sm border border-border/70 rounded-2xl p-4 transition-all hover:border-primary/30 hover:shadow-md">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-semibold">Total Pets</p>
+                  <p className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-semibold">Pets Ativos</p>
                   <div className="p-1.5 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
                     <Users size={13} className="text-primary" strokeWidth={2.2} />
                   </div>
                 </div>
                 <p className="text-3xl font-bold text-foreground">{activeClients.length}</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">cadastrados</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">na creche</p>
               </div>
               <div className="group bg-card/80 backdrop-blur-sm border border-border/70 rounded-2xl p-4 transition-all hover:border-destructive/40 hover:shadow-md">
                 <div className="flex items-center justify-between mb-2">
