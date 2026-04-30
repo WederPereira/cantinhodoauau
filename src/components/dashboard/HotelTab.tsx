@@ -766,17 +766,24 @@ const HotelTab: React.FC = () => {
                     className="bg-card border border-border rounded-2xl overflow-hidden transition-all hover:border-primary/30 hover:shadow-md"
                   >
                     {/* Large photo - clickable to open sheet */}
-                    <div className="aspect-[4/3] bg-muted relative overflow-hidden cursor-pointer active:scale-[0.98] transition-transform"
-                      onClick={() => setSheetStayId(stay.id)}>
-                      {client?.photo ? (
-                        <img src={client.photo} alt={stay.dog_name} className="w-full h-full object-cover" />
-                      ) : (
+                    <PetPhotoFrame
+                      clientId={client?.id}
+                      dogName={stay.dog_name}
+                      tutorName={stay.tutor_name}
+                      photoUrl={client?.photo}
+                      alt={stay.dog_name}
+                      rounded="md"
+                      ringWidth={4}
+                      className="aspect-[4/3] cursor-pointer active:scale-[0.98] transition-transform rounded-none"
+                      onClick={() => setSheetStayId(stay.id)}
+                      fallback={(
                         <div className="w-full h-full flex items-center justify-center">
                           <Dog size={36} className="text-muted-foreground/30" />
                         </div>
                       )}
+                    >
                       {/* Badges overlay */}
-                      <div className="absolute top-2 right-2 flex flex-col gap-1">
+                      <div className="absolute top-2 right-2 flex flex-col gap-1 z-10">
                         {pendingMeds > 0 && (
                           <Badge variant="destructive" className="text-[8px] px-1.5 py-0 animate-pulse">
                             <Pill size={8} className="mr-0.5" />{pendingMeds}
@@ -788,11 +795,11 @@ const HotelTab: React.FC = () => {
                           </Badge>
                         )}
                       </div>
-                      <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-2.5 pt-6">
+                      <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-2.5 pt-6 z-10">
                         <p className="font-bold text-sm text-white truncate">{stay.dog_name}</p>
                         <p className="text-[10px] text-white/70 truncate">{stay.tutor_name}</p>
                       </div>
-                    </div>
+                    </PetPhotoFrame>
                     {/* Info + meal buttons below photo */}
                     <div className="p-2.5 space-y-2">
                       <div className="flex items-center justify-between text-[9px] text-muted-foreground">
