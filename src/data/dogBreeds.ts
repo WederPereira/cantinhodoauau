@@ -230,7 +230,7 @@ export const DOG_BREEDS: string[] = [
   "Spitz Alemão",
   "Spitz Finlandês",
   "Spitz Japonês",
-  "SRD (Sem Raça Definida / Caramelo / Vira-Lata)",
+  "SRD",
   "Staffordshire Bull Terrier",
   "Sussex Spaniel",
   "Swedish Vallhund",
