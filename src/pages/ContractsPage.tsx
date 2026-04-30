@@ -12,7 +12,7 @@ import {
 } from '@/types/contract';
 import { generateContractPDF, generateContractDOCX } from '@/lib/contractGenerator';
 import { ContractDialog } from '@/components/contracts/ContractDialog';
-import { FileText, Download, Trash2, Plus, Search, Settings, X, Check } from 'lucide-react';
+import { FileText, Download, Trash2, Plus, Search, Settings, X, Check, Pencil } from 'lucide-react';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
@@ -28,6 +28,7 @@ const ContractsPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [editingContract, setEditingContract] = useState<Contract | null>(null);
 
   const filtered = contracts.filter(c => {
     const snap = c.client_snapshot || {};
@@ -113,6 +114,7 @@ const ContractsPage: React.FC = () => {
             <ContractCard key={c.id} contract={c} isAdmin={isAdmin}
               onDelete={() => deleteContract(c.id)}
               onStatusChange={(status) => updateContract(c.id, { status })}
+              onEdit={() => { setEditingContract(c); setSelectedClientId(c.client_id); setDialogOpen(true); }}
               onCancel={() => {
                 updateContract(c.id, {
                   status: 'cancelado',
@@ -159,12 +161,17 @@ const ContractsPage: React.FC = () => {
         </TabsContent>
       </Tabs>
 
-      <ContractDialog open={dialogOpen} onOpenChange={setDialogOpen} clientId={selectedClientId} />
+      <ContractDialog
+        open={dialogOpen}
+        onOpenChange={(v) => { setDialogOpen(v); if (!v) setEditingContract(null); }}
+        clientId={selectedClientId}
+        contract={editingContract}
+      />
 
       <ClientPickerDialog
         open={showClientPicker}
         onOpenChange={setShowClientPicker}
-        onPick={(id) => { setSelectedClientId(id); setShowClientPicker(false); setDialogOpen(true); }}
+        onPick={(id) => { setEditingContract(null); setSelectedClientId(id); setShowClientPicker(false); setDialogOpen(true); }}
       />
     </div>
   );
@@ -176,9 +183,10 @@ interface ContractCardProps {
   onDelete: () => void;
   onStatusChange: (s: ContractStatus) => void;
   onCancel: () => void;
+  onEdit: () => void;
 }
 
-const ContractCard: React.FC<ContractCardProps> = ({ contract, isAdmin, onDelete, onStatusChange, onCancel }) => {
+const ContractCard: React.FC<ContractCardProps> = ({ contract, isAdmin, onDelete, onStatusChange, onCancel, onEdit }) => {
   const snap = contract.client_snapshot || {};
   const extraPets = (snap.pets as any[]) || [];
   const feePct = Number(contract.discount_percent) || 0;
@@ -216,6 +224,9 @@ const ContractCard: React.FC<ContractCardProps> = ({ contract, isAdmin, onDelete
       <div className="flex flex-wrap gap-1.5 mt-2">
         <Button size="sm" variant="outline" onClick={() => generateContractPDF(contract)}><Download size={14} className="mr-1" />PDF</Button>
         <Button size="sm" variant="outline" onClick={() => generateContractDOCX(contract)}><Download size={14} className="mr-1" />DOCX</Button>
+        {contract.status !== 'cancelado' && (
+          <Button size="sm" variant="outline" onClick={onEdit}><Pencil size={14} className="mr-1" />Editar</Button>
+        )}
         {contract.status === 'pendente' && (
           <Button size="sm" variant="outline" className="text-green-600" onClick={() => onStatusChange('ativo')}>
             <Check size={14} className="mr-1" />Ativar
