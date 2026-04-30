@@ -343,17 +343,22 @@ const MedicationTab: React.FC = () => {
     return (
       <div className={cn("rounded-xl border-2 p-3 transition-all", borderColors[variant])}>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 border border-border">
-            {client?.photo ? (
-              <img src={client.photo} alt={med.dog_name} className="w-full h-full object-cover" />
-            ) : (
+          <PetPhotoFrame
+            clientId={client?.id}
+            dogName={med.dog_name}
+            photoUrl={client?.photo}
+            alt={med.dog_name}
+            rounded="full"
+            ringWidth={3}
+            className="w-10 h-10 shrink-0 border border-border"
+            fallback={(
               <div className={cn("w-full h-full flex items-center justify-center",
                 variant === 'overdue' ? 'bg-destructive/15' : variant === 'past' ? 'bg-amber-100 dark:bg-amber-900/30' : 'bg-primary/10'
               )}>
                 <Dog size={18} className={variant === 'overdue' ? 'text-destructive' : 'text-primary'} />
               </div>
             )}
-          </div>
+          />
           <div className="flex-1 min-w-0">
             <p className="font-bold text-sm text-foreground truncate">{med.dog_name}</p>
             <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
