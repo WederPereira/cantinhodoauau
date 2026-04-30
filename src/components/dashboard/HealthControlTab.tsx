@@ -15,6 +15,7 @@ import { format, startOfMonth, endOfMonth, subMonths, addMonths, isWithinInterva
 import { toast } from 'sonner';
 import FecesCollectionTab from './FecesCollectionTab';
 import { useUserRole } from '@/hooks/useUserRole';
+import { PetPhotoFrame } from '@/components/PetPhotoFrame';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 
 type HealthCategory = 'vaccines' | 'flea' | 'feces' | 'restrictions';
