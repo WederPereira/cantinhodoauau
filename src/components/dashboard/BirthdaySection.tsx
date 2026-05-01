@@ -3,6 +3,7 @@ import { Client } from '@/types/client';
 import { Cake, ChevronLeft, ChevronRight, Copy, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { PetPhotoFrame } from '@/components/PetPhotoFrame';
 import { Badge } from '@/components/ui/badge';
 import { getMonth, differenceInYears } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
