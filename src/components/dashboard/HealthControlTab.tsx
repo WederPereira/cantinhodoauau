@@ -17,8 +17,10 @@ import FecesCollectionTab from './FecesCollectionTab';
 import { useUserRole } from '@/hooks/useUserRole';
 import { PetPhotoFrame } from '@/components/PetPhotoFrame';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
+import HealthSpreadsheet from './HealthSpreadsheet';
+import { Table2 } from 'lucide-react';
 
-type HealthCategory = 'vaccines' | 'flea' | 'feces' | 'restrictions';
+type HealthCategory = 'vaccines' | 'flea' | 'feces' | 'restrictions' | 'spreadsheet';
 type HealthStatus = 'ok' | 'expiring' | 'expired' | 'none';
 
 type RestrictionType = 'alimentar' | 'alergia' | 'vacina' | 'medicamento' | 'outra';
@@ -844,12 +846,26 @@ export const HealthControlTab: React.FC = () => {
           <ShieldAlert size={15} />
           Restrições
         </button>
+        <button
+          onClick={() => { setCategory('spreadsheet'); setFilter('all'); clearDateFilter(); }}
+          className={cn(
+            'flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs sm:text-sm font-medium transition-all',
+            category === 'spreadsheet'
+              ? 'bg-background shadow-sm text-foreground'
+              : 'text-muted-foreground hover:text-foreground'
+          )}
+        >
+          <Table2 size={15} />
+          Planilha
+        </button>
       </div>
 
       {category === 'feces' ? (
         <FecesCollectionTab />
       ) : category === 'restrictions' ? (
         <RestrictionsSection clients={clients} />
+      ) : category === 'spreadsheet' ? (
+        <HealthSpreadsheet />
       ) : (
       <>
       {/* Stats */}
