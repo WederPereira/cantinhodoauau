@@ -24,12 +24,6 @@ export const ClientCard: React.FC<ClientCardProps> = ({
   compact = false,
 }) => {
   const { percent, level } = getProfileCompleteness(client);
-  const entryMap = React.useMemo(() => ({ [client.id]: client.entryDate }), [client.id, client.entryDate]);
-  const { getEffectiveTags } = usePetTags(entryMap);
-  const tags = getEffectiveTags(client.id);
-  const hasNewTag = tags.some(t => t.auto_kind === 'new_pet');
-
-  const ringColorCompact = tags.find(t => t.auto_kind === 'new_pet')?.color || tags[0]?.color;
 
   if (compact) {
     return (
@@ -42,18 +36,14 @@ export const ClientCard: React.FC<ClientCardProps> = ({
           className
         )}
       >
-        <div
-          className="relative w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-muted"
-          style={ringColorCompact ? { boxShadow: `inset 0 0 0 2.5px ${ringColorCompact}` } : undefined}
-        >
-          {client.photo ? (
-            <img src={client.photo} alt={client.name} className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <span className="text-sm font-semibold text-muted-foreground">{client.name.charAt(0).toUpperCase()}</span>
-            </div>
-          )}
-        </div>
+        <PetPhotoFrame
+          clientId={client.id}
+          rounded="full"
+          ringWidth={3}
+          showTagBadges={false}
+          showNewBadge
+          className="w-10 h-10 flex-shrink-0"
+        />
         <div className="flex-1 min-w-0">
           <p className="font-medium text-foreground truncate text-sm">{client.name}</p>
           {client.breed && <p className="text-xs text-muted-foreground truncate">{client.breed}</p>}
@@ -63,10 +53,6 @@ export const ClientCard: React.FC<ClientCardProps> = ({
       </div>
     );
   }
-
-  // Find dominant tag color for the photo ring (prefer "Novo")
-  const ringColor = tags.find(t => t.auto_kind === 'new_pet')?.color
-    || tags[0]?.color;
 
   return (
     <div
@@ -79,47 +65,25 @@ export const ClientCard: React.FC<ClientCardProps> = ({
       )}
     >
       {/* Photo area */}
-      <div
-        className={cn(
-          "aspect-[4/3] bg-muted relative overflow-hidden",
-          ringColor && 'ring-[3px] ring-inset',
-        )}
-        style={ringColor ? { boxShadow: `inset 0 0 0 3px ${ringColor}` } : undefined}
+      <PetPhotoFrame
+        clientId={client.id}
+        rounded="md"
+        ringWidth={4}
+        maxBadges={2}
+        className="aspect-[4/3] rounded-none"
       >
-        {client.photo ? (
-          <img src={client.photo} alt={client.name} className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <span className="text-4xl font-bold text-muted-foreground/30">{client.name.charAt(0).toUpperCase()}</span>
-          </div>
-        )}
-
-        {/* Tags overlay (top-left, stacked) */}
-        {tags.length > 0 && (
-          <div className="absolute top-2 left-2 flex flex-col gap-1 max-w-[70%]">
-            {tags.slice(0, 3).map(t => (
-              <PetTagBadge key={t.id} tag={t} size="xs" />
-            ))}
-            {tags.length > 3 && (
-              <span className="text-[9px] font-semibold bg-card/90 text-foreground px-1.5 py-0.5 rounded-full">
-                +{tags.length - 3}
-              </span>
-            )}
-          </div>
-        )}
-
         {/* Completeness dot */}
-        <div className="absolute top-3 right-3">
+        <div className="absolute top-3 right-3 z-20">
           <div className={cn('w-2.5 h-2.5 rounded-full ring-2 ring-card', levelDot[level])} />
         </div>
         {client.petSize && (
-          <div className="absolute bottom-2 left-2">
-            <span className="text-[10px] font-medium bg-card/90 backdrop-blur-sm text-foreground px-2 py-0.5 rounded-full">
+          <div className="absolute bottom-2 left-2 z-20">
+            <span className="text-[10px] font-medium bg-card/90 backdrop-blur-sm text-foreground px-2 py-0.5 rounded-full shadow">
               {client.petSize}
             </span>
           </div>
         )}
-      </div>
+      </PetPhotoFrame>
 
       {/* Info */}
       <div className="p-3.5 space-y-1">
