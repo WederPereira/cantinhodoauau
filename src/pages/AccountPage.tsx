@@ -9,13 +9,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { LogOut, User, Mail, Shield, Loader2, Save, KeyRound, Users, History, ClipboardList, Download, RefreshCw, Database } from "lucide-react";
+import { LogOut, User, Mail, Shield, Loader2, Save, KeyRound, Users, History, ClipboardList, Download, RefreshCw, Database, FileText } from "lucide-react";
 import EmployeeManager from "@/components/account/EmployeeManager";
 import ActionHistory from "@/components/account/ActionHistory";
 import WorkTaskManager from "@/components/account/WorkTaskManager";
 import BackupAndReports from "@/components/account/BackupAndReports";
 import ThemeColorPicker from "@/components/account/ThemeColorPicker";
 import NotificationSettings from "@/components/account/NotificationSettings";
+import ContractsPage from "@/pages/ContractsPage";
 
 const AccountPage = () => {
   const { session, signOut } = useAuth();
