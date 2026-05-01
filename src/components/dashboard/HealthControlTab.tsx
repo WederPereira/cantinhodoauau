@@ -18,7 +18,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { PetPhotoFrame } from '@/components/PetPhotoFrame';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 
-type HealthCategory = 'vaccines' | 'flea' | 'feces' | 'restrictions';
+type HealthCategory = 'vaccines' | 'flea' | 'feces' | 'restrictions' | 'spreadsheet';
 type HealthStatus = 'ok' | 'expiring' | 'expired' | 'none';
 
 type RestrictionType = 'alimentar' | 'alergia' | 'vacina' | 'medicamento' | 'outra';
