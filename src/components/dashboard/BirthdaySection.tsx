@@ -3,6 +3,7 @@ import { Client } from '@/types/client';
 import { Cake, ChevronLeft, ChevronRight, Copy, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { PetPhotoFrame } from '@/components/PetPhotoFrame';
 import { Badge } from '@/components/ui/badge';
 import { getMonth, differenceInYears } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -98,10 +99,14 @@ export const BirthdaySection: React.FC<BirthdaySectionProps> = ({ clients, onCli
             const isBirthdayToday = isCurrentMonth && birth.getDate() === today.getDate();
             return (
               <div key={client.id} onClick={() => onClientClick(client)} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={client.photo} />
-                  <AvatarFallback className="text-xs bg-primary/10 text-primary">{client.name.charAt(0)}</AvatarFallback>
-                </Avatar>
+                <PetPhotoFrame
+                  clientId={client.id}
+                  rounded="full"
+                  ringWidth={2.5 as any}
+                  showTagBadges={false}
+                  showNewBadge
+                  className="h-9 w-9 flex-shrink-0"
+                />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{client.name}</p>
                   <p className="text-xs text-muted-foreground">
@@ -132,10 +137,14 @@ export const BirthdaySection: React.FC<BirthdaySectionProps> = ({ clients, onCli
             <div className="space-y-1 mt-2 max-h-[200px] overflow-y-auto pr-1">
               {missingBirthday.map(client => (
                 <div key={client.id} onClick={() => onClientClick(client)} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors">
-                  <Avatar className="h-7 w-7">
-                    <AvatarImage src={client.photo} />
-                    <AvatarFallback className="text-[10px] bg-muted text-muted-foreground">{client.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
+                  <PetPhotoFrame
+                    clientId={client.id}
+                    rounded="full"
+                    ringWidth={2 as any}
+                    showTagBadges={false}
+                    showNewBadge
+                    className="h-8 w-8 flex-shrink-0"
+                  />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-foreground truncate">{client.name}</p>
                     <p className="text-[10px] text-muted-foreground truncate">{client.tutorName}</p>
