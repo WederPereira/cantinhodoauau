@@ -17,6 +17,8 @@ import FecesCollectionTab from './FecesCollectionTab';
 import { useUserRole } from '@/hooks/useUserRole';
 import { PetPhotoFrame } from '@/components/PetPhotoFrame';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
+import HealthSpreadsheet from './HealthSpreadsheet';
+import { Table2 } from 'lucide-react';
 
 type HealthCategory = 'vaccines' | 'flea' | 'feces' | 'restrictions' | 'spreadsheet';
 type HealthStatus = 'ok' | 'expiring' | 'expired' | 'none';
