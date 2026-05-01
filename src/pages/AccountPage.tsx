@@ -20,7 +20,7 @@ import ContractsPage from "@/pages/ContractsPage";
 
 const AccountPage = () => {
   const { session, signOut } = useAuth();
-  const { isAdmin, role, loading: roleLoading } = useUserRole();
+  const { isAdmin, canManageContracts, role, loading: roleLoading } = useUserRole();
   const [fullName, setFullName] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [loading, setLoading] = useState(false);
