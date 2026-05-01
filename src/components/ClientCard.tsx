@@ -2,8 +2,7 @@ import React from 'react';
 import { Client, formatDate, getProfileCompleteness } from '@/types/client';
 import { cn } from '@/lib/utils';
 import { ChevronRight } from 'lucide-react';
-import { usePetTags } from '@/hooks/usePetTags';
-import { PetTagBadge } from '@/components/PetTagBadge';
+import { PetPhotoFrame } from '@/components/PetPhotoFrame';
 
 interface ClientCardProps {
   client: Client;
