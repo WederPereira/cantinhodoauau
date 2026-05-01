@@ -153,46 +153,52 @@ const AccountPage = () => {
       <NotificationSettings />
 
       <Separator />
-      <Tabs defaultValue={isAdmin ? "employees" : "tasks"} className="w-full">
-        <TabsList className={`w-full grid ${isAdmin ? "grid-cols-4" : "grid-cols-1"}`}>
-          {isAdmin && (
-            <TabsTrigger value="employees" className="gap-1 text-xs">
-              <Users className="w-3.5 h-3.5" /> Equipe
-            </TabsTrigger>
-          )}
-          <TabsTrigger value="tasks" className="gap-1 text-xs">
-            <ClipboardList className="w-3.5 h-3.5" /> Tarefas
-          </TabsTrigger>
-          {isAdmin && (
-            <TabsTrigger value="history" className="gap-1 text-xs">
-              <History className="w-3.5 h-3.5" /> Histórico
-            </TabsTrigger>
-          )}
-          {isAdmin && (
-            <TabsTrigger value="backup" className="gap-1 text-xs">
-              <Database className="w-3.5 h-3.5" /> Backup
-            </TabsTrigger>
-          )}
-        </TabsList>
-        {isAdmin && (
-          <TabsContent value="employees" className="mt-3">
-            <EmployeeManager />
-          </TabsContent>
-        )}
-        <TabsContent value="tasks" className="mt-3">
-          <WorkTaskManager />
-        </TabsContent>
-        {isAdmin && (
-          <TabsContent value="history" className="mt-3">
-            <ActionHistory />
-          </TabsContent>
-        )}
-        {isAdmin && (
-          <TabsContent value="backup" className="mt-3">
-            <BackupAndReports />
-          </TabsContent>
-        )}
-      </Tabs>
+      {(() => {
+        const tabs: { value: string; label: string; icon: React.ReactNode; show: boolean }[] = [
+          { value: "employees", label: "Equipe", icon: <Users className="w-3.5 h-3.5" />, show: isAdmin },
+          { value: "tasks", label: "Tarefas", icon: <ClipboardList className="w-3.5 h-3.5" />, show: true },
+          { value: "contracts", label: "Contratos", icon: <FileText className="w-3.5 h-3.5" />, show: canManageContracts },
+          { value: "history", label: "Histórico", icon: <History className="w-3.5 h-3.5" />, show: isAdmin },
+          { value: "backup", label: "Backup", icon: <Database className="w-3.5 h-3.5" />, show: isAdmin },
+        ].filter(t => t.show);
+        const cols = tabs.length;
+        const colsClass = cols === 1 ? "grid-cols-1" : cols === 2 ? "grid-cols-2" : cols === 3 ? "grid-cols-3" : cols === 4 ? "grid-cols-4" : "grid-cols-5";
+        const defaultTab = isAdmin ? "employees" : "tasks";
+        return (
+          <Tabs defaultValue={defaultTab} className="w-full">
+            <TabsList className={`w-full grid ${colsClass}`}>
+              {tabs.map(t => (
+                <TabsTrigger key={t.value} value={t.value} className="gap-1 text-xs">
+                  {t.icon} {t.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            {isAdmin && (
+              <TabsContent value="employees" className="mt-3">
+                <EmployeeManager />
+              </TabsContent>
+            )}
+            <TabsContent value="tasks" className="mt-3">
+              <WorkTaskManager />
+            </TabsContent>
+            {canManageContracts && (
+              <TabsContent value="contracts" className="mt-3 -mx-4">
+                <ContractsPage />
+              </TabsContent>
+            )}
+            {isAdmin && (
+              <TabsContent value="history" className="mt-3">
+                <ActionHistory />
+              </TabsContent>
+            )}
+            {isAdmin && (
+              <TabsContent value="backup" className="mt-3">
+                <BackupAndReports />
+              </TabsContent>
+            )}
+          </Tabs>
+        );
+      })()}
 
       <Separator />
       <div className="grid grid-cols-2 gap-3">
