@@ -99,10 +99,14 @@ export const BirthdaySection: React.FC<BirthdaySectionProps> = ({ clients, onCli
             const isBirthdayToday = isCurrentMonth && birth.getDate() === today.getDate();
             return (
               <div key={client.id} onClick={() => onClientClick(client)} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={client.photo} />
-                  <AvatarFallback className="text-xs bg-primary/10 text-primary">{client.name.charAt(0)}</AvatarFallback>
-                </Avatar>
+                <PetPhotoFrame
+                  clientId={client.id}
+                  rounded="full"
+                  ringWidth={2.5 as any}
+                  showTagBadges={false}
+                  showNewBadge
+                  className="h-9 w-9 flex-shrink-0"
+                />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{client.name}</p>
                   <p className="text-xs text-muted-foreground">
