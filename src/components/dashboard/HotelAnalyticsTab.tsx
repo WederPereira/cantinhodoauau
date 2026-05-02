@@ -112,17 +112,37 @@ const HotelAnalyticsTab: React.FC = () => {
     return { totalStays, activeStays, completedStays, mealRate, medRate, avgStayDays, topDogs, monthlyData, maxMonthly, mealsEaten, totalMeals, medsAdministered, totalMeds, dayOfWeekData };
   }, [stays, meals, meds]);
 
+  // Helper: returns true if the stay was present (hospedado) on the given day
+  const stayPresentOnDay = useCallback((s: StayData, day: Date) => {
+    const dayStart = startOfDay(day).getTime();
+    const checkInStart = startOfDay(new Date(s.check_in)).getTime();
+    if (checkInStart > dayStart) return false;
+    // End of presence: actual check_out if exists, otherwise (still active) today
+    const endRef = s.check_out ? new Date(s.check_out) : new Date();
+    const endStart = startOfDay(endRef).getTime();
+    return dayStart <= endStart;
+  }, []);
+
   const datesWithStays = useMemo(() => {
     const set = new Set<string>();
-    stays.forEach(s => set.add(format(new Date(s.check_in), 'yyyy-MM-dd')));
+    const today = startOfDay(new Date());
+    stays.forEach(s => {
+      const start = startOfDay(new Date(s.check_in));
+      const end = s.check_out ? startOfDay(new Date(s.check_out)) : today;
+      // Iterate day by day from check_in to end (inclusive)
+      const cursor = new Date(start);
+      while (cursor.getTime() <= end.getTime()) {
+        set.add(format(cursor, 'yyyy-MM-dd'));
+        cursor.setDate(cursor.getDate() + 1);
+      }
+    });
     return set;
   }, [stays]);
 
   const staysForSelectedDate = useMemo(() => {
     if (!selectedDate) return [];
-    const dayStart = startOfDay(selectedDate);
-    return stays.filter(s => startOfDay(new Date(s.check_in)).getTime() === dayStart.getTime());
-  }, [stays, selectedDate]);
+    return stays.filter(s => stayPresentOnDay(s, selectedDate));
+  }, [stays, selectedDate, stayPresentOnDay]);
 
   const copySelectedDateHotel = () => {
     if (staysForSelectedDate.length === 0) return;
