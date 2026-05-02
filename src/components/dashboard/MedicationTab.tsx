@@ -520,7 +520,9 @@ const MedicationTab: React.FC = () => {
                           photoUrl={dog.photo}
                           alt={dog.name}
                           rounded="full"
-                          ringWidth={3}
+                          ringWidth={2}
+                          showTagBadges={false}
+                          showNewBadge={false}
                           className="w-10 h-10 mb-1 border border-border"
                           fallback={(
                             <div className="w-full h-full flex items-center justify-center bg-muted">
