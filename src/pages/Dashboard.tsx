@@ -17,7 +17,6 @@ const HealthControlTab = lazy(() => import('@/components/dashboard/HealthControl
 const DaycareTab = lazy(() => import('@/components/dashboard/DaycareTab'));
 const TaxiTab = lazy(() => import('@/components/dashboard/TaxiTab'));
 const HotelTab = lazy(() => import('@/components/dashboard/HotelTab'));
-const HotelMedicationAlerts = lazy(() => import('@/components/dashboard/HotelMedicationAlerts'));
 const HotelFeedingAlerts = lazy(() => import('@/components/dashboard/HotelFeedingAlerts'));
 const HotelCheckoutAlerts = lazy(() => import('@/components/dashboard/HotelCheckoutAlerts'));
 const MedicationTab = lazy(() => import('@/components/dashboard/MedicationTab'));
