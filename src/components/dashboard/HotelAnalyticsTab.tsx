@@ -113,14 +113,19 @@ const HotelAnalyticsTab: React.FC = () => {
   }, [stays, meals, meds]);
 
   // Helper: returns true if the stay was present (hospedado) on the given day
+  // Day of checkout is NOT counted (pet já saiu)
   const stayPresentOnDay = useCallback((s: StayData, day: Date) => {
     const dayStart = startOfDay(day).getTime();
     const checkInStart = startOfDay(new Date(s.check_in)).getTime();
     if (checkInStart > dayStart) return false;
-    // End of presence: actual check_out if exists, otherwise (still active) today
-    const endRef = s.check_out ? new Date(s.check_out) : new Date();
-    const endStart = startOfDay(endRef).getTime();
-    return dayStart <= endStart;
+    if (s.check_out) {
+      const checkOutStart = startOfDay(new Date(s.check_out)).getTime();
+      // Presença vai até o dia ANTERIOR ao checkout
+      return dayStart < checkOutStart;
+    }
+    // Ainda ativo: presente até hoje
+    const todayStart = startOfDay(new Date()).getTime();
+    return dayStart <= todayStart;
   }, []);
 
   const datesWithStays = useMemo(() => {
@@ -128,8 +133,14 @@ const HotelAnalyticsTab: React.FC = () => {
     const today = startOfDay(new Date());
     stays.forEach(s => {
       const start = startOfDay(new Date(s.check_in));
-      const end = s.check_out ? startOfDay(new Date(s.check_out)) : today;
-      // Iterate day by day from check_in to end (inclusive)
+      // Se há checkout, último dia presente = checkout - 1; senão = hoje
+      let end: Date;
+      if (s.check_out) {
+        end = startOfDay(new Date(s.check_out));
+        end.setDate(end.getDate() - 1);
+      } else {
+        end = today;
+      }
       const cursor = new Date(start);
       while (cursor.getTime() <= end.getTime()) {
         set.add(format(cursor, 'yyyy-MM-dd'));
